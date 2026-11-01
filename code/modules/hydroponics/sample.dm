@@ -28,15 +28,15 @@ GLOBAL_LIST_INIT(chem_t4_reagents, list(
 	yield = -1
 	var/sample_color = "#FFFFFF"
 
-/obj/item/seeds/sample/New()
-	..()
+/obj/item/seeds/sample/Initialize(mapload)
+	. = ..()
 	if(sample_color)
 		var/image/I = image(icon, icon_state = "sample-filling")
 		I.color = sample_color
 		overlays += I
 
 /obj/item/seeds/sample/get_analyzer_text()
-	return " The DNA of this sample is damaged beyond recovery, it can't support life on it's own.\n*---------*"
+	return " The DNA of this sample is damaged beyond recovery, it can't support life on it's own."
 
 /obj/item/seeds/sample/alienweed
 	name = "alien weed sample"

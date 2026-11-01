@@ -6,8 +6,8 @@
 	key_third_person = "chirps"
 	message = "chirps!"
 	sound = "sound/creatures/nymphchirp.ogg"
-	emote_type = EMOTE_SOUND
-	mob_type_allowed_typecache = list(/mob/living/simple_animal/diona)
+	emote_type = EMOTE_AUDIBLE
+	mob_type_allowed_typecache = list(/mob/living/basic/diona_nymph)
 
 // Dog emotes
 
@@ -19,7 +19,7 @@
 	key_third_person = "barks"
 	message = "barks."
 	message_param = "barks at %t."
-	emote_type = EMOTE_SOUND
+	emote_type = EMOTE_AUDIBLE
 
 /datum/emote/living/simple_animal/pet/dog/bark/get_sound(mob/living/user)
 	. = ..()
@@ -33,7 +33,7 @@
 	key_third_person = "yelps"
 	message = "yelps!"
 	message_param = "yelps at %t!"
-	emote_type = EMOTE_SOUND
+	emote_type = EMOTE_AUDIBLE
 
 /datum/emote/living/simple_animal/pet/dog/yelp/get_sound(mob/living/user)
 	var/mob/living/simple_animal/pet/dog/D = user
@@ -44,23 +44,23 @@
 	key_third_person = "growls"
 	message = "growls!"
 	message_param = "growls at %t!"
-	emote_type = EMOTE_SOUND
+	emote_type = EMOTE_AUDIBLE
 	sound = "growl"
 
 // Mouse
 
 /datum/emote/living/simple_animal/mouse
-	mob_type_allowed_typecache = list(/mob/living/simple_animal/mouse)
+	mob_type_allowed_typecache = list(/mob/living/basic/mouse)
 
 /datum/emote/living/simple_animal/mouse/squeak
 	key = "squeak"
 	key_third_person = "squeaks"
 	message = "squeaks!"
 	message_param = "squeaks at %t!"
-	emote_type = EMOTE_SOUND
+	emote_type = EMOTE_AUDIBLE
 
 /datum/emote/living/simple_animal/mouse/squeak/get_sound(mob/living/user)
-	var/mob/living/simple_animal/mouse/M = user
+	var/mob/living/basic/mouse/M = user
 	return M.squeak_sound
 
 // cat
@@ -74,7 +74,7 @@
 	message = "meows."
 	message_param = "meows at %t."
 	sound = "sound/creatures/cat_meow.ogg"
-	emote_type = EMOTE_SOUND
+	emote_type = EMOTE_AUDIBLE
 
 /datum/emote/living/simple_animal/pet/cat/meow/run_emote(mob/user, params, type_override, intentional)
 	var/mob/living/simple_animal/pet/cat/C = user
@@ -100,3 +100,27 @@
 	var/mob/living/simple_animal/pet/cat/C = user
 	C.sit()
 	return TRUE
+
+/datum/emote/living/simple_animal/cow/moo
+	key = "moo"
+	key_third_person = "moos"
+	message = "moos!"
+	sound = "sound/creatures/cow.ogg"
+	emote_type = EMOTE_AUDIBLE
+	mob_type_allowed_typecache = list(/mob/living/basic/cow)
+
+/datum/emote/living/simple_animal/chicken/cluck
+	key = "cluck"
+	key_third_person = "clucks"
+	message = "clucks."
+	sound = "sound/creatures/clucks.ogg"
+	emote_type = EMOTE_AUDIBLE
+	mob_type_allowed_typecache = list(/mob/living/basic/chicken)
+
+/datum/emote/living/simple_animal/pig/oink
+	key = "oink"
+	key_third_person = "oinks"
+	message = "oinks."
+	sound = "sound/creatures/pig.ogg"
+	emote_type = EMOTE_AUDIBLE
+	mob_type_allowed_typecache = list(/mob/living/basic/pig)

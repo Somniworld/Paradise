@@ -6,13 +6,12 @@ GLOBAL_LIST_EMPTY(empty_playable_ai_cores)
 	set desc = "Wipe your core. This is functionally equivalent to cryo or robotic storage, freeing up your job slot."
 
 	// Guard against misclicks, this isn't the sort of thing we want happening accidentally
-	if(alert("WARNING: This will immediately wipe your core and ghost you, removing your character from the round permanently (similar to cryo and robotic storage). Are you entirely sure you want to do this?",
-					"Wipe Core", "No", "No", "Yes") != "Yes")
+	if(tgui_alert(usr, "WARNING: This will immediately wipe your core and ghost you, removing your character from the round permanently (similar to cryo and robotic storage). Are you entirely sure you want to do this?", "Wipe Core", list("No", "Yes")) != "Yes")
 		return
 	cryo_AI()
 
 /mob/living/silicon/ai/proc/cryo_AI()
-	var/dead_aicore = new /obj/structure/AIcore/deactivated(loc)
+	var/dead_aicore = new /obj/structure/ai_core/deactivated(loc)
 	GLOB.empty_playable_ai_cores += dead_aicore
 	GLOB.global_announcer.autosay("[src] has been moved to intelligence storage.", "Artificial Intelligence Oversight", follow_target_override = dead_aicore)
 
@@ -21,19 +20,33 @@ GLOBAL_LIST_EMPTY(empty_playable_ai_cores)
 
 	SSjobs.FreeRole(job)
 
-	if(mind.objectives.len)
-		mind.objectives.Cut()
+	if(mind.objective_holder.clear())
 		mind.special_role = null
 	else
 		if(SSticker.mode.name == "AutoTraitor")
 			var/datum/game_mode/traitor/autotraitor/current_mode = SSticker.mode
 			current_mode.possible_traitors.Remove(src)
 
+	for(var/datum/objective/destroy/O in GLOB.all_objectives)
+		if(O.target != mind)
+			continue
+		O.on_target_cryo()
+
+	view_core()
 	// Ghost the current player and disallow them to return to the body
 	if(TOO_EARLY_TO_GHOST)
-		ghostize(FALSE)
+		ghostize(GHOST_FLAGS_OBSERVE_ONLY)
 	else
-		ghostize(TRUE)
+		ghostize()
+
+	in_storage = TRUE
+	// Clean up AI programs, reassign nodes
+	for(var/obj/machinery/ai_node/node as anything in GLOB.ai_nodes)
+		if(!istype(node))
+			continue
+		if(node.assigned_ai != src)
+			continue
+		node.refresh_ai()
 	// Delete the old AI shell
 	qdel(src)
 
@@ -59,11 +72,11 @@ GLOBAL_LIST_EMPTY(empty_playable_ai_cores)
 
 // Before calling this, make sure an empty core exists, or this will no-op
 /mob/living/silicon/ai/proc/moveToEmptyCore()
-	if(!GLOB.empty_playable_ai_cores.len)
+	if(!length(GLOB.empty_playable_ai_cores))
 		CRASH("moveToEmptyCore called without any available cores")
 
 	// IsJobAvailable for AI checks that there is an empty core available in this list
-	var/obj/structure/AIcore/deactivated/C = GLOB.empty_playable_ai_cores[1]
+	var/obj/structure/ai_core/deactivated/C = GLOB.empty_playable_ai_cores[1]
 	GLOB.empty_playable_ai_cores -= C
 
 	forceMove(C.loc)

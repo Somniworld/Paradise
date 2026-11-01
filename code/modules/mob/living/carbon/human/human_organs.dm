@@ -4,9 +4,6 @@
 		eyes.update_colour()
 		update_body()
 
-/mob/living/carbon/human/var/list/bodyparts = list()
-/mob/living/carbon/human/var/list/bodyparts_by_name = list() // map organ names to organs
-
 // Takes care of organ related updates, such as broken and missing limbs
 /mob/living/carbon/human/handle_organs()
 	..()
@@ -15,19 +12,18 @@
 		var/obj/item/organ/internal/I = X
 		I.process()
 
-	for(var/Y in bodyparts)
-		var/obj/item/organ/external/E = Y
-		E.process()
+	for(var/obj/item/organ/external/limb in bodyparts)
+		limb.process()
 
 		if(!IS_HORIZONTAL(src) && world.time - l_move_time < 15)
 		//Moving around with fractured ribs won't do you any good
-			if(E.is_broken() && E.internal_organs && E.internal_organs.len && prob(15))
-				var/obj/item/organ/internal/I = pick(E.internal_organs)
-				custom_pain("You feel broken bones moving in your [E.name]!")
-				I.receive_damage(rand(3,5))
-			if((E.status & ORGAN_BURNT) && !(E.status & ORGAN_SALVED))
-				custom_pain("You feel the skin sloughing off the burn on your [E.name]!")
-				E.germ_level++
+			if(limb.is_broken() && limb.internal_organs && length(limb.internal_organs) && prob(15))
+				var/obj/item/organ/internal/I = pick(limb.internal_organs)
+				limb.custom_pain("You feel broken bones moving in your [limb.name]!")
+				I.receive_damage(rand(3, 5))
+			if((limb.status & ORGAN_BURNT) && !(limb.status & ORGAN_SALVED))
+				limb.custom_pain("You feel the skin sloughing off the burn on your [limb.name]!")
+				limb.germ_level++
 
 
 	//handle_stance()
@@ -45,27 +41,29 @@
 
 	// Buckled to a bed/chair. Stance damage is forced to 0 since they're sitting on something solid
 	// Not standing, so no need to care about stance
-	if(istype(buckled, /obj/structure/chair) || !isturf(loc))
+	if(istype(buckled, /obj/structure/chair) || istype(buckled, /obj/vehicle/bike) || !isturf(loc))
 		return
 
 	for(var/limb_tag in list("l_leg","r_leg","l_foot","r_foot"))
 		var/obj/item/organ/external/E = bodyparts_by_name[limb_tag]
-		if(!E || (E.status & ORGAN_DEAD) || E.is_malfunctioning() || !E.properly_attached)
+		if(!E || (E.status & ORGAN_DEAD) || E.is_malfunctioning() || !E.properly_attached || HAS_TRAIT(src, TRAIT_PARAPLEGIC))
+			if(E?.status & ORGAN_DEAD && HAS_TRAIT(src, TRAIT_I_WANT_BRAINS))
+				continue
 			if(E && !E.properly_attached && life_tick % 24 == 0)
-				to_chat(src, "<span class='danger'>Your [E] is hanging on by a thread! You need someone to surgically attach it for you!</span>")
+				to_chat(src, SPAN_DANGER("Your [E] is hanging on by a thread! You need someone to surgically attach it for you!"))
 			// let it fail even if just foot&leg. Also malfunctioning happens sporadically so it should impact more when it procs.
 			// Also, if you haven't gotten your leg properly attached surgically, you're not gonna have a good time trying to walk.
 			stance_damage += 2
 		else if(E.is_broken() || !E.is_usable())
 			stance_damage += 1
 
-	// Canes and crutches help you stand (if the latter is ever added)
+	// Canes and crutches help you stand
 	// One cane mitigates a broken leg+foot, or a missing foot.
-	// Two canes are needed for a lost leg. If you are missing both legs, canes aren't gonna help you.
-	if(l_hand && l_hand.is_crutch())
-		stance_damage -= 2
-	if(r_hand && r_hand.is_crutch())
-		stance_damage -= 2
+	// Two canes are needed for a lost leg. If you are missing both legs, canes aren't gonna help you. Get some crutches instead.
+	if(l_hand)
+		stance_damage -= l_hand.get_crutch_efficiency()
+	if(r_hand)
+		stance_damage -= r_hand.get_crutch_efficiency()
 
 	if(stance_damage < 0)
 		stance_damage = 0
@@ -93,18 +91,18 @@
 			if((E.body_part == HAND_LEFT) || (E.body_part == ARM_LEFT))
 				if(!l_hand)
 					continue
-				if(!unEquip(l_hand))
+				if(!drop_item_to_ground(l_hand))
 					continue
 			else
 				if(!r_hand)
 					continue
-				if(!unEquip(r_hand))
+				if(!drop_item_to_ground(r_hand))
 					continue
 
 			if(!E.properly_attached)
 				visible_message(
-					"<span class='warning'>[src]'s [E.name] seems to be hanging loosely from [p_their()] wrist, completely fumbling what [p_they()] [p_were()] holding!</span>",
-					"<span class='userdanger'>You feel pain shoot through your [E.name] as it dangles limply from your [E.amputation_point], you need to get it surgically attached before you can hold anything with it!</span>"
+					SPAN_WARNING("[src]'s [E.name] seems to be hanging loosely from [p_their()] wrist, completely fumbling what [p_they()] [p_were()] holding!"),
+					SPAN_USERDANGER("You feel pain shoot through your [E.name] as it dangles limply from your [E.amputation_point], you need to get it surgically attached before you can hold anything with it!")
 				)
 
 				return
@@ -117,12 +115,12 @@
 			if((E.body_part == HAND_LEFT) || (E.body_part == ARM_LEFT))
 				if(!l_hand)
 					continue
-				if(!unEquip(l_hand))
+				if(!drop_item_to_ground(l_hand))
 					continue
 			else
 				if(!r_hand)
 					continue
-				if(!unEquip(r_hand))
+				if(!drop_item_to_ground(r_hand))
 					continue
 
 			custom_emote(EMOTE_VISIBLE, "drops what [p_they()] [p_were()] holding, [p_their()] [E.name] malfunctioning!")
@@ -135,11 +133,11 @@
 		gloves.germ_level += 1
 
 /mob/living/carbon/human/proc/becomeSlim()
-	to_chat(src, "<span class='notice'>You feel fit again!</span>")
+	to_chat(src, SPAN_NOTICE("You feel fit again!"))
 	REMOVE_TRAIT(src, TRAIT_FAT, OBESITY)
 
 /mob/living/carbon/human/proc/becomeFat()
-	to_chat(src, "<span class='alert'>You suddenly feel blubbery!</span>")
+	to_chat(src, SPAN_ALERT("You suddenly feel blubbery!"))
 	ADD_TRAIT(src, TRAIT_FAT, OBESITY)
 
 //Handles chem traces
@@ -162,17 +160,6 @@ old_ue: Set this to a UE string, and this proc will overwrite the dna of organs 
 		if(assimilate || O.dna.unique_enzymes == ue_to_compare)
 			O.set_dna(dna)
 
-/*
-Given the name of an organ, returns the external organ it's contained in
-I use this to standardize shadowling dethrall code
--- Crazylemon
-*/
-/mob/living/carbon/human/proc/named_organ_parent(organ_name)
-	if(!get_int_organ_tag(organ_name))
-		return null
-	var/obj/item/organ/internal/O = get_int_organ_tag(organ_name)
-	return O.parent_organ
-
 /mob/living/carbon/human/has_organic_damage()
 	var/robo_damage = 0
 	var/perma_injury_damage = 0
@@ -189,3 +176,12 @@ I use this to standardize shadowling dethrall code
 	for(var/obj/item/organ/external/limb in bodyparts)
 		if(limb.status & ORGAN_SPLINTED)
 			splinted_limbs += limb
+
+/mob/living/carbon/human/rename_character(oldname, newname)
+	. = ..()
+	if(!.)
+		return
+
+	for(var/obj/item/organ/external/BP in bodyparts)
+		if(BP.dna?.real_name == oldname)
+			BP.dna.real_name = newname

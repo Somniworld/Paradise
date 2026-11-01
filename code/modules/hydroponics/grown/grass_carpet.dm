@@ -5,7 +5,7 @@
 	icon_state = "seed-grass"
 	species = "grass"
 	plantname = "Grass"
-	product = /obj/item/reagent_containers/food/snacks/grown/grass
+	product = /obj/item/food/grown/grass
 	lifespan = 40
 	endurance = 40
 	maturation = 2
@@ -18,7 +18,7 @@
 	mutatelist = list(/obj/item/seeds/grass/carpet)
 	reagents_add = list("plantmatter" = 0.02, "hydrogen" = 0.05)
 
-/obj/item/reagent_containers/food/snacks/grown/grass
+/obj/item/food/grown/grass
 	seed = /obj/item/seeds/grass
 	name = "grass"
 	desc = "Green and lush."
@@ -30,16 +30,20 @@
 	tastes = list("grass" = 1)
 	wine_power = 0.15
 
-/obj/item/reagent_containers/food/snacks/grown/grass/attack_self(mob/user)
-	to_chat(user, "<span class='notice'>You prepare the astroturf.</span>")
+/obj/item/food/grown/grass/activate_self(mob/user)
+	if(..())
+		return ITEM_INTERACT_COMPLETE
+
+	to_chat(user, SPAN_NOTICE("You prepare the astroturf."))
 	var/grassAmt = 1 + round(seed.potency * tile_coefficient) // The grass we're holding
-	for(var/obj/item/reagent_containers/food/snacks/grown/grass/G in user.loc) // The grass on the floor
+	for(var/obj/item/food/grown/grass/G in user.loc) // The grass on the floor
 		if(G.type != type)
 			continue
 		grassAmt += 1 + round(G.seed.potency * tile_coefficient)
 		qdel(G)
 	new stacktype(user.drop_location(), grassAmt)
 	qdel(src)
+	return ITEM_INTERACT_COMPLETE
 
 // Carpet
 /obj/item/seeds/grass/carpet
@@ -48,11 +52,11 @@
 	icon_state = "seed-carpet"
 	species = "carpet"
 	plantname = "Carpet"
-	product = /obj/item/reagent_containers/food/snacks/grown/grass/carpet
+	product = /obj/item/food/grown/grass/carpet
 	mutatelist = list()
 	rarity = 10
 
-/obj/item/reagent_containers/food/snacks/grown/grass/carpet
+/obj/item/food/grown/grass/carpet
 	seed = /obj/item/seeds/grass/carpet
 	name = "carpet"
 	desc = "The textile industry's dark secret."

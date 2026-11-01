@@ -33,7 +33,7 @@
 	if(check_power_on())
 		active = TRUE
 	else
-		visible_message("<span class='warning'>Error: Another relay is already active in this sector. Power-up cancelled due to radio interference.</span>")
+		visible_message(SPAN_WARNING("Error: Another relay is already active in this sector. Power-up cancelled due to radio interference."))
 	update_icon()
 	if(mapload && autolink_id)
 		return INITIALIZE_HINT_LATELOAD
@@ -54,6 +54,11 @@
   */
 /obj/machinery/tcomms/relay/LateInitialize()
 	. = ..()
+
+	// It's also possible the relay's APC's Initialize was called after this one.
+	// Take the opportunity here to re-check the equipment channel.
+	power_change()
+
 	for(var/obj/machinery/tcomms/core/C in GLOB.tcomms_machines)
 		if(C.network_id == autolink_id)
 			AddLink(C)
@@ -65,7 +70,7 @@
   *
   * Handles parent call of disabling the machine if it changes Z-level, but also rebuilds the list of reachable levels on the linked core
   */
-/obj/machinery/tcomms/relay/onTransitZ(old_z, new_z)
+/obj/machinery/tcomms/relay/on_changed_z_level(turf/old_turf, turf/new_turf)
 	. = ..()
 	if(linked_core)
 		linked_core.refresh_zlevels()
@@ -139,10 +144,13 @@
 // UI STUFF //
 //////////////
 
-/obj/machinery/tcomms/relay/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/tcomms/relay/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/tcomms/relay/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "TcommsRelay", name, 600, 400, master_ui, state)
+		ui = new(user, src, "TcommsRelay", name)
 		ui.open()
 
 /obj/machinery/tcomms/relay/ui_data(mob/user)
@@ -183,13 +191,13 @@
 				if(linked_core)
 					linked_core.refresh_zlevels()
 			else
-				to_chat(usr, "<span class='warning'>Error: Another relay is already active in this sector. Power-up cancelled due to radio interference.</span>")
+				to_chat(usr, SPAN_WARNING("Error: Another relay is already active in this sector. Power-up cancelled due to radio interference."))
 
 		// Set network ID
 		if("network_id")
 			var/new_id = input(usr, "Please enter a new network ID", "Network ID", network_id)
 			log_action(usr, "renamed core with ID [network_id] to [new_id]")
-			to_chat(usr, "<span class='notice'>Device ID changed from <b>[network_id]</b> to <b>[new_id]</b>.</span>")
+			to_chat(usr, SPAN_NOTICE("Device ID changed from <b>[network_id]</b> to <b>[new_id]</b>."))
 			network_id = new_id
 
 		// Only do these hrefs if we are linked to prevent bugs/exploits
@@ -202,7 +210,7 @@
 		if("unlink")
 			if(!linked)
 				return
-			var/choice = alert(usr, "Are you SURE you want to unlink this relay?\nYou wont be able to re-link without the core password", "Unlink","Yes","No")
+			var/choice = tgui_alert(usr, "Are you SURE you want to unlink this relay?\nYou wont be able to re-link without the core password", "Unlink", list("Yes", "No"))
 			if(choice == "Yes")
 				log_action(usr, "Unlinked [network_id] from [linked_core.network_id]")
 				Reset()
@@ -215,16 +223,18 @@
 			if(istype(C, /obj/machinery/tcomms/core))
 				if(password_bypass)
 					AddLink(C)
-					to_chat(usr, "<span class='notice'>Successfully linked to <b>[C.network_id]</b>.</span>")
+					to_chat(usr, SPAN_NOTICE("Successfully linked to <b>[C.network_id]</b>."))
 					return
 				var/user_pass = input(usr, "Please enter core password","Password Entry")
 				// Check the password
 				if(user_pass == C.link_password)
 					AddLink(C)
-					to_chat(usr, "<span class='notice'>Successfully linked to <b>[C.network_id]</b>.</span>")
+					to_chat(usr, SPAN_NOTICE("Successfully linked to <b>[C.network_id]</b>."))
 				else
-					to_chat(usr, "<span class='alert'><b>ERROR:</b> Password incorrect.</span>")
+					to_chat(usr, SPAN_ALERT("<b>ERROR:</b> Password incorrect."))
 			else
-				to_chat(usr, "<span class='alert'><b>ERROR:</b> Core not found. Please file an issue report.</span>")
+				to_chat(usr, SPAN_ALERT("<b>ERROR:</b> Core not found. Please file an issue report."))
 
-
+/obj/machinery/tcomms/relay/start_off/Initialize(mapload) // always starts off
+	. = ..()
+	active = FALSE

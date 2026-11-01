@@ -2,7 +2,6 @@
 	name = "snow"
 	desc = "A crunchy layer of freshly fallen snow."
 	anchored = TRUE
-	density = FALSE
 	layer = TURF_LAYER
 	plane = FLOOR_PLANE
 	icon = 'icons/turf/snow.dmi'
@@ -11,7 +10,6 @@
 	var/cooldown = 0 // very cool down
 
 /obj/structure/snow/AltClick(mob/user)
-	. = ..()
 	if(cooldown > world.time)
 		return
 	if(ishuman(user) && Adjacent(user))

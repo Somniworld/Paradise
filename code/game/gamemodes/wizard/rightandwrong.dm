@@ -8,7 +8,7 @@ GLOBAL_LIST_INIT(summoned_guns, list(
 	/obj/item/gun/energy/gun,
 	/obj/item/gun/energy/gun/advtaser,
 	/obj/item/gun/energy/laser,
-	/obj/item/gun/projectile/revolver,
+	/obj/item/gun/projectile/revolver/syndie,
 	/obj/item/gun/energy/detective,
 	/obj/item/gun/projectile/automatic/pistol/deagle/camo,
 	/obj/item/gun/projectile/automatic/gyropistol,
@@ -41,7 +41,22 @@ GLOBAL_LIST_INIT(summoned_guns, list(
 	/obj/item/gun/projectile/revolver/golden,
 	/obj/item/gun/projectile/automatic/sniper_rifle,
 	/obj/item/gun/medbeam,
-	/obj/item/gun/energy/laser/scatter))
+	/obj/item/gun/energy/laser/scatter,
+	/obj/item/gun/projectile/automatic/c20r/toy/riot,
+	/obj/item/gun/projectile/shotgun/automatic/dual_tube,
+	/obj/item/gun/energy/kinetic_accelerator/experimental, // even with atmos, this thing can get scary
+	/obj/item/gun/energy/emitter,
+	/obj/item/gun/energy/spikethrower,
+	/obj/item/gun/energy/bsg/prebuilt,
+	/obj/item/gun/energy/xray,
+	/obj/item/gun/energy/plasma_pistol,
+	/obj/item/gun/projectile/automatic/pistol/type_230, // whyyy is this capitalized
+	/obj/item/gun/projectile/revolver/overgrown,
+	/obj/item/gun/energy/gun/blueshield/pdw9,
+	/obj/item/gun/energy/disabler/silencer,
+	/obj/item/gun/energy/lwap,
+	/obj/item/gun/energy/arc_revolver,
+	/obj/item/gun/projectile/automatic/ak814))
 
 //if you add anything that isn't covered by the typepaths below, add it to summon_magic_objective_types
 GLOBAL_LIST_INIT(summoned_magic, list(
@@ -55,40 +70,41 @@ GLOBAL_LIST_INIT(summoned_magic, list(
 	/obj/item/spellbook/oneuse/charge,
 	/obj/item/spellbook/oneuse/summonitem,
 	/obj/item/gun/magic/wand,
-	/obj/item/gun/magic/wand/death,
 	/obj/item/gun/magic/wand/resurrection,
-	/obj/item/gun/magic/wand/polymorph,
 	/obj/item/gun/magic/wand/teleport,
 	/obj/item/gun/magic/wand/door,
 	/obj/item/gun/magic/wand/fireball,
 	/obj/item/gun/magic/staff/healing,
 	/obj/item/gun/magic/staff/door,
 	/obj/item/scrying,
-	/obj/item/clothing/suit/space/hardsuit/shielded/wizard,
+	/obj/item/clothing/suit/space/hardsuit/wizard,
 	/obj/item/immortality_talisman,
-	/obj/item/melee/ghost_sword))
+	/obj/item/melee/ghost_sword,
+	/obj/item/tarot_card_pack,
+	/obj/item/tarot_card_pack/jumbo))
 
 GLOBAL_LIST_INIT(summoned_special_magic, list(
-	/obj/item/gun/magic/staff/change,
 	/obj/item/gun/magic/staff/animate,
 	/obj/item/storage/belt/wands/full,
 	/obj/item/contract,
 	/obj/item/gun/magic/staff/chaos,
 	/obj/item/necromantic_stone,
-	/obj/item/blood_contract))
+	/obj/item/blood_contract,
+	/obj/item/tarot_generator))
 
 //everything above except for single use spellbooks, because they are counted separately (and are for basic bitches anyways)
 GLOBAL_LIST_INIT(summoned_magic_objectives, list(
 	/obj/item/contract,
 	/obj/item/blood_contract,
-	/obj/item/clothing/suit/space/hardsuit/shielded/wizard,
+	/obj/item/clothing/suit/space/hardsuit/wizard,
 	/obj/item/gun/magic,
 	/obj/item/immortality_talisman,
 	/obj/item/melee/ghost_sword,
 	/obj/item/necromantic_stone,
 	/obj/item/scrying,
 	/obj/item/spellbook,
-	/obj/item/storage/belt/wands/full))
+	/obj/item/storage/belt/wands/full,
+	/obj/item/tarot_generator))
 
 // If true, it's the probability of triggering "survivor" antag.
 GLOBAL_VAR_INIT(summon_guns_triggered, FALSE)
@@ -98,7 +114,7 @@ GLOBAL_VAR_INIT(summon_magic_triggered, FALSE)
 	if(H.stat == DEAD || !(H.client))
 		return
 	if(H.mind)
-		if(iswizard(H))
+		if(iswizard(H) || H.mind.offstation_role)
 			return
 
 	if(prob(GLOB.summon_guns_triggered) && !(H.mind in SSticker.mode.traitors))
@@ -114,13 +130,13 @@ GLOBAL_VAR_INIT(summon_magic_triggered, FALSE)
 
 	var/in_hand = H.put_in_hands(G) // not always successful
 
-	to_chat(H, "<span class='warning'>\A [G] appears [in_hand ? "in your hand" : "at your feet"]!</span>")
+	to_chat(H, SPAN_WARNING("\A [G] appears [in_hand ? "in your hand" : "at your feet"]!"))
 
 /proc/give_magic(mob/living/carbon/human/H)
 	if(H.stat == DEAD || !(H.client))
 		return
 	if(H.mind)
-		if(iswizard(H))
+		if(iswizard(H) || H.mind.offstation_role)
 			return
 
 	if(prob(GLOB.summon_magic_triggered) && !(H.mind in SSticker.mode.traitors) && !jobban_isbanned(H, ROLE_SYNDICATE))
@@ -141,13 +157,13 @@ GLOBAL_VAR_INIT(summon_magic_triggered, FALSE)
 
 	var/in_hand = H.put_in_hands(M)
 
-	to_chat(H, "<span class='warning'>\A [M] appears [in_hand ? "in your hand" : "at your feet"]!</span>")
+	to_chat(H, SPAN_WARNING("\A [M] appears [in_hand ? "in your hand" : "at your feet"]!"))
 	if(lucky)
-		to_chat(H, "<span class='notice'>You feel incredibly lucky.</span>")
+		to_chat(H, SPAN_NOTICE("You feel incredibly lucky."))
 
 /proc/rightandwrong(summon_type, mob/user, survivor_probability)
 	if(user) //in this case either someone holding a spellbook or a badmin
-		to_chat(user, "<span class='warning'>You summoned [summon_type]!</span>")
+		to_chat(user, SPAN_WARNING("You summoned [summon_type]!"))
 		message_admins("[ADMIN_LOOKUPFLW(user)] summoned [summon_type]!")
 		log_game("[key_name(user)] summoned [summon_type]!")
 
@@ -166,3 +182,5 @@ GLOBAL_VAR_INIT(summon_magic_triggered, FALSE)
 			give_magic(H)
 		else
 			give_guns(H)
+
+#undef SPECIALIST_MAGIC_PROB

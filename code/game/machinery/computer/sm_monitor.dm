@@ -25,10 +25,13 @@
 		return
 	ui_interact(user)
 
-/obj/machinery/computer/sm_monitor/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/computer/sm_monitor/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/computer/sm_monitor/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "SupermatterMonitor", name, 600, 350, master_ui, state)
+		ui = new(user, src, "SupermatterMonitor", name)
 		ui.open()
 
 /obj/machinery/computer/sm_monitor/ui_data(mob/user)
@@ -41,7 +44,7 @@
 			active = null
 			refresh()
 			return
-		var/datum/gas_mixture/air = T.return_air()
+		var/datum/gas_mixture/air = T.get_readonly_air()
 		if(!air)
 			active = null
 			return
@@ -49,25 +52,32 @@
 		data["active"] = TRUE
 		data["SM_integrity"] = active.get_integrity()
 		data["SM_power"] = active.power
-		data["SM_ambienttemp"] = air.temperature
+		data["SM_pre_reduction_power"] = active.pre_reduction_power
+		data["SM_ambienttemp"] = air.temperature()
 		data["SM_ambientpressure"] = air.return_pressure()
+		data["SM_moles"] = air.total_moles()
+		data["SM_gas_coefficient"] = active.gas_coefficient
 		//data["SM_EPR"] = round((air.total_moles / air.group_multiplier) / 23.1, 0.01)
 		var/list/gasdata = list()
 		var/TM = air.total_moles()
 		if(TM)
-			gasdata.Add(list(list("name"= "Oxygen", "amount" = round(100 * air.oxygen / TM, 0.01))))
-			gasdata.Add(list(list("name"= "Carbon Dioxide", "amount" = round(100 * air.carbon_dioxide / TM, 0.01))))
-			gasdata.Add(list(list("name"= "Nitrogen", "amount" = round(100 * air.nitrogen / TM, 0.01))))
-			gasdata.Add(list(list("name"= "Plasma", "amount" = round(100 * air.toxins / TM, 0.01))))
-			gasdata.Add(list(list("name"= "Nitrous Oxide", "amount" = round(100 * air.sleeping_agent / TM, 0.01))))
-			gasdata.Add(list(list("name"= "Agent B", "amount" = round(100 * air.agent_b / TM, 0.01))))
+			gasdata.Add(list(list("name"= "Oxygen", "amount" = air.oxygen(), "portion" = round(100 * air.oxygen() / TM, 0.01))))
+			gasdata.Add(list(list("name"= "Carbon Dioxide", "amount" = air.carbon_dioxide(), "portion" = round(100 * air.carbon_dioxide() / TM, 0.01))))
+			gasdata.Add(list(list("name"= "Nitrogen", "amount" = air.nitrogen(), "portion" = round(100 * air.nitrogen() / TM, 0.01))))
+			gasdata.Add(list(list("name"= "Plasma", "amount" = air.toxins(), "portion" = round(100 * air.toxins() / TM, 0.01))))
+			gasdata.Add(list(list("name"= "Nitrous Oxide", "amount" = air.sleeping_agent(), "portion" = round(100 * air.sleeping_agent() / TM, 0.01))))
+			gasdata.Add(list(list("name"= "Agent B", "amount" = air.agent_b(), "portion" = round(100 * air.agent_b() / TM, 0.01))))
+			gasdata.Add(list(list("name"= "Hydrogen", "amount" = air.hydrogen(), "portion" = round(100 * air.hydrogen() / TM, 0.01))))
+			gasdata.Add(list(list("name"= "Water Vapor", "amount" = air.water_vapor(), "portion" = round(100 * air.water_vapor() / TM, 0.01))))
 		else
-			gasdata.Add(list(list("name"= "Oxygen", "amount" = 0)))
-			gasdata.Add(list(list("name"= "Carbon Dioxide", "amount" = 0)))
-			gasdata.Add(list(list("name"= "Nitrogen", "amount" = 0)))
-			gasdata.Add(list(list("name"= "Plasma", "amount" = 0)))
-			gasdata.Add(list(list("name"= "Nitrous Oxide", "amount" = 0)))
-			gasdata.Add(list(list("name"= "Agent B", "amount" = 0)))
+			gasdata.Add(list(list("name"= "Oxygen", "amount" = 0, "portion" = 0)))
+			gasdata.Add(list(list("name"= "Carbon Dioxide", "amount" = 0,"portion" = 0)))
+			gasdata.Add(list(list("name"= "Nitrogen", "amount" = 0,"portion" = 0)))
+			gasdata.Add(list(list("name"= "Plasma", "amount" = 0,"portion" = 0)))
+			gasdata.Add(list(list("name"= "Nitrous Oxide", "amount" = 0,"portion" = 0)))
+			gasdata.Add(list(list("name"= "Agent B", "amount" = 0,"portion" = 0)))
+			gasdata.Add(list(list("name"= "Hydrogen", "amount" = 0,"portion" = 0)))
+			gasdata.Add(list(list("name"= "Water Vapor", "amount" = 0,"portion" = 0)))
 		data["gases"] = gasdata
 	else
 		var/list/SMS = list()
@@ -100,7 +110,7 @@
 		return
 	for(var/obj/machinery/atmospherics/supermatter_crystal/S in SSair.atmos_machinery)
 		// Delaminating, not within coverage, not on a tile.
-		if(!(is_station_level(S.z) || is_mining_level(S.z) || atoms_share_level(S, T) || !issimulatedturf(S.loc)))
+		if(!atoms_share_level(S, T) || !issimulatedturf(S.loc))
 			continue
 		supermatters.Add(S)
 
@@ -144,4 +154,3 @@
 
 		if("back")
 			active = null
-

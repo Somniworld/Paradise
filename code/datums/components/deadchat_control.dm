@@ -47,7 +47,12 @@
 	if(!ismob(parent) && !(parent in GLOB.poi_list))
 		GLOB.poi_list |= parent
 		generated_point_of_interest = TRUE
-	message_admins("[parent] has been given deadchat control in [deadchat_mode == DEADCHAT_ANARCHY_MODE ? "anarchy" : "democracy"] mode with a cooldown of [input_cooldown SECONDS] second\s.")
+	message_admins("[parent] has been given deadchat control in [deadchat_mode == DEADCHAT_ANARCHY_MODE ? "anarchy" : "democracy"] mode with a cooldown of [input_cooldown] second\s.")
+
+	var/atom/A = parent
+	for(var/mob/dead/observer/ghost in A.get_orbiters())
+		// get started with anyone who's already following
+		orbit_begin(A, ghost)
 
 /datum/component/deadchat_control/Destroy(force, silent)
 	var/message = "<span class='deadsay italics bold'>[parent] is no longer controllable.</span>"
@@ -74,17 +79,17 @@
 			return
 		var/cooldown = ckey_to_cooldown[source.ckey] - world.time
 		if(cooldown > 0)
-			to_chat(source, "<span class='warning'>Your deadchat control inputs are still on cooldown for another [CEILING(cooldown * 0.1, 1)] second\s.</span>")
+			to_chat(source, SPAN_WARNING("Your deadchat control inputs are still on cooldown for another [CEILING(cooldown * 0.1, 1)] second\s."))
 			return MOB_DEADSAY_SIGNAL_INTERCEPT
 		ckey_to_cooldown[source.ckey] = world.time + input_cooldown
 		addtimer(CALLBACK(src, PROC_REF(end_cooldown), source.ckey), input_cooldown)
 		inputs[message].Invoke()
-		to_chat(source, "<span class='notice'>\"[message]\" input accepted. You are now on cooldown for [input_cooldown * 0.1] second\s.</span>")
+		to_chat(source, SPAN_NOTICE("\"[message]\" input accepted. You are now on cooldown for [input_cooldown * 0.1] second\s."))
 		return MOB_DEADSAY_SIGNAL_INTERCEPT
 
 	if(deadchat_mode & DEADCHAT_DEMOCRACY_MODE)
 		ckey_to_cooldown[source.ckey] = message
-		to_chat(source, "<span class='notice'>You have voted for \"[message]\".</span>")
+		to_chat(source, SPAN_NOTICE("You have voted for \"[message]\"."))
 		return MOB_DEADSAY_SIGNAL_INTERCEPT
 
 /datum/component/deadchat_control/proc/democracy_loop()
@@ -142,9 +147,11 @@
 	if(isobserver(orbiter))
 		var/mob/dead/observer/O = orbiter
 		if(O.client && !(O.client.prefs.toggles & PREFTOGGLE_CHAT_DEAD))
-			to_chat(O, "<span class='deadsay'>You have deadchat muted, and as such will not receive messages related to, nor be able to participate in, controlling this object.</span>")
-			to_chat(O, "<span class='notice'>If you would like to participate, unmute deadchat and follow this object again.</span>")
+			to_chat(O, SPAN_DEADSAY("You have deadchat muted, and as such will not receive messages related to, nor be able to participate in, controlling this object."))
+			to_chat(O, SPAN_NOTICE("If you would like to participate, unmute deadchat and follow this object again."))
 			return
+		else
+			to_chat(O, SPAN_DEADSAY("[parent] is deadchat-controllable! Examine [parent] to see possible commands you can use while orbiting [parent.p_them()] to control [parent.p_their()] behavior!"))
 
 	RegisterSignal(orbiter, COMSIG_MOB_DEADSAY, PROC_REF(deadchat_react))
 	RegisterSignal(orbiter, COMSIG_MOB_AUTOMUTE_CHECK, PROC_REF(waive_automute))
@@ -184,21 +191,25 @@
 	if(!isobserver(user))
 		return
 
-	examine_list += "<span class='notice'>[A.p_theyre(TRUE)] currently under deadchat control using the [(deadchat_mode & DEADCHAT_DEMOCRACY_MODE) ? "democracy" : "anarchy"] ruleset!</span>"
+	examine_list += SPAN_NOTICE("[A.p_theyre(TRUE)] currently under deadchat control using the [(deadchat_mode & DEADCHAT_DEMOCRACY_MODE) ? "democracy" : "anarchy"] ruleset!")
 
 	if(user.client && !(user.client.prefs.toggles & PREFTOGGLE_CHAT_DEAD))
-		examine_list += "<span class='deadsay'>As you have deadchat disabled, you will not see vote messages, nor be able to participate in voting.</span>"
+		examine_list += SPAN_DEADSAY("As you have deadchat disabled, you will not see vote messages, nor be able to participate in voting.")
 		return
 
+	if(!(user in orbiters))
+		examine_list += "<span class='deadsay bold'>Orbit [A.p_them()] and examine [A.p_them()] again to see the list of possible commands.</span>"
+		return
+
+
 	if(deadchat_mode & DEADCHAT_DEMOCRACY_MODE)
-		examine_list += "<span class='notice'>Type a command into chat to vote on an action. This happens once every [input_cooldown * 0.1] second\s.</span>"
+		examine_list += SPAN_NOTICE("Type a command into chat to vote on an action. This happens once every [input_cooldown * 0.1] second\s.")
 	else if(deadchat_mode & DEADCHAT_ANARCHY_MODE)
-		examine_list += "<span class='notice'>Type a command into chat to perform. You may do this once every [input_cooldown * 0.1] second\s.</span>"
+		examine_list += SPAN_NOTICE("Type a command into chat to perform. You may do this once every [input_cooldown * 0.1] second\s.")
 
 	var/extended_examine = "<span class='notice'>Command list:"
 
-	for(var/possible_input in inputs)
-		extended_examine += " [possible_input]"
+	extended_examine += english_list(inputs)
 
 	extended_examine += ".</span>"
 
@@ -210,7 +221,7 @@
 	var/mob/ghost = get_mob_by_ckey(ghost_ckey)
 	if(!ghost || isliving(ghost))
 		return
-	to_chat(ghost, "<span class='green'>Your deadchat control inputs for [parent] ([ghost_follow_link(parent, ghost)]) are no longer on cooldown.</span>")
+	to_chat(ghost, SPAN_GREEN("Your deadchat control inputs for [parent] ([ghost_follow_link(parent, ghost)]) are no longer on cooldown."))
 
 /// Dummy to call since we can't proc reference builtins
 /datum/component/deadchat_control/proc/_step(ref, dir)
@@ -247,5 +258,22 @@
 	_inputs["down"] = CALLBACK(parent, TYPE_PROC_REF(/obj/effect/immovablerod, walk_in_direction), SOUTH)
 	_inputs["left"] = CALLBACK(parent, TYPE_PROC_REF(/obj/effect/immovablerod, walk_in_direction), WEST)
 	_inputs["right"] = CALLBACK(parent, TYPE_PROC_REF(/obj/effect/immovablerod, walk_in_direction), EAST)
+
+	return ..()
+
+/**
+ * Deadchat Moves Things
+ *
+ * A special variant of the deadchat_control component that comes pre-baked with basic inputs for moving humans around,
+ * with special behavior that has them resist while moving.
+ */
+/datum/component/deadchat_control/human/Initialize(_deadchat_mode, _inputs, _input_cooldown, _on_removal)
+	if(!ishuman(parent))
+		return COMPONENT_INCOMPATIBLE
+
+	_inputs["up"] = CALLBACK(parent, TYPE_PROC_REF(/mob/living/carbon/human, dchat_step), NORTH)
+	_inputs["down"] = CALLBACK(parent, TYPE_PROC_REF(/mob/living/carbon/human, dchat_step), SOUTH)
+	_inputs["left"] = CALLBACK(parent, TYPE_PROC_REF(/mob/living/carbon/human, dchat_step), WEST)
+	_inputs["right"] = CALLBACK(parent, TYPE_PROC_REF(/mob/living/carbon/human, dchat_step), EAST)
 
 	return ..()

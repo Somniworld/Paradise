@@ -2,12 +2,14 @@
 #define MED_DATA_MAINT	3	// Records maintenance
 #define MED_DATA_RECORD	4	// Record
 #define MED_DATA_V_DATA	5	// Virus database
-#define MED_DATA_MEDBOT	6	// Medbot monitor
+#define MED_DATA_GOAL_DATA	6	// Virology goals
+#define MED_DATA_MEDBOT	7	// Medbot monitor
 
 #define FIELD(N, V, E) list(field = N, value = V, edit = E)
 #define MED_FIELD(N, V, E, LB) list(field = N, value = V, edit = E, line_break = LB)
 
-/obj/machinery/computer/med_data //TODO:SANITY
+/// TODO:SANITY
+/obj/machinery/computer/med_data
 	name = "medical records console"
 	desc = "This can be used to check medical records."
 	icon_keyboard = "med_key"
@@ -25,8 +27,8 @@
 
 	light_color = LIGHT_COLOR_DARKBLUE
 
-/obj/machinery/computer/med_data/Initialize()
-	..()
+/obj/machinery/computer/med_data/Initialize(mapload)
+	. = ..()
 	field_edit_questions = list(
 		// General
 		"sex" = "Please select new sex:",
@@ -61,24 +63,28 @@
 	active2 = null
 	return ..()
 
-/obj/machinery/computer/med_data/attackby(obj/item/O, mob/user, params)
-	if(ui_login_attackby(O, user))
-		return
+/obj/machinery/computer/med_data/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	if(ui_login_attackby(used, user))
+		return ITEM_INTERACT_COMPLETE
+
 	return ..()
 
 /obj/machinery/computer/med_data/attack_hand(mob/user)
 	if(..())
 		return
 	if(is_away_level(z))
-		to_chat(user, "<span class='danger'>Unable to establish a connection</span>: You're too far away from the station!")
+		to_chat(user, "[SPAN_DANGER("Unable to establish a connection")]: You're too far away from the station!")
 		return
 	add_fingerprint(user)
 	ui_interact(user)
 
-/obj/machinery/computer/med_data/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/computer/med_data/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/computer/med_data/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "MedicalRecords", "Medical Records", 800, 800, master_ui, state)
+		ui = new(user, src, "MedicalRecords", "Medical Records")
 		ui.open()
 		ui.set_autoupdate(FALSE)
 
@@ -100,6 +106,7 @@
 							"ref" = "\ref[R]",
 							"name" = R.fields["name"],
 							"id" = R.fields["id"],
+							"dna" = R.fields["b_dna"],
 							"rank" = R.fields["rank"],
 							"p_stat" = R.fields["p_stat"],
 							"m_stat" = R.fields["m_stat"])
@@ -164,6 +171,15 @@
 						"D" = D)
 					data["virus"] += list(payload)
 					qdel(DS)
+			if(MED_DATA_GOAL_DATA)
+				data["goals"] = list()
+				for(var/datum/virology_goal/G as anything in GLOB.virology_goals)
+					var/list/payload = list(
+						"name" = G.name,
+						"delivered" = G.delivered_amount,
+						"deliverygoal" = G.delivery_goal,
+						"report" = G.get_report(TRUE))
+					data["goals"] += list(payload)
 			if(MED_DATA_MEDBOT)
 				data["medbots"] = list()
 				for(var/mob/living/simple_animal/bot/medbot/M in GLOB.bots_list)
@@ -394,7 +410,7 @@
 		<br>\nCurrent Diseases: [active2.fields["cdi"]] (per disease info placed in log/comment section)
 		<br>\nDetails: [active2.fields["cdi_d"]]<br>\n
 		<br>\nImportant Notes:
-		<br>\n\t[active2.fields["notes"]]<br>\n
+		<br>\n\t[replacetext(active2.fields["notes"], "\n", "<BR>")]<br>\n
 		<br>\n
 		<center><b>Comments/Log</b></center><br>"}
 		for(var/c in active2.fields["comments"])
@@ -461,6 +477,7 @@
 #undef MED_DATA_MAINT
 #undef MED_DATA_RECORD
 #undef MED_DATA_V_DATA
+#undef MED_DATA_GOAL_DATA
 #undef MED_DATA_MEDBOT
 #undef FIELD
 #undef MED_FIELD

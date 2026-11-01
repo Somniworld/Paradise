@@ -2,7 +2,7 @@
 
 /datum/action/innate/terrorspider/web
 	name = "Web"
-	icon_icon = 'icons/effects/effects.dmi'
+	button_icon = 'icons/effects/effects.dmi'
 	button_icon_state = "stickyweb1"
 
 /datum/action/innate/terrorspider/web/Activate()
@@ -11,7 +11,7 @@
 
 /datum/action/innate/terrorspider/wrap
 	name = "Wrap"
-	icon_icon = 'icons/effects/effects.dmi'
+	button_icon = 'icons/effects/effects.dmi'
 	button_icon_state = "cocoon_large1"
 
 /datum/action/innate/terrorspider/wrap/Activate()
@@ -23,7 +23,7 @@
 
 /datum/action/innate/terrorspider/greeneggs
 	name = "Lay Green Eggs"
-	icon_icon = 'icons/effects/effects.dmi'
+	button_icon = 'icons/effects/effects.dmi'
 	button_icon_state = "eggs"
 
 /datum/action/innate/terrorspider/greeneggs/Activate()
@@ -35,7 +35,7 @@
 
 /datum/action/innate/terrorspider/ventsmash
 	name = "Smash Welded Vent"
-	icon_icon = 'icons/atmos/vent_pump.dmi'
+	button_icon = 'icons/atmos/vent_pump.dmi'
 	button_icon_state = "map_vent"
 
 /datum/action/innate/terrorspider/ventsmash/Activate()
@@ -44,7 +44,7 @@
 
 /datum/action/innate/terrorspider/remoteview
 	name = "Remote View"
-	icon_icon = 'icons/obj/eyes.dmi'
+	button_icon = 'icons/obj/eyes.dmi'
 	button_icon_state = "heye"
 
 /datum/action/innate/terrorspider/remoteview/Activate()
@@ -56,7 +56,6 @@
 
 /datum/action/innate/terrorspider/mother/royaljelly
 	name = "Lay Royal Jelly"
-	icon_icon = 'icons/mob/actions/actions.dmi'
 	button_icon_state = "spiderjelly"
 
 /datum/action/innate/terrorspider/mother/royaljelly/Activate()
@@ -65,7 +64,7 @@
 
 /datum/action/innate/terrorspider/mother/gatherspiderlings
 	name = "Gather Spiderlings"
-	icon_icon = 'icons/effects/effects.dmi'
+	button_icon = 'icons/effects/effects.dmi'
 	button_icon_state = "spiderling"
 
 /datum/action/innate/terrorspider/mother/gatherspiderlings/Activate()
@@ -74,7 +73,7 @@
 
 /datum/action/innate/terrorspider/mother/incubateeggs
 	name = "Incubate Eggs"
-	icon_icon = 'icons/effects/effects.dmi'
+	button_icon = 'icons/effects/effects.dmi'
 	button_icon_state = "eggs"
 
 /datum/action/innate/terrorspider/mother/incubateeggs/Activate()
@@ -85,7 +84,7 @@
 
 /datum/action/innate/terrorspider/queen/queennest
 	name = "Nest"
-	icon_icon = 'icons/mob/terrorspider.dmi'
+	button_icon = 'icons/mob/terrorspider.dmi'
 	button_icon_state = "terror_queen"
 
 /datum/action/innate/terrorspider/queen/queennest/Activate()
@@ -94,7 +93,6 @@
 
 /datum/action/innate/terrorspider/queen/queensense
 	name = "Hive Sense"
-	icon_icon = 'icons/mob/actions/actions.dmi'
 	button_icon_state = "mindswap"
 
 /datum/action/innate/terrorspider/queen/queensense/Activate()
@@ -103,7 +101,7 @@
 
 /datum/action/innate/terrorspider/queen/queeneggs
 	name = "Lay Queen Eggs"
-	icon_icon = 'icons/effects/effects.dmi'
+	button_icon = 'icons/effects/effects.dmi'
 	button_icon_state = "eggs"
 
 /datum/action/innate/terrorspider/queen/queeneggs/Activate()
@@ -115,7 +113,7 @@
 
 /datum/action/innate/terrorspider/queen/empress/empresserase
 	name = "Empress Erase Brood"
-	icon_icon = 'icons/effects/blood.dmi'
+	button_icon = 'icons/effects/blood.dmi'
 	button_icon_state = "mgibbl1"
 
 /datum/action/innate/terrorspider/queen/empress/empresserase/Activate()
@@ -124,7 +122,7 @@
 
 /datum/action/innate/terrorspider/queen/empress/empresslings
 	name = "Empresss Spiderlings"
-	icon_icon = 'icons/effects/effects.dmi'
+	button_icon = 'icons/effects/effects.dmi'
 	button_icon_state = "spiderling"
 
 /datum/action/innate/terrorspider/queen/empress/empresslings/Activate()
@@ -138,57 +136,57 @@
 	if(!web_type)
 		return
 	if(!isturf(loc))
-		to_chat(src, "<span class='danger'>Webs can only be spun while standing on a floor.</span>")
+		to_chat(src, SPAN_DANGER("Webs can only be spun while standing on a floor."))
 		return
 	var/turf/mylocation = loc
-	visible_message("<span class='notice'>[src] begins to secrete a sticky substance.</span>")
+	visible_message(SPAN_NOTICE("[src] begins to secrete a sticky substance."))
 	if(do_after(src, delay_web, target = loc))
 		if(loc != mylocation)
 			return
 		else if(isspaceturf(loc))
-			to_chat(src, "<span class='danger'>Webs cannot be spun in space.</span>")
+			to_chat(src, SPAN_DANGER("Webs cannot be spun in space."))
 		else
 			var/obj/structure/spider/terrorweb/T = locate() in get_turf(src)
 			if(T)
-				to_chat(src, "<span class='danger'>There is already a web here.</span>")
+				to_chat(src, SPAN_DANGER("There is already a web here."))
 			else
 				var/obj/structure/spider/terrorweb/W = new web_type(loc)
 				W.creator_ckey = ckey
 
 /obj/structure/spider/terrorweb
 	name = "terror web"
-	desc = "it's stringy and sticky"
-	icon = 'icons/effects/effects.dmi'
-	anchored = TRUE // prevents people dragging it
-	density = FALSE // prevents it blocking all movement
+	desc = "It's stringy and sticky!"
 	max_integrity = 20 // two welders, or one laser shot (15 for the normal spider webs)
-	icon_state = "stickyweb1"
+	creates_cover = TRUE
 	var/creator_ckey = null
 
 /obj/structure/spider/terrorweb/Initialize(mapload)
 	. = ..()
 	if(prob(50))
 		icon_state = "stickyweb2"
+	var/static/list/loc_connections = list(
+		COMSIG_ATOM_ENTERED = PROC_REF(on_atom_entered)
+	)
+	AddElement(/datum/element/connect_loc, loc_connections)
 
-/obj/structure/spider/terrorweb/CanPass(atom/movable/mover, turf/target)
+/obj/structure/spider/terrorweb/CanPass(atom/movable/mover, border_dir)
 	if(isterrorspider(mover))
 		return TRUE
-	if(istype(mover, /obj/item/projectile/terrorqueenspit))
+	if(istype(mover, /obj/projectile/terrorqueenspit))
 		return TRUE
 	if(isliving(mover))
 		var/mob/living/M = mover
 		if(!(M.mobility_flags & MOBILITY_MOVE))
 			return TRUE
 		return prob(80)
-	if(istype(mover, /obj/item/projectile))
+	if(isprojectile(mover))
 		return prob(20)
 	return ..()
 
-/obj/structure/spider/terrorweb/Crossed(atom/movable/AM, oldloc)
-	..()
-	if(isliving(AM) && !isterrorspider(AM))
-		var/mob/living/M = AM
-		to_chat(M, "<span class='userdanger'>You get stuck in [src] for a moment.</span>")
+/obj/structure/spider/terrorweb/proc/on_atom_entered(datum/source, atom/movable/entered)
+	if(isliving(entered) && !isterrorspider(entered))
+		var/mob/living/M = entered
+		to_chat(M, SPAN_USERDANGER("You get stuck in [src] for a moment."))
 		M.Weaken(8 SECONDS)
 		if(iscarbon(M))
 			web_special_ability(M)
@@ -204,9 +202,9 @@
 	if(!QDELETED(C) && C.loc == loc)
 		qdel(src)
 
-/obj/structure/spider/terrorweb/bullet_act(obj/item/projectile/Proj)
+/obj/structure/spider/terrorweb/bullet_act(obj/projectile/Proj)
 	if(Proj.damage_type != BRUTE && Proj.damage_type != BURN)
-		visible_message("<span class='danger'>[src] is undamaged by [Proj]!</span>")
+		visible_message(SPAN_DANGER("[src] is undamaged by [Proj]!"))
 		// Webs don't care about disablers, tasers, etc. Or toxin damage. They're organic, but not alive.
 		return
 	..()
@@ -240,10 +238,10 @@
 			if(Adjacent(O) && !O.anchored)
 				if(!istype(O, /obj/structure/spider))
 					choices += O
-		if(choices.len)
-			cocoon_target = input(src,"What do you wish to cocoon?") in null|choices
+		if(length(choices))
+			cocoon_target = tgui_input_list(src, "What do you wish to cocoon?", "Cocoon Selection", choices)
 		else
-			to_chat(src, "<span class='danger'>There is nothing nearby you can wrap.</span>")
+			to_chat(src, SPAN_DANGER("There is nothing nearby you can wrap."))
 
 /mob/living/simple_animal/hostile/poison/terror_spider/proc/DoWrap()
 	if(cocoon_target && busy != SPINNING_COCOON)
@@ -251,9 +249,9 @@
 			cocoon_target = null
 			return
 		busy = SPINNING_COCOON
-		visible_message("<span class='notice'>[src] begins to secrete a sticky substance around [cocoon_target].</span>")
+		visible_message(SPAN_NOTICE("[src] begins to secrete a sticky substance around [cocoon_target]."))
 		stop_automated_movement = TRUE
-		walk(src,0)
+		GLOB.move_manager.stop_looping(src)
 		if(do_after(src, 40, target = cocoon_target.loc))
 			if(busy == SPINNING_COCOON)
 				if(cocoon_target && isturf(cocoon_target.loc) && get_dist(src,cocoon_target) <= 1)
@@ -278,10 +276,10 @@
 						if(iscarbon(L))
 							regen_points += regen_points_per_kill
 							fed++
-							visible_message("<span class='danger'>[src] sticks a proboscis into [L] and sucks a viscous substance out.</span>")
-							to_chat(src, "<span class='notice'>You feel invigorated!</span>")
+							visible_message(SPAN_DANGER("[src] sticks a proboscis into [L] and sucks a viscous substance out."))
+							to_chat(src, SPAN_NOTICE("You feel invigorated!"))
 						else
-							visible_message("<span class='danger'>[src] wraps [L] in a web.</span>")
+							visible_message(SPAN_DANGER("[src] wraps [L] in a web."))
 						large_cocoon = 1
 						last_cocoon_object = 0
 						L.loc = C
@@ -295,33 +293,32 @@
 		stop_automated_movement = FALSE
 
 /mob/living/simple_animal/hostile/poison/terror_spider/proc/DoVentSmash()
-	var/valid_target = FALSE
+	var/obj/machinery/atmospherics/unary/vent_pump/valid_supply = null
+	var/obj/machinery/atmospherics/unary/vent_pump/valid_scrubber = null
+	var/obj/machinery/atmospherics/pipe/pipe_loc = loc
 	for(var/obj/machinery/atmospherics/unary/vent_pump/P in range(1, get_turf(src)))
-		if(P.welded)
-			valid_target = TRUE
+		if(P.welded && (!istype(pipe_loc, /obj/machinery/atmospherics) || pipe_loc.parent == P.parent))
+			valid_supply = P
 	for(var/obj/machinery/atmospherics/unary/vent_scrubber/C in range(1, get_turf(src)))
-		if(C.welded)
-			valid_target = TRUE
-	if(!valid_target)
-		to_chat(src, "<span class='warning'>No welded vent or scrubber nearby!</span>")
+		if(C.welded && (!istype(pipe_loc, /obj/machinery/atmospherics) || pipe_loc.parent == C.parent))
+			valid_scrubber = C
+	if(!(valid_supply || valid_scrubber))
+		to_chat(src, SPAN_WARNING("No welded vent or scrubber nearby!"))
 		return
 	playsound(get_turf(src), 'sound/machines/airlock_alien_prying.ogg', 50, 0)
-	if(do_after(src, 40, target = loc))
-		for(var/obj/machinery/atmospherics/unary/vent_pump/P in range(1, get_turf(src)))
-			if(P.welded)
-				P.welded = FALSE
-				P.update_icon()
-				P.update_pipe_image()
-				forceMove(P.loc)
-				P.visible_message("<span class='danger'>[src] smashes the welded cover off [P]!</span>")
-				return
-		for(var/obj/machinery/atmospherics/unary/vent_scrubber/C in range(1, get_turf(src)))
-			if(C.welded)
-				C.welded = FALSE
-				C.update_icon()
-				C.update_pipe_image()
-				forceMove(C.loc)
-				C.visible_message("<span class='danger'>[src] smashes the welded cover off [C]!</span>")
-				return
-		to_chat(src, "<span class='danger'>There is no welded vent or scrubber close enough to do this.</span>")
+	if(!do_after(src, 40, target = loc))
+		return
+	if(valid_supply && valid_supply.welded)
+		valid_supply.welded = FALSE
+		valid_supply.update_icon()
+		forceMove(valid_supply.loc)
+		valid_supply.visible_message(SPAN_DANGER("[src] smashes the welded cover off [valid_supply]!"))
+		return
+	if(valid_scrubber && valid_scrubber.welded)
+		valid_scrubber.welded = FALSE
+		valid_scrubber.update_icon()
+		forceMove(valid_scrubber.loc)
+		valid_scrubber.visible_message(SPAN_DANGER("[src] smashes the welded cover off [valid_scrubber]!"))
+		return
+	to_chat(src, SPAN_WARNING("There is no welded vent or scrubber close enough to do this!"))
 

@@ -63,19 +63,20 @@
 
 /obj/machinery/poolcontroller/emag_act(user as mob) //Emag_act, this is called when it is hit with a cryptographic sequencer.
 	if(!emagged) //If it is not already emagged, emag it.
-		to_chat(user, "<span class='warning'>You disable \the [src]'s temperature safeguards.</span>")//Inform the mob of what emagging does.
+		to_chat(user, SPAN_WARNING("You disable \the [src]'s temperature safeguards."))//Inform the mob of what emagging does.
 
 		emagged = TRUE //Set the emag var to true.
+		return TRUE
 
 /obj/machinery/poolcontroller/multitool_act(mob/user, obj/item/I)
 	. = TRUE
 	if(!I.use_tool(src, user, 0, volume = I.tool_volume))
 		return
 	if(emagged) //Check the emag status
-		to_chat(user, "<span class='warning'>You re-enable [src]'s temperature safeguards.</span>")//Inform the user that they have just fixed the safeguards.
+		to_chat(user, SPAN_WARNING("You re-enable [src]'s temperature safeguards."))//Inform the user that they have just fixed the safeguards.
 		emagged = FALSE //Set the emagged var to false.
 	else
-		to_chat(user, "<span class='warning'>Nothing happens.</span>")//If not emagged, don't do anything, and don't tell the user that it can be emagged.
+		to_chat(user, SPAN_WARNING("Nothing happens."))//If not emagged, don't do anything, and don't tell the user that it can be emagged.
 
 /obj/machinery/poolcontroller/attack_hand(mob/user)
 	ui_interact(user)
@@ -101,23 +102,23 @@
 			QDEL_IN(decal, 25)
 
 /obj/machinery/poolcontroller/proc/handleTemp(mob/M)
-	if(!M || isAIEye(M) || issilicon(M) || isobserver(M) || M.stat == DEAD)
+	if(!M || is_ai_eye(M) || issilicon(M) || isobserver(M) || M.stat == DEAD)
 		return
 	M.water_act(100, temperature, src)//leave temp at 0, we handle it in the switch. oh wait
 	switch(temperature) //Apply different effects based on what the temperature is set to.
 		if(SCALDING) //Burn the mob.
-			to_chat(M, "<span class='danger'>The water is searing hot!</span>")
+			to_chat(M, SPAN_DANGER("The water is searing hot!"))
 
 		if(WARM) //Warm the mob.
 			if(prob(5)) //inform the mob of warm water occasionally
-				to_chat(M, "<span class='warning'>The water is quite warm.</span>")//Inform the mob it's warm water.
+				to_chat(M, SPAN_WARNING("The water is quite warm."))//Inform the mob it's warm water.
 
 		if(COOL) //Cool the mob.
 			if(prob(5)) //inform the mob of cold water occasionally
-				to_chat(M, "<span class='warning'>The water is chilly.</span>")//Inform the mob it's chilly water.
+				to_chat(M, SPAN_WARNING("The water is chilly."))//Inform the mob it's chilly water.
 
 		if(FRIGID) //YOU'RE AS COLD AS ICE
-			to_chat(M, "<span class='danger'>The water is freezing!</span>")
+			to_chat(M, SPAN_DANGER("The water is freezing!"))
 
 /obj/machinery/poolcontroller/proc/handleDrowning(mob/living/carbon/human/drownee)
 	if(!drownee)
@@ -139,16 +140,16 @@
 		add_attack_logs(src, drownee, "Drowned", isLivingSSD(drownee) ? null : ATKLOG_ALL)
 		if(drownee.stat) //Mob is in critical.
 			drownee.AdjustLoseBreath(6 SECONDS, bound_lower = 0, bound_upper = 40 SECONDS)
-			drownee.visible_message("<span class='danger'>\The [drownee] appears to be drowning!</span>","<span class='userdanger'>You're quickly drowning!</span>") //inform them that they are fucked.
+			drownee.visible_message(SPAN_DANGER("\The [drownee] appears to be drowning!"),SPAN_USERDANGER("You're quickly drowning!")) //inform them that they are fucked.
 		else
 			drownee.AdjustLoseBreath(4 SECONDS, bound_lower = 0, bound_upper = 40 SECONDS)		//For every time you drown, you miss 2 breath attempts. Hope you catch on quick!
 			if(prob(35)) //35% chance to tell them what is going on. They should probably figure it out before then.
-				drownee.visible_message("<span class='danger'>\The [drownee] flails, almost like [drownee.p_they()] [drownee.p_are()] drowning!</span>","<span class='userdanger'>You're lacking air!</span>") //*gasp* *gasp* *gasp* *gasp* *gasp*
+				drownee.visible_message(SPAN_DANGER("\The [drownee] flails, almost like [drownee.p_they()] [drownee.p_are()] drowning!"),SPAN_USERDANGER("You're lacking air!")) //*gasp* *gasp* *gasp* *gasp* *gasp*
 
 
 
 /obj/machinery/poolcontroller/proc/miston() //Spawn /obj/effect/mist (from the shower) on all linked pool tiles
-	if(linkedmist.len)
+	if(length(linkedmist))
 		return
 
 	for(var/turf/simulated/floor/beach/water/W in linkedturfs)
@@ -161,10 +162,13 @@
 	linkedmist.Cut()
 
 
-/obj/machinery/poolcontroller/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = TRUE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/poolcontroller/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/poolcontroller/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "PoolController", "Pool Controller Interface", 520, 410)
+		ui = new(user, src, "PoolController", "Pool Controller Interface")
 		ui.open()
 
 /obj/machinery/poolcontroller/proc/temp_to_str(temp)
@@ -181,7 +185,7 @@
 			return "scalding"
 
 /obj/machinery/poolcontroller/proc/set_temp(val)
-	if (val != WARM && val != NORMAL && val != COOL && !(emagged && (val == SCALDING || val == FRIGID)))
+	if(val != WARM && val != NORMAL && val != COOL && !(emagged && (val == SCALDING || val == FRIGID)))
 		return
 
 	if(val == SCALDING)

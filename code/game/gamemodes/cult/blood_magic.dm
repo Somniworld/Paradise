@@ -1,44 +1,32 @@
-/datum/action/innate/cult/blood_magic //Blood magic handles the creation of blood spells (formerly talismans)
+/// Blood magic handles the creation of blood spells (formerly talismans)
+/datum/action/innate/cult/blood_magic
 	name = "Prepare Blood Magic"
 	button_icon_state = "carve"
 	desc = "Prepare blood magic by carving runes into your flesh. This is easier with an <b>empowering rune</b>."
+	default_button_position = DEFAULT_BLOODSPELLS
 	var/list/spells = list()
 	var/channeling = FALSE
+	/// If the magic has been enhanced somehow, likely due to a crimson medallion.
+	var/magic_enhanced = FALSE
 
 /datum/action/innate/cult/blood_magic/Remove()
 	for(var/X in spells)
 		qdel(X)
 	..()
 
-/datum/action/innate/cult/blood_magic/override_location()
-	button.ordered = FALSE
-	button.screen_loc = DEFAULT_BLOODSPELLS
-	button.moved = DEFAULT_BLOODSPELLS
-
-/datum/action/innate/cult/blood_magic/proc/Positioning()
-	var/list/screen_loc_split = splittext(button.screen_loc, ",")
-	var/list/screen_loc_X = splittext(screen_loc_split[1], ":")
-	var/list/screen_loc_Y = splittext(screen_loc_split[2], ":")
-	var/pix_X = text2num(screen_loc_X[2])
-	for(var/datum/action/innate/cult/blood_spell/B in spells)
-		if(B.button.locked)
-			var/order = pix_X + spells.Find(B) * 31
-			B.button.screen_loc = "[screen_loc_X[1]]:[order],[screen_loc_Y[1]]:[screen_loc_Y[2]]"
-			B.button.moved = B.button.screen_loc
-
 /datum/action/innate/cult/blood_magic/Activate()
 	var/rune = FALSE
 	var/limit = RUNELESS_MAX_BLOODCHARGE
 	for(var/obj/effect/rune/empower/R in range(1, owner))
 		rune = TRUE
-		limit = MAX_BLOODCHARGE
+		limit = magic_enhanced ? ENHANCED_BLOODCHARGE : MAX_BLOODCHARGE
 		break
 	if(length(spells) >= limit)
 		if(rune)
-			to_chat(owner, "<span class='cultitalic'>You cannot store more than [MAX_BLOODCHARGE] spell\s. <b>Pick a spell to remove.</b></span>")
+			to_chat(owner, SPAN_CULTITALIC("You cannot store more than [MAX_BLOODCHARGE] spell\s. <b>Pick a spell to remove.</b>"))
 			remove_spell("You cannot store more than [MAX_BLOODCHARGE] spell\s, pick a spell to remove.")
 		else
-			to_chat(owner, "<span class='cultitalic'>You cannot store more than [RUNELESS_MAX_BLOODCHARGE] spell\s without an empowering rune! <b>Pick a spell to remove.</b></span>")
+			to_chat(owner, SPAN_CULTITALIC("You cannot store more than [RUNELESS_MAX_BLOODCHARGE] spell\s without an empowering rune! <b>Pick a spell to remove.</b>"))
 			remove_spell("You cannot store more than [RUNELESS_MAX_BLOODCHARGE] spell\s without an empowering rune, pick a spell to remove.")
 		return
 	var/entered_spell_name
@@ -51,7 +39,7 @@
 		possible_spells[cult_name] = J
 	if(length(spells))
 		possible_spells += "(REMOVE SPELL)"
-	entered_spell_name = input(owner, "Pick a blood spell to prepare...", "Spell Choices") as null|anything in possible_spells
+	entered_spell_name = tgui_input_list(owner, "Pick a blood spell to prepare...", "Spell Choices", possible_spells)
 	if(entered_spell_name == "(REMOVE SPELL)")
 		remove_spell()
 		return
@@ -61,9 +49,9 @@
 
 	if(!channeling)
 		channeling = TRUE
-		to_chat(owner, "<span class='cultitalic'>You begin to carve unnatural symbols into your flesh!</span>")
+		to_chat(owner, SPAN_CULTITALIC("You begin to carve unnatural symbols into your flesh!"))
 	else
-		to_chat(owner, "<span class='warning'>You are already invoking blood magic!</span>")
+		to_chat(owner, SPAN_WARNING("You are already invoking blood magic!"))
 		return
 
 	if(do_after(owner, 100 - rune * 60, target = owner))
@@ -76,19 +64,21 @@
 		var/datum/action/innate/cult/blood_spell/new_spell = new BS(owner)
 		spells += new_spell
 		new_spell.Grant(owner, src)
-		to_chat(owner, "<span class='cult'>Your wounds glow with power, you have prepared a [new_spell.name] invocation!</span>")
+		to_chat(owner, SPAN_CULT("Your wounds glow with power, you have prepared a [new_spell.name] invocation!"))
 		SSblackbox.record_feedback("tally", "cult_spells_prepared", 1, "[new_spell.name]")
 	channeling = FALSE
 
-/datum/action/innate/cult/blood_magic/proc/remove_spell(message = "Pick a spell to remove.")
-	var/nullify_spell = input(owner, message, "Current Spells") as null|anything in spells
+/datum/action/innate/cult/blood_magic/proc/remove_spell()
+	var/nullify_spell = tgui_input_list(owner, "Pick a spell to remove", "Current Spells", spells)
 	if(nullify_spell)
 		qdel(nullify_spell)
 
-/datum/action/innate/cult/blood_spell //The next generation of talismans, handles storage/creation of blood magic
+/// The next generation of talismans, handles storage/creation of blood magic
+/datum/action/innate/cult/blood_spell
 	name = "Blood Magic"
 	button_icon_state = "telerune"
 	desc = "Fear the Old Blood."
+	default_button_position = SCRN_OBJ_CULT_LIST
 	var/charges = 1
 	var/magic_path = null
 	var/obj/item/melee/blood_magic/hand_magic
@@ -96,6 +86,31 @@
 	var/base_desc //To allow for updating tooltips
 	var/invocation = "Hoi there something's wrong!"
 	var/health_cost = 0
+	/// Have we already been positioned into our starting location?
+	var/positioned = FALSE
+	var/mutable_appearance/button_charge_count
+
+/datum/action/innate/cult/blood_spell/New(target)
+	. = ..()
+	button_charge_count = image('icons/effects/effects.dmi', icon_state = "nothing")
+
+/datum/action/innate/cult/blood_spell/proc/get_panel_text()
+	if(initial(charges) == 1)
+		return
+	var/available_charges = hand_magic ? "[hand_magic.uses]" : "[charges]"
+	return "[available_charges]/[initial(charges)]"
+
+/datum/action/innate/cult/blood_spell/update_button_status(atom/movable/screen/movable/action_button/button, force)
+	. = ..()
+	if(!button)
+		return
+	button.overlays -= button_charge_count
+
+	var/text = get_panel_text()
+	if(!text || !button)
+		return
+	button_charge_count.maptext = "<div style=\"font-size:8pt;color:white;font:'Small Fonts';text-align:center;\" valign=\"bottom\">[text]</div>"
+	button.overlays |= button_charge_count
 
 /datum/action/innate/cult/blood_spell/Grant(mob/living/owner, datum/action/innate/cult/blood_magic/BM)
 	if(health_cost)
@@ -103,12 +118,9 @@
 	base_desc = desc
 	desc += "<br><b><u>Has [charges] use\s remaining</u></b>."
 	all_magic = BM
-	button.ordered = FALSE
+	// todo blood magic guh
+	// button.ordered = FALSE
 	..()
-
-/datum/action/innate/cult/blood_spell/override_location()
-	button.locked = TRUE
-	all_magic.Positioning()
 
 /datum/action/innate/cult/blood_spell/Remove()
 	if(all_magic)
@@ -118,8 +130,8 @@
 		hand_magic = null
 	..()
 
-/datum/action/innate/cult/blood_spell/IsAvailable()
-	if(!iscultist(owner) || owner.incapacitated() || !charges)
+/datum/action/innate/cult/blood_spell/IsAvailable(show_message = TRUE)
+	if(!IS_CULTIST(owner) || owner.incapacitated() || !charges)
 		return FALSE
 	return ..()
 
@@ -132,9 +144,9 @@
 			if(!owner.put_in_hands(hand_magic))
 				qdel(hand_magic)
 				hand_magic = null
-				to_chat(owner, "<span class='warning'>You have no empty hand for invoking blood magic!</span>")
+				to_chat(owner, SPAN_WARNING("You have no empty hand for invoking blood magic!"))
 				return
-			to_chat(owner, "<span class='cultitalic'>Your wounds glow as you invoke the [name].</span>")
+			to_chat(owner, SPAN_CULTITALIC("Your wounds glow as you invoke the [name]."))
 
 		else // If the spell is active, and you clicked on the button for it
 			qdel(hand_magic)
@@ -177,15 +189,15 @@
 					oof = TRUE
 					break
 		if(oof)
-			to_chat(owner, "<span class='userdanger'>You get the feeling this is a bad idea.</span>")
+			to_chat(owner, SPAN_USERDANGER("You get the feeling this is a bad idea."))
 	..()
 
 /datum/action/innate/cult/blood_spell/emp/Activate()
 	if(owner.holy_check())
 		return
-	owner.visible_message("<span class='warning'>[owner]'s body flashes a bright blue!</span>", \
-						"<span class='cultitalic'>You speak the cursed words, channeling an electromagnetic pulse from your body.</span>")
-	owner.emp_act(2)
+	owner.visible_message(SPAN_WARNING("[owner]'s body flashes a bright blue!"), \
+						SPAN_CULTITALIC("You speak the cursed words, channeling an electromagnetic pulse from your body."))
+	owner.emp_act(EMP_LIGHT)
 	INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(empulse), owner, 2, 5, TRUE, "cult")
 	owner.whisper(invocation)
 	charges--
@@ -212,21 +224,20 @@
 	button_icon_state = "cult_dagger"
 
 /datum/action/innate/cult/blood_spell/dagger/New()
-	if(SSticker.mode)
-		button_icon_state = SSticker.cultdat.dagger_icon
+	button_icon_state = GET_CULT_DATA(dagger_icon, "cult_dagger")
 	..()
 
 /datum/action/innate/cult/blood_spell/dagger/Activate()
 	var/turf/T = get_turf(owner)
-	owner.visible_message("<span class='warning'>[owner]'s hand glows red for a moment.</span>", \
-						"<span class='cultitalic'>Red light begins to shimmer and take form within your hand!</span>")
+	owner.visible_message(SPAN_WARNING("[owner]'s hand glows red for a moment."), \
+						SPAN_CULTITALIC("Red light begins to shimmer and take form within your hand!"))
 	var/obj/item/melee/cultblade/dagger/O = new(T)
 	if(owner.put_in_hands(O))
-		to_chat(owner, "<span class='warning'>A [O.name] appears in your hand!</span>")
+		to_chat(owner, SPAN_WARNING("A [O.name] appears in your hand!"))
 	else
-		owner.visible_message("<span class='warning'>A [O.name] appears at [owner]'s feet!</span>", \
-							"<span class='cultitalic'>A [O.name] materializes at your feet.</span>")
-	playsound(owner, 'sound/magic/cult_spell.ogg', 25, TRUE)
+		owner.visible_message(SPAN_WARNING("A [O.name] appears at [owner]'s feet!"), \
+							SPAN_CULTITALIC("A [O.name] materializes at your feet."))
+	playsound(owner, 'sound/magic/cult_spell.ogg', 25, TRUE, SOUND_RANGE_SET(4))
 	charges--
 	desc = base_desc
 	desc += "<br><b><u>Has [charges] use\s remaining</u></b>."
@@ -243,7 +254,7 @@
 	name = "Hallucinations"
 	desc = "Gives hallucinations to a target at range. A silent and invisible spell."
 	button_icon_state = "horror"
-	var/obj/effect/proc_holder/horror/PH
+	var/datum/spell/horror/PH
 	charges = 4
 
 /datum/action/innate/cult/blood_spell/horror/New()
@@ -252,7 +263,7 @@
 	..()
 
 /datum/action/innate/cult/blood_spell/horror/Destroy()
-	var/obj/effect/proc_holder/horror/destroy = PH
+	var/datum/spell/horror/destroy = PH
 	. = ..()
 	if(!QDELETED(destroy))
 		QDEL_NULL(destroy)
@@ -261,47 +272,48 @@
 	PH.toggle(owner) //the important bit
 	return TRUE
 
-/obj/effect/proc_holder/horror
-	active = FALSE
-	ranged_mousepointer = 'icons/effects/cult_target.dmi'
+/datum/spell/horror
+	ranged_mousepointer = 'icons/mouse_icons/cult_target.dmi'
 	var/datum/action/innate/cult/blood_spell/attached_action
 
-/obj/effect/proc_holder/horror/Destroy()
+/datum/spell/horror/Destroy()
 	var/datum/action/innate/cult/blood_spell/AA = attached_action
 	. = ..()
 	if(!QDELETED(AA))
 		QDEL_NULL(AA)
 
-/obj/effect/proc_holder/horror/proc/toggle(mob/user)
+/datum/spell/horror/proc/toggle(mob/user)
 	if(active)
-		remove_ranged_ability(user, "<span class='cult'>You dispel the magic...</span>")
+		remove_ranged_ability(user, SPAN_CULT("You dispel the magic..."))
 	else
-		add_ranged_ability(user, "<span class='cult'>You prepare to horrify a target...</span>")
+		add_ranged_ability(user, SPAN_CULT("You prepare to horrify a target..."))
 
-/obj/effect/proc_holder/horror/InterceptClickOn(mob/living/user, params, atom/target)
-	if(..())
-		return
-	if(ranged_ability_user.incapacitated() || !iscultist(user))
+/datum/spell/horror/InterceptClickOn(mob/living/user, params, atom/target) //This should not exist
+	. = ..()
+	if(!.)
+		return FALSE
+	if(ranged_ability_user.incapacitated() || !IS_CULTIST(user))
 		user.ranged_ability.remove_ranged_ability(user)
-		return
+		return TRUE
 	if(user.holy_check())
-		return
+		return TRUE
 	var/turf/T = get_turf(ranged_ability_user)
 	if(!isturf(T))
-		return FALSE
+		return TRUE
 	if(target in view(7, ranged_ability_user))
-		if(!ishuman(target) || iscultist(target))
-			return
+		if(!ishuman(target) || IS_CULTIST(target))
+			return TRUE
 		var/mob/living/carbon/human/H = target
 		H.Hallucinate(120 SECONDS)
 		attached_action.charges--
 		attached_action.desc = attached_action.base_desc
 		attached_action.desc += "<br><b><u>Has [attached_action.charges] use\s remaining</u></b>."
-		attached_action.UpdateButtonIcon()
-		user.ranged_ability.remove_ranged_ability(user, "<span class='cult'><b>[H] has been cursed with living nightmares!</b></span>")
+		attached_action.build_all_button_icons()
+		user.ranged_ability.remove_ranged_ability(user, SPAN_CULT("<b>[H] has been cursed with living nightmares!</b>"))
 		if(attached_action.charges <= 0)
-			to_chat(ranged_ability_user, "<span class='cult'>You have exhausted the spell's power!</span>")
+			to_chat(ranged_ability_user, SPAN_CULT("You have exhausted the spell's power!"))
 			qdel(src)
+		return TRUE
 
 /datum/action/innate/cult/blood_spell/veiling
 	name = "Conceal Presence"
@@ -315,10 +327,13 @@
 	if(owner.holy_check())
 		return
 	if(!revealing) // Hiding stuff
-		owner.visible_message("<span class='warning'>Thin grey dust falls from [owner]'s hand!</span>", \
-		"<span class='cultitalic'>You invoke the veiling spell, hiding nearby runes and cult structures.</span>")
+		owner.visible_message(SPAN_WARNING("Thin grey dust falls from [owner]'s hand!"), \
+		SPAN_CULTITALIC("You invoke the veiling spell, hiding nearby runes and cult structures."))
 		charges--
-		playsound(owner, 'sound/magic/smoke.ogg', 25, TRUE, -13) // 4 tile range.
+		if(!SSticker.mode.cult_team.cult_risen || !SSticker.mode.cult_team.cult_ascendant)
+			playsound(owner, 'sound/magic/smoke.ogg', 25, TRUE, SOUND_RANGE_SET(4)) // If Cult is risen/ascendant.
+		else
+			playsound(owner, 'sound/magic/smoke.ogg', 25, TRUE, SOUND_RANGE_SET(1)) // If Cult is unpowered.
 		owner.whisper(invocation)
 		for(var/obj/O in range(4, owner))
 			O.cult_conceal()
@@ -327,11 +342,14 @@
 		button_icon_state = "revealing"
 
 	else // Unhiding stuff
-		owner.visible_message("<span class='warning'>A flash of light shines from [owner]'s hand!</span>", \
-		"<span class='cultitalic'>You invoke the counterspell, revealing nearby runes and cult structures.</span>")
+		owner.visible_message(SPAN_WARNING("A flash of light shines from [owner]'s hand!"), \
+		SPAN_CULTITALIC("You invoke the counterspell, revealing nearby runes and cult structures."))
 		charges--
 		owner.whisper(invocation)
-		playsound(owner, 'sound/misc/enter_blood.ogg', 25, TRUE, -10) // 7 tile range.
+		if(!SSticker.mode.cult_team.cult_risen || !SSticker.mode.cult_team.cult_ascendant)
+			playsound(owner, 'sound/misc/enter_blood.ogg', 25, TRUE, SOUND_RANGE_SET(7)) // If Cult is risen/ascendant.
+		else
+			playsound(owner, 'sound/magic/smoke.ogg', 25, TRUE, SOUND_RANGE_SET(1)) // If Cult is unpowered.
 		for(var/obj/O in range(5, owner)) // Slightly higher in case we arent in the exact same spot
 			O.cult_reveal()
 		revealing = FALSE // Switch on use
@@ -341,7 +359,7 @@
 		qdel(src)
 	desc = "[revealing ? "Reveals" : "Conceals"] nearby cult structures, airlocks, and runes."
 	desc += "<br><b><u>Has [charges] use\s remaining</u></b>."
-	UpdateButtonIcon()
+	build_all_button_icons()
 
 /datum/action/innate/cult/blood_spell/manipulation
 	name = "Blood Rites"
@@ -352,19 +370,20 @@
 	charges = 5
 	magic_path = /obj/item/melee/blood_magic/manipulator
 
+/datum/action/innate/cult/blood_spell/manipulation/get_panel_text()
+	return hand_magic ? "[hand_magic.uses]" : "[charges]"
+
 // The "magic hand" items
 /obj/item/melee/blood_magic
-	name = "\improper magical aura"
+	name = "magical aura"
 	desc = "A sinister looking aura that distorts the flow of reality around it."
-	icon = 'icons/obj/items.dmi'
+	icon = 'icons/obj/weapons/magical_weapons.dmi'
+	icon_state = "disintegrate"
+	inhand_icon_state = "disintegrate"
 	lefthand_file = 'icons/mob/inhands/items_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/items_righthand.dmi'
-	icon_state = "disintegrate"
-	item_state = "disintegrate"
 	flags = ABSTRACT | DROPDEL
-
 	w_class = WEIGHT_CLASS_HUGE
-	throwforce = 0
 	throw_range = 0
 	throw_speed = 0
 	/// Does it have a source, AKA bloody empowerment.
@@ -373,13 +392,14 @@
 	var/uses = 1
 	var/health_cost = 0 //The amount of health taken from the user when invoking the spell
 	var/datum/action/innate/cult/blood_spell/source
+	var/antimagic_flags = MAGIC_RESISTANCE_HOLY
 
-/obj/item/melee/blood_magic/New(loc, spell)
-	if(has_source)
+/obj/item/melee/blood_magic/Initialize(mapload, spell)
+	. = ..()
+	if(spell && has_source)
 		source = spell
 		uses = source.charges
 		health_cost = source.health_cost
-	..()
 
 /obj/item/melee/blood_magic/Destroy()
 	if(has_source && !QDELETED(source))
@@ -392,21 +412,29 @@
 			source.charges = uses
 			source.desc = source.base_desc
 			source.desc += "<br><b><u>Has [uses] use\s remaining</u></b>."
-			source.UpdateButtonIcon()
+			source.build_all_button_icons()
 	return ..()
 
-/obj/item/melee/blood_magic/attack_self(mob/living/user)
-	afterattack(user, user, TRUE)
+/obj/item/melee/blood_magic/customised_abstract_text(mob/living/carbon/owner)
+	return SPAN_WARNING("[owner.p_their(TRUE)] [owner.l_hand == src ? "left hand" : "right hand"] is burning in blood-red fire.")
 
-/obj/item/melee/blood_magic/attack(mob/living/M, mob/living/carbon/user)
-	if(!iscarbon(user) || !iscultist(user))
+/obj/item/melee/blood_magic/attack_self__legacy__attackchain(mob/living/user)
+	attackby__legacy__attackchain(user, user, TRUE)
+
+/obj/item/melee/blood_magic/attack__legacy__attackchain(mob/living/M, mob/living/carbon/user)
+	if(!iscarbon(user) || !IS_CULTIST(user))
+		uses = 0
+		qdel(src)
+		return
+	if(M.can_block_magic(MAGIC_RESISTANCE_HOLY))
+		to_chat(user, SPAN_DANGER("[M] absorbs your spell!"))
 		uses = 0
 		qdel(src)
 		return
 	add_attack_logs(user, M, "used a cult spell ([src]) on")
-	M.lastattacker = user.real_name
+	M.store_last_attacker(user)
 
-/obj/item/melee/blood_magic/afterattack(atom/target, mob/living/carbon/user, proximity)
+/obj/item/melee/blood_magic/afterattack__legacy__attackchain(atom/target, mob/living/carbon/user, proximity)
 	. = ..()
 	if(invocation)
 		user.whisper(invocation)
@@ -417,7 +445,7 @@
 	else if(source)
 		source.desc = source.base_desc
 		source.desc += "<br><b><u>Has [uses] use\s remaining</u></b>."
-		source.UpdateButtonIcon()
+		source.build_all_button_icons()
 
 //The spell effects
 
@@ -428,40 +456,53 @@
 	color = RUNE_COLOR_RED
 	invocation = "Fuu ma'jin!"
 
-/obj/item/melee/blood_magic/stun/afterattack(atom/target, mob/living/carbon/user, proximity)
+/obj/item/melee/blood_magic/stun/afterattack__legacy__attackchain(atom/target, mob/living/carbon/user, proximity)
 	if(!isliving(target) || !proximity)
 		return
 	var/mob/living/L = target
-	if(iscultist(target))
+	if(IS_CULTIST(target))
 		return
 	if(user.holy_check())
 		return
-	user.visible_message("<span class='warning'>[user] holds up [user.p_their()] hand, which explodes in a flash of red light!</span>", \
-							"<span class='cultitalic'>You attempt to stun [L] with the spell!</span>")
+	user.visible_message(SPAN_WARNING("[user] holds up [user.p_their()] hand, which explodes in a flash of red light!"), \
+							SPAN_CULTITALIC("You attempt to stun [L] with the spell!"))
 
 	user.mob_light(LIGHT_COLOR_BLOOD_MAGIC, 3, _duration = 2)
 
 	var/obj/item/nullrod/N = locate() in target
 	if(N)
-		target.visible_message("<span class='warning'>[target]'s holy weapon absorbs the red light!</span>", \
-							"<span class='userdanger'>Your holy weapon absorbs the blinding light!</span>")
+		target.visible_message(SPAN_WARNING("[target]'s holy weapon absorbs the red light!"), \
+							SPAN_USERDANGER("Your holy weapon absorbs the blinding light!"))
 	else
-		to_chat(user, "<span class='cultitalic'>In a brilliant flash of red, [L] falls to the ground!</span>")
+		if(IS_HERETIC(L))
+			L.Stun(0.5 SECONDS)
+			L.AdjustConfused(3 SECONDS)
+			L.AdjustDizzy(3 SECONDS)
 
-		L.KnockDown(10 SECONDS)
-		L.adjustStaminaLoss(60)
-		L.apply_status_effect(STATUS_EFFECT_CULT_STUN)
-		L.flash_eyes(1, TRUE)
-		if(issilicon(target))
-			var/mob/living/silicon/S = L
-			S.emp_act(EMP_HEAVY)
-		else if(iscarbon(target))
-			var/mob/living/carbon/C = L
-			C.Silence(6 SECONDS)
-			C.Stuttering(16 SECONDS)
-			C.CultSlur(20 SECONDS)
-			C.Jitter(16 SECONDS)
-			to_chat(user, "<span class='boldnotice'>Stun mark applied! Stab them with a dagger, sword or blood spear to stun them fully!</span>")
+			var/old_color = target.color
+			target.color = COLOR_HERETIC_GREEN
+			animate(target, color = old_color, time = 4 SECONDS, easing = EASE_IN)
+			L.mob_light(COLOR_HERETIC_GREEN, 1.5, 2.5, 0.5 SECONDS)
+			playsound(L, 'sound/effects/curse.ogg', 50, TRUE)
+
+			to_chat(user, SPAN_WARNING("An eldritch force intervenes as you touch [target], absorbing most of the effects!"))
+			to_chat(target, SPAN_WARNING("As [user] touches you with vile magicks, the Mansus absorbs most of the effects!"))
+			to_chat(user, SPAN_CULTITALIC("In a brilliant flash of red, [L] falls to the ground!"))
+		else
+			L.apply_status_effect(STATUS_EFFECT_CULT_STUN)
+			L.Silence(6 SECONDS)
+			if(issilicon(target))
+				var/mob/living/silicon/S = L
+				S.emp_act(EMP_HEAVY)
+			else if(iscarbon(target))
+				var/mob/living/carbon/C = L
+				C.KnockDown(10 SECONDS)
+				C.apply_damage(60, STAMINA)
+				C.flash_eyes(1, TRUE)
+				C.Stuttering(16 SECONDS)
+				C.CultSlur(20 SECONDS)
+				C.Jitter(16 SECONDS)
+			to_chat(user, SPAN_BOLDNOTICE("Stun mark applied! Stab them with a dagger, sword or blood spear to stun them fully!"))
 	user.do_attack_animation(target)
 	uses--
 	..()
@@ -474,15 +515,15 @@
 	desc = "Will teleport a cultist to a teleport rune on contact."
 	invocation = "Sas'so c'arta forbici!"
 
-/obj/item/melee/blood_magic/teleport/afterattack(atom/target, mob/living/carbon/user, proximity)
+/obj/item/melee/blood_magic/teleport/afterattack__legacy__attackchain(atom/target, mob/living/carbon/user, proximity)
 	if(user.holy_check())
 		return
 	var/list/potential_runes = list()
 	var/list/teleportnames = list()
 	var/list/duplicaterunecount = list()
 	var/atom/movable/teleportee
-	if(!iscultist(target) || !proximity)
-		to_chat(user, "<span class='warning'>You can only teleport adjacent cultists with this spell!</span>")
+	if(!IS_CULTIST(target) || !proximity)
+		to_chat(user, SPAN_WARNING("You can only teleport adjacent cultists with this spell!"))
 		return
 	if(user != target) // So that the teleport effect shows on the correct mob
 		teleportee = target
@@ -501,41 +542,43 @@
 		potential_runes[resultkey] = T
 
 	if(!length(potential_runes))
-		to_chat(user, "<span class='warning'>There are no valid runes to teleport to!</span>")
+		to_chat(user, SPAN_WARNING("There are no valid runes to teleport to!"))
 		log_game("Teleport spell failed - no other teleport runes")
 		return
 	if(!is_level_reachable(user.z))
-		to_chat(user, "<span class='cultitalic'>You are too far away from the station to teleport!</span>")
+		to_chat(user, SPAN_CULTITALIC("You are too far away from the station to teleport!"))
 		log_game("Teleport spell failed - user in away mission")
 		return
 
-	var/input_rune_key = input(user, "Choose a rune to teleport to.", "Rune to Teleport to") as null|anything in potential_runes //we know what key they picked
+	var/input_rune_key = tgui_input_list(user, "Choose a rune to teleport to", "Rune to Teleport to", potential_runes) //we know what key they picked
 	var/obj/effect/rune/teleport/actual_selected_rune = potential_runes[input_rune_key] //what rune does that key correspond to?
-	if(QDELETED(src) || !user || user.l_hand != src && user.r_hand != src || user.incapacitated() || !actual_selected_rune)
+	if(QDELETED(src) || !user || !user.is_holding(src) || user.incapacitated() || !actual_selected_rune)
 		return
 
 	if(HAS_TRAIT(user, TRAIT_FLOORED))
-		to_chat(user, "<span class='cultitalic'>You cannot cast this spell while knocked down!</span>")
+		to_chat(user, SPAN_CULTITALIC("You cannot cast this spell while knocked down!"))
 		return
 
 	uses--
 
 	var/turf/origin = get_turf(teleportee)
 	var/turf/destination = get_turf(actual_selected_rune)
+	if(SEND_SIGNAL(target, COMSIG_MOVABLE_TELEPORTING, destination) & COMPONENT_BLOCK_TELEPORT)
+		return
 	INVOKE_ASYNC(actual_selected_rune, TYPE_PROC_REF(/obj/effect/rune, teleport_effect), teleportee, origin, destination)
 
 	if(is_mining_level(user.z) && !is_mining_level(destination.z)) //No effect if you stay on lavaland
 		actual_selected_rune.handle_portal("lava")
-	else if(!is_station_level(user.z) || istype(get_area(user), /area/space))
+	else if(!is_station_level(user.z) || isspacearea(get_area(user)))
 		actual_selected_rune.handle_portal("space", origin)
 
 	if(user == target)
-		target.visible_message("<span class='warning'>Dust flows from [user]'s hand, and [user.p_they()] disappear[user.p_s()] in a flash of red light!</span>", \
-		"<span class='cultitalic'>You speak the words and find yourself somewhere else!</span>")
+		target.visible_message(SPAN_WARNING("Dust flows from [user]'s hand, and [user.p_they()] disappear[user.p_s()] in a flash of red light!"), \
+		SPAN_CULTITALIC("You speak the words and find yourself somewhere else!"))
 	else
-		target.visible_message("<span class='warning'>Dust flows from [user]'s hand, and [target] disappears in a flash of red light!</span>", \
-		"<span class='cultitalic'>You suddenly find yourself somewhere else!</span>")
-	destination.visible_message("<span class='warning'>There is a boom of outrushing air as something appears above the rune!</span>", null, "<i>You hear a boom.</i>")
+		target.visible_message(SPAN_WARNING("Dust flows from [user]'s hand, and [target] disappears in a flash of red light!"), \
+		SPAN_CULTITALIC("You suddenly find yourself somewhere else!"))
+	destination.visible_message(SPAN_WARNING("There is a boom of outrushing air as something appears above the rune!"), null, "<i>You hear a boom.</i>")
 	teleportee.forceMove(destination)
 	return ..()
 
@@ -546,50 +589,53 @@
 	invocation = "In'totum Lig'abis!"
 	color = "#000000" // black
 
-/obj/item/melee/blood_magic/shackles/afterattack(atom/target, mob/living/carbon/user, proximity)
+/obj/item/melee/blood_magic/shackles/afterattack__legacy__attackchain(atom/target, mob/living/carbon/user, proximity)
 	if(user.holy_check())
 		return
 	if(iscarbon(target) && proximity)
 		var/mob/living/carbon/C = target
-		if(C.canBeHandcuffed() || C.get_arm_ignore())
-			CuffAttack(C, user)
-		else
-			user.visible_message("<span class='cultitalic'>This victim doesn't have enough arms to complete the restraint!</span>")
+		if(!(C.has_left_hand() || C.has_right_hand()))
+			user.visible_message(SPAN_CULTITALIC("This victim doesn't have enough arms to complete the restraint!"))
 			return
+		CuffAttack(C, user)
+		source.build_all_button_icons()
 		..()
 
 /obj/item/melee/blood_magic/shackles/proc/CuffAttack(mob/living/carbon/C, mob/living/user)
 	if(!C.handcuffed)
-		playsound(loc, 'sound/weapons/cablecuff.ogg', 30, TRUE, -2)
-		C.visible_message("<span class='danger'>[user] begins restraining [C] with dark magic!</span>", \
-		"<span class='userdanger'>[user] begins shaping dark magic shackles around your wrists!</span>")
+		playsound(loc, 'sound/weapons/cablecuff.ogg', 30, TRUE, SOUND_RANGE_SET(7))
+		C.visible_message(SPAN_DANGER("[user] begins restraining [C] with dark magic!"), \
+		SPAN_USERDANGER("[user] begins shaping dark magic shackles around your wrists!"))
 		if(do_mob(user, C, 30))
 			if(!C.handcuffed)
-				C.handcuffed = new /obj/item/restraints/handcuffs/energy/cult/used(C)
+				C.handcuffed = new /obj/item/restraints/handcuffs/cult(C)
 				C.update_handcuffed()
 				C.Silence(12 SECONDS)
-				to_chat(user, "<span class='notice'>You shackle [C].</span>")
+				to_chat(user, SPAN_NOTICE("You shackle [C]."))
 				add_attack_logs(user, C, "shackled")
 				uses--
 			else
-				to_chat(user, "<span class='warning'>[C] is already bound.</span>")
+				to_chat(user, SPAN_WARNING("[C] is already bound."))
 		else
-			to_chat(user, "<span class='warning'>You fail to shackle [C].</span>")
+			to_chat(user, SPAN_WARNING("You fail to shackle [C]."))
 	else
-		to_chat(user, "<span class='warning'>[C] is already bound.</span>")
+		to_chat(user, SPAN_WARNING("[C] is already bound."))
 
 
-/obj/item/restraints/handcuffs/energy/cult //For the shackling spell
+/// For the shackling spell
+/obj/item/restraints/handcuffs/cult
 	name = "shadow shackles"
 	desc = "Shackles that bind the wrists with sinister magic."
-	trashtype = /obj/item/restraints/handcuffs/energy/used
+	icon_state = "cablecuff"
+	breakouttime = 45 SECONDS
+	origin_tech = "materials=4;magnets=5;abductor=2"
 	flags = DROPDEL
 
-/obj/item/restraints/handcuffs/energy/cult/used/dropped(mob/user)
-	user.visible_message("<span class='danger'>[user]'s shackles shatter in a discharge of dark magic!</span>", \
-	"<span class='userdanger'>Your [name] shatter in a discharge of dark magic!</span>")
+/obj/item/restraints/handcuffs/cult/finish_resist_restraints(mob/living/carbon/user, break_cuffs, silent)
+	user.visible_message(SPAN_DANGER("[user]'s shackles shatter in a discharge of dark magic!"), SPAN_USERDANGER("Your [name] shatter in a discharge of dark magic!"))
+	break_cuffs = TRUE
+	silent = TRUE
 	. = ..()
-
 
 //Construction: Converts 50 metal to a construct shell, plasteel to runed metal, or an airlock to brittle runed airlock
 /obj/item/melee/blood_magic/construction
@@ -606,12 +652,12 @@
 	[METAL_TO_CONSTRUCT_SHELL_CONVERSION] metal into a construct shell\n
 	Airlocks into brittle runed airlocks after a delay (harm intent)"}
 
-/obj/item/melee/blood_magic/construction/afterattack(atom/target, mob/user, proximity_flag, click_parameters)
+/obj/item/melee/blood_magic/construction/afterattack__legacy__attackchain(atom/target, mob/user, proximity_flag, click_parameters)
 	if(user.holy_check())
 		return
 	if(proximity_flag)
 		if(channeling)
-			to_chat(user, "<span class='cultitalic'>You are already invoking twisted construction!</span>")
+			to_chat(user, SPAN_CULTITALIC("You are already invoking twisted construction!"))
 			return
 		var/turf/T = get_turf(target)
 
@@ -620,11 +666,11 @@
 			var/obj/item/stack/sheet/candidate = target
 			if(candidate.use(METAL_TO_CONSTRUCT_SHELL_CONVERSION))
 				uses--
-				to_chat(user, "<span class='warning'>A dark cloud emanates from your hand and swirls around the metal, twisting it into a construct shell!</span>")
+				to_chat(user, SPAN_WARNING("A dark cloud emanates from your hand and swirls around the metal, twisting it into a construct shell!"))
 				new /obj/structure/constructshell(T)
-				playsound(user, 'sound/magic/cult_spell.ogg', 25, TRUE)
+				playsound(user, 'sound/magic/cult_spell.ogg', 25, TRUE, SOUND_RANGE_SET(4))
 			else
-				to_chat(user, "<span class='warning'>You need [METAL_TO_CONSTRUCT_SHELL_CONVERSION] metal to produce a construct shell!</span>")
+				to_chat(user, SPAN_WARNING("You need [METAL_TO_CONSTRUCT_SHELL_CONVERSION] metal to produce a construct shell!"))
 				return
 
 		//Plasteel to runed metal
@@ -634,25 +680,25 @@
 			if(candidate.use(quantity))
 				uses--
 				new /obj/item/stack/sheet/runed_metal(T, quantity)
-				to_chat(user, "<span class='warning'>A dark cloud emanates from you hand and swirls around the plasteel, transforming it into runed metal!</span>")
-				playsound(user, 'sound/magic/cult_spell.ogg', 25, TRUE)
+				to_chat(user, SPAN_WARNING("A dark cloud emanates from you hand and swirls around the plasteel, transforming it into runed metal!"))
+				playsound(user, 'sound/magic/cult_spell.ogg', 25, TRUE, SOUND_RANGE_SET(4))
 
 		//Airlock to cult airlock
 		else if(istype(target, /obj/machinery/door/airlock) && !istype(target, /obj/machinery/door/airlock/cult))
 			channeling = TRUE
-			playsound(T, 'sound/machines/airlockforced.ogg', 50, TRUE)
+			playsound(T, 'sound/machines/airlockforced.ogg', 50, TRUE, SOUND_RANGE_SET(7))
 			do_sparks(5, TRUE, target)
 			if(do_after(user, 50, target = target))
 				target.narsie_act(TRUE)
 				uses--
-				user.visible_message("<span class='warning'>Black ribbons suddenly emanate from [user]'s hand and cling to the airlock - twisting and corrupting it!</span>")
-				playsound(user, 'sound/magic/cult_spell.ogg', 25, TRUE)
+				user.visible_message(SPAN_WARNING("Black ribbons suddenly emanate from [user]'s hand and cling to the airlock - twisting and corrupting it!"))
+				playsound(user, 'sound/magic/cult_spell.ogg', 25, TRUE, SOUND_RANGE_SET(7))
 				channeling = FALSE
 			else
 				channeling = FALSE
 				return
 		else
-			to_chat(user, "<span class='warning'>The spell will not work on [target]!</span>")
+			to_chat(user, SPAN_WARNING("The spell will not work on [target]!"))
 			return
 		..()
 
@@ -662,22 +708,22 @@
 	desc = "Will equipt cult combat gear onto a cultist on contact."
 	color = "#33cc33" // green
 
-/obj/item/melee/blood_magic/armor/afterattack(atom/target, mob/living/carbon/user, proximity)
+/obj/item/melee/blood_magic/armor/afterattack__legacy__attackchain(atom/target, mob/living/carbon/user, proximity)
 	if(user.holy_check())
 		return
 	if(iscarbon(target) && proximity)
 		uses--
 		var/mob/living/carbon/C = target
-		var/armour = C.equip_to_slot_or_del(new /obj/item/clothing/suit/hooded/cultrobes/alt(user), slot_wear_suit)
-		C.equip_to_slot_or_del(new /obj/item/clothing/under/color/black(user), slot_w_uniform)
-		C.equip_to_slot_or_del(new /obj/item/storage/backpack/cultpack(user), slot_back)
-		C.equip_to_slot_or_del(new /obj/item/clothing/shoes/cult(user), slot_shoes)
+		var/armour = C.equip_to_slot_or_del(new /obj/item/clothing/suit/hooded/cultrobes/alt(user), ITEM_SLOT_OUTER_SUIT)
+		C.equip_to_slot_or_del(new /obj/item/clothing/under/color/black(user), ITEM_SLOT_JUMPSUIT)
+		C.equip_to_slot_or_del(new /obj/item/storage/backpack/cultpack(user), ITEM_SLOT_BACK)
+		C.equip_to_slot_or_del(new /obj/item/clothing/shoes/cult(user), ITEM_SLOT_SHOES)
 
 		if(C == user)
 			qdel(src) //Clears the hands
 		C.put_in_hands(new /obj/item/melee/cultblade(user))
 		C.put_in_hands(new /obj/item/restraints/legcuffs/bola/cult(user))
-		C.visible_message("<span class='warning'>Otherworldly [armour ? "armour" : "equipment"] suddenly appears on [C]!</span>")
+		C.visible_message(SPAN_WARNING("Otherworldly [armour ? "armour" : "equipment"] suddenly appears on [C]!"))
 		..()
 //Used by blood rite, to recharge things like viel shifter or the cultest shielded robes
 /obj/item/melee/blood_magic/empower
@@ -687,41 +733,38 @@
 	color = "#9c0651"
 	has_source = FALSE //special, only availible for a blood cost.
 
-/obj/item/melee/blood_magic/empower/afterattack(atom/target, mob/user, proximity_flag, click_parameters)
+/obj/item/melee/blood_magic/empower/afterattack__legacy__attackchain(atom/target, mob/user, proximity_flag, click_parameters)
 	if(user.holy_check())
 		return
 	if(proximity_flag)
-
 		// Shielded suit
 		if(istype(target, /obj/item/clothing/suit/hooded/cultrobes/cult_shield))
-			var/obj/item/clothing/suit/hooded/cultrobes/cult_shield/C = target
-			if(C.current_charges < 3)
-				uses--
-				to_chat(user, "<span class='warning'>You empower [target] with blood, recharging its shields!</span>")
-				playsound(user, 'sound/magic/cult_spell.ogg', 25, TRUE)
-				C.current_charges = 3
-				C.shield_state = "shield-cult"
-				user.update_inv_wear_suit() // The only way a suit can be clicked on is if its on the floor, in the users bag, or on the user, so we will play it safe if it is on the user.
-			else
-				to_chat(user, "<span class='warning'>[target] is already at full charge!</span>")
+			var/datum/component/shielded/shield = target.GetComponent(/datum/component/shielded)
+			if(shield.current_charges >= 3)
+				to_chat(user, SPAN_WARNING("[target] is already at full charge!"))
 				return
+			uses--
+			to_chat(user, SPAN_WARNING("You empower [target] with blood, recharging its shields!"))
+			playsound(user, 'sound/magic/cult_spell.ogg', 25, TRUE, SOUND_RANGE_SET(7))
+			shield.current_charges = 3
+			user.update_appearance(UPDATE_ICON)
+			return ..()
 
 		// Veil Shifter
-		else if(istype(target, /obj/item/cult_shift))
+		if(istype(target, /obj/item/cult_shift))
 			var/obj/item/cult_shift/S = target
-			if(S.uses < 4)
-				uses--
-				to_chat(user, "<span class='warning'>You empower [target] with blood, recharging its ability to shift!</span>")
-				playsound(user, 'sound/magic/cult_spell.ogg', 25, TRUE)
-				S.uses = 4
-				S.icon_state = "shifter"
-			else
-				to_chat(user, "<span class='warning'>[target] is already at full charge!</span>")
+			if(S.uses >= 4)
+				to_chat(user, SPAN_WARNING("[target] is already at full charge!"))
 				return
-		else
-			to_chat(user, "<span class='warning'>The spell will not work on [target]!</span>")
-			return
-		..()
+			uses--
+			to_chat(user, SPAN_WARNING("You empower [target] with blood, recharging its ability to shift!"))
+			playsound(user, 'sound/magic/cult_spell.ogg', 25, TRUE, SOUND_RANGE_SET(7))
+			S.uses = 4
+			S.icon_state = "shifter"
+			return ..()
+
+		to_chat(user, SPAN_WARNING("The spell will not work on [target]!"))
+		return ..()
 
 //Blood Rite: Absorb blood to heal cult members or summon weapons
 /obj/item/melee/blood_magic/manipulator
@@ -733,152 +776,169 @@
 	. = ..()
 	. += "Blood spear and blood barrage cost [BLOOD_SPEAR_COST] and [BLOOD_BARRAGE_COST] charges respectively."
 	. += "Blood orb and blood empower cost [BLOOD_ORB_COST] and [BLOOD_RECHARGE_COST] charges respectively."
-	. += "<span class='cultitalic'>You have collected [uses] charge\s of blood.</span>"
+	. += SPAN_CULTITALIC("You have collected [uses] charge\s of blood.")
+
+/obj/item/melee/blood_magic/manipulator/proc/restore_blood(mob/living/carbon/human/user, mob/living/carbon/human/H)
+	if(uses == 0)
+		return
+	if(!H.dna || (NO_BLOOD in H.dna.species.species_traits) || !isnull(H.dna.species.exotic_blood))
+		return
+	if(H.blood_volume >= BLOOD_VOLUME_SAFE)
+		return
+	var/restore_blood = BLOOD_VOLUME_SAFE - H.blood_volume
+	if(uses * 2 < restore_blood)
+		H.blood_volume += uses * 2
+		to_chat(user, SPAN_DANGER("You use the last of your charges to restore what blood you could, and the spell dissipates!"))
+		uses = 0
+	else
+		H.blood_volume = BLOOD_VOLUME_SAFE
+		uses -= round(restore_blood / 2)
+		to_chat(user, SPAN_CULT("Your blood rites have restored [H == user ? "your" : "[H.p_their()]"] blood to safe levels!"))
+
+/obj/item/melee/blood_magic/manipulator/proc/heal_human_damage(mob/living/carbon/human/user, mob/living/carbon/human/H)
+	if(uses == 0)
+		return
+	var/overall_damage = H.getBruteLoss() + H.getFireLoss() + H.getToxLoss() + H.getOxyLoss()
+	if(overall_damage == 0)
+		to_chat(user, SPAN_WARNING("[H] doesn't require healing!"))
+		return
+
+	var/ratio = uses / overall_damage
+	if(H == user)
+		to_chat(user, SPAN_WARNING("Your blood healing is far less efficient when used on yourself!"))
+		ratio *= 0.35 // Healing is half as effective if you can't perform a full heal
+		uses -= round(overall_damage) // Healing is 65% more "expensive" even if you can still perform the full heal
+	if(ratio > 1)
+		ratio = 1
+		uses -= round(overall_damage)
+		H.visible_message(SPAN_WARNING("[H] is fully healed by [H == user ? "[H.p_their()]" : "[H]'s"] blood magic!"),
+			SPAN_CULTITALIC("You are fully healed by [H == user ? "your" : "[user]'s"] blood magic!"))
+	else
+		H.visible_message(SPAN_WARNING("[H] is partially healed by [H == user ? "[H.p_their()]" : "[H]'s"] blood magic."),
+			SPAN_CULTITALIC("You are partially healed by [H == user ? "your" : "[user]'s"] blood magic."))
+		uses = 0
+	ratio *= -1
+	H.adjustOxyLoss((overall_damage * ratio) * (H.getOxyLoss() / overall_damage), FALSE, null, TRUE)
+	H.adjustToxLoss((overall_damage * ratio) * (H.getToxLoss() / overall_damage), FALSE, null, TRUE)
+	H.adjustFireLoss((overall_damage * ratio) * (H.getFireLoss() / overall_damage), FALSE, null, TRUE)
+	H.adjustBruteLoss((overall_damage * ratio) * (H.getBruteLoss() / overall_damage), FALSE, null, TRUE)
+	H.updatehealth()
+	playsound(get_turf(H), 'sound/magic/staff_healing.ogg', 25, extrarange = SOUND_RANGE_SET(7))
+	new /obj/effect/temp_visual/cult/sparks(get_turf(H))
+	user.Beam(H, icon_state="sendbeam", time = 15)
+
+/obj/item/melee/blood_magic/manipulator/proc/heal_cultist(mob/living/carbon/human/user, mob/living/carbon/human/H)
+	if(H.stat == DEAD)
+		to_chat(user, SPAN_WARNING("Only a revive rune can bring back the dead!"))
+		return
+	var/charge_loss = uses
+	restore_blood(user, H)
+	heal_human_damage(user, H)
+	charge_loss = charge_loss - uses
+	if(!uses)
+		to_chat(user, SPAN_DANGER("You use the last of your charges to heal [H == user ? "yourself" : "[H]"], and the spell dissipates!"))
+	else
+		to_chat(user, SPAN_CULTITALIC("You use [charge_loss] charge\s, and have [uses] remaining."))
+
+/obj/item/melee/blood_magic/manipulator/proc/heal_construct(mob/living/carbon/human/user, mob/living/simple_animal/M)
+	if(uses == 0)
+		return
+	var/missing = M.maxHealth - M.health
+	if(!missing)
+		to_chat(user, SPAN_WARNING("[M] doesn't require healing!"))
+		return
+	if(uses > missing)
+		M.adjustHealth(-missing)
+		M.visible_message(SPAN_WARNING("[M] is fully healed by [user]'s blood magic!"),
+			SPAN_CULTITALIC("You are fully healed by [user]'s blood magic!"))
+		uses -= missing
+	else
+		M.adjustHealth(-uses)
+		M.visible_message(SPAN_WARNING("[M] is partially healed by [user]'s blood magic!"),
+			SPAN_CULTITALIC("You are partially healed by [user]'s blood magic."))
+		uses = 0
+	playsound(get_turf(M), 'sound/magic/staff_healing.ogg', 25, extrarange = SOUND_RANGE_SET(7))
+	user.Beam(M, icon_state = "sendbeam", time = 10)
+
+/obj/item/melee/blood_magic/manipulator/proc/steal_blood(mob/living/carbon/human/user, mob/living/carbon/human/H)
+	if(H.stat == DEAD)
+		to_chat(user, SPAN_WARNING("[H.p_their(TRUE)] blood has stopped flowing, you'll have to find another way to extract it."))
+		return
+	if(H.AmountCultSlurring())
+		to_chat(user, SPAN_DANGER("[H.p_their(TRUE)] blood has been tainted by an even stronger form of blood magic, it's no use to us like this!"))
+		return
+	if(!H.dna || (NO_BLOOD in H.dna.species.species_traits) || H.dna.species.exotic_blood != null)
+		to_chat(user, SPAN_WARNING("[H] does not have any usable blood!"))
+		return
+	if(H.blood_volume <= BLOOD_VOLUME_SAFE)
+		to_chat(user, SPAN_WARNING("[H] is missing too much blood - you cannot drain [H.p_them()] further!"))
+		return
+	H.blood_volume -= 100
+	uses += 50
+	user.Beam(H, icon_state = "drainbeam", time = 10)
+	playsound(get_turf(H), 'sound/misc/enter_blood.ogg', 50, extrarange = SOUND_RANGE_SET(7))
+	H.visible_message(SPAN_DANGER("[user] has drained some of [H]'s blood!"),
+					SPAN_USERDANGER("[user] has drained some of your blood!"))
+	to_chat(user, SPAN_CULTITALIC("Your blood rite gains 50 charges from draining [H]'s blood."))
+	new /obj/effect/temp_visual/cult/sparks(get_turf(H))
 
 // This should really be split into multiple procs
-/obj/item/melee/blood_magic/manipulator/afterattack(atom/target, mob/living/carbon/human/user, proximity)
+/obj/item/melee/blood_magic/manipulator/afterattack__legacy__attackchain(atom/target, mob/living/carbon/human/user, proximity)
 	if(user.holy_check())
 		return
-	if(proximity)
-		if(ishuman(target))
-			var/mob/living/carbon/human/H = target
+	if(!proximity)
+		return ..()
+	if(ishuman(target))
+		if(IS_CULTIST(target))
+			heal_cultist(user, target)
+			target.clean_blood()
+		else
+			steal_blood(user, target)
+		source.build_all_button_icons()
+		return
 
-			//Healing a cultist
-			if(iscultist(H))
-				var/charge_loss = uses // Before/after charge difference
-				if(H.stat == DEAD)
-					to_chat(user, "<span class='warning'>Only a revive rune can bring back the dead!</span>")
-					return
+	if(isconstruct(target))
+		heal_construct(user, target)
+		source.build_all_button_icons()
+		return
 
-				//Blood restoration
-				if(H.dna && !(NO_BLOOD in H.dna.species.species_traits) && H.dna.species.exotic_blood == null)
-					if(H.blood_volume < BLOOD_VOLUME_SAFE)
-						var/restore_blood = BLOOD_VOLUME_SAFE - H.blood_volume
-						if(uses * 2 < restore_blood)
-							H.blood_volume += uses * 2
-							to_chat(user, "<span class='danger'>You use the last of your charges to restore what blood you could, and the spell dissipates!</span>")
-							uses = 0
-							return ..()
-						else
-							H.blood_volume = BLOOD_VOLUME_SAFE
-							uses -= round(restore_blood / 2)
-							to_chat(user, "<span class='cult'>Your blood rites have restored [H == user ? "your" : "[H.p_their()]"] blood to safe levels!</span>")
-
-				//Damage healing
-				var/overall_damage = H.getBruteLoss() + H.getFireLoss() + H.getToxLoss() + H.getOxyLoss()
-				if(overall_damage == 0)
-					to_chat(user, "<span class='warning'>That cultist doesn't require healing!</span>")
-					return
-				else
-					var/ratio = uses / overall_damage
-					if(H == user)
-						to_chat(user, "<span class='warning'>Your blood healing is far less efficient when used on yourself!</span>")
-						ratio *= 0.35 // Healing is half as effective if you can't perform a full heal
-						uses -= round(overall_damage) // Healing is 65% more "expensive" even if you can still perform the full heal
-					if(ratio > 1)
-						ratio = 1
-						uses -= round(overall_damage)
-						H.visible_message("<span class='warning'>[H] is fully healed by [H == user ? "[H.p_their()]" : "[H]'s"] blood magic!</span>",
-						"<span class='cultitalic'>You are fully healed by [H == user ? "your" : "[user]'s"] blood magic!</span>")
-					else
-						H.visible_message("<span class='warning'>[H] is partially healed by [H == user ? "[H.p_their()]" : "[H]'s"] blood magic.</span>",
-						"<span class='cultitalic'>You are partially healed by [H == user ? "your" : "[user]'s"] blood magic.</span>")
-						uses = 0
-					ratio *= -1
-					H.adjustOxyLoss((overall_damage * ratio) * (H.getOxyLoss() / overall_damage), FALSE, null, TRUE)
-					H.adjustToxLoss((overall_damage * ratio) * (H.getToxLoss() / overall_damage), FALSE, null, TRUE)
-					H.adjustFireLoss((overall_damage * ratio) * (H.getFireLoss() / overall_damage), FALSE, null, TRUE)
-					H.adjustBruteLoss((overall_damage * ratio) * (H.getBruteLoss() / overall_damage), FALSE, null, TRUE)
-					H.updatehealth()
-					playsound(get_turf(H), 'sound/magic/staff_healing.ogg', 25)
-					new /obj/effect/temp_visual/cult/sparks(get_turf(H))
-					user.Beam(H, icon_state="sendbeam", time = 15)
-
-				charge_loss = charge_loss - uses
-				if(!uses)
-					to_chat(user, "<span class='danger'>You use the last of your charges to heal [H == user ? "yourself" : "[H]"], and the spell dissipates!</span>")
-				else
-					to_chat(user, "<span class='cultitalic'>You use [charge_loss] charge\s, and have [uses] remaining.</span>")
-
-			//Draining blood from non-cultists
-			else
-				if(H.stat == DEAD)
-					to_chat(user, "<span class='warning'>[H.p_their(TRUE)] blood has stopped flowing, you'll have to find another way to extract it.</span>")
-					return
-				if(H.AmountCultSlurring())
-					to_chat(user, "<span class='danger'>[H.p_their(TRUE)] blood has been tainted by an even stronger form of blood magic, it's no use to us like this!</span>")
-					return
-				if(H.dna && !(NO_BLOOD in H.dna.species.species_traits) && H.dna.species.exotic_blood == null)
-					if(H.blood_volume > BLOOD_VOLUME_SAFE)
-						H.blood_volume -= 100
-						uses += 50
-						user.Beam(H, icon_state = "drainbeam", time = 10)
-						playsound(get_turf(H), 'sound/misc/enter_blood.ogg', 50)
-						H.visible_message("<span class='danger'>[user] has drained some of [H]'s blood!</span>",
-										"<span class='userdanger'>[user] has drained some of your blood!</span>")
-						to_chat(user, "<span class='cultitalic'>Your blood rite gains 50 charges from draining [H]'s blood.</span>")
-						new /obj/effect/temp_visual/cult/sparks(get_turf(H))
-					else
-						to_chat(user, "<span class='warning'>[H] is missing too much blood - you cannot drain [H.p_them()] further!</span>")
-						return
-				else
-					to_chat(user, "<span class='warning'>[H] does not have any usable blood!</span>")
-					return
-
-		//Healing constructs
-		if(isconstruct(target))
-			var/mob/living/simple_animal/M = target
-			var/missing = M.maxHealth - M.health
-			if(missing)
-				if(uses > missing)
-					M.adjustHealth(-missing)
-					M.visible_message("<span class='warning'>[M] is fully healed by [user]'s blood magic!</span>",
-					"<span class='cultitalic'>You are fully healed by [user]'s blood magic!</span>")
-					uses -= missing
-				else
-					M.adjustHealth(-uses)
-					M.visible_message("<span class='warning'>[M] is partially healed by [user]'s blood magic!</span>",
-					"<span class='cultitalic'>You are partially healed by [user]'s blood magic.</span>")
-					uses = 0
-				playsound(get_turf(M), 'sound/magic/staff_healing.ogg', 25)
-				user.Beam(M, icon_state = "sendbeam", time = 10)
-
-		//Draining blood on the floor
-		if(istype(target, /obj/effect/decal/cleanable/blood) || istype(target, /obj/effect/decal/cleanable/trail_holder))
-			blood_draw(target, user)
-		if(istype(target, /obj/item/blood_orb))
-			var/obj/item/blood_orb/candidate = target
-			if(candidate.blood)
-				uses += candidate.blood
-				to_chat(user, "<span class='warning'>You obtain [candidate.blood] blood from the orb of blood!</span>")
-				playsound(user, 'sound/misc/enter_blood.ogg', 50)
-				qdel(candidate)
-
-		..()
+	if(istype(target, /obj/item/blood_orb))
+		var/obj/item/blood_orb/candidate = target
+		if(candidate.blood)
+			uses += candidate.blood
+			to_chat(user, SPAN_WARNING("You obtain [candidate.blood] blood from the orb of blood!"))
+			playsound(user, 'sound/misc/enter_blood.ogg', 50, extrarange = SOUND_RANGE_SET(7))
+			qdel(candidate)
+			source.build_all_button_icons()
+			return
+	blood_draw(target, user)
+	source.build_all_button_icons()
 
 /obj/item/melee/blood_magic/manipulator/proc/blood_draw(atom/target, mob/living/carbon/human/user)
 	var/temp = 0
 	var/turf/T = get_turf(target)
-	if(T)
-		for(var/obj/effect/decal/cleanable/blood/B in view(T, 2))
-			if(B.blood_state == BLOOD_STATE_HUMAN && (B.can_bloodcrawl_in() || istype(B, /obj/effect/decal/cleanable/blood/slime)))
-				if(B.bloodiness == 100) //Bonus for "pristine" bloodpools, also to prevent cheese with footprint spam
-					temp += 30
-				else
-					temp += max((B.bloodiness ** 2) / 800, 1)
-				new /obj/effect/temp_visual/cult/turf/open/floor(get_turf(B))
-				qdel(B)
-		for(var/obj/effect/decal/cleanable/trail_holder/TH in view(T, 2))
-			qdel(TH)
-		if(temp)
-			user.Beam(T, icon_state = "drainbeam", time = 15)
-			new /obj/effect/temp_visual/cult/sparks(get_turf(user))
-			playsound(T, 'sound/misc/enter_blood.ogg', 50)
-			temp = round(temp)
-			to_chat(user, "<span class='cultitalic'>Your blood rite has gained [temp] charge\s from blood sources around you!</span>")
-			uses += max(1, temp)
+	if(!T)
+		return
+	for(var/obj/effect/decal/cleanable/blood/B in range(T, 2))
+		if(B.blood_state == BLOOD_STATE_HUMAN && (B.can_bloodcrawl_in()))
+			if(B.bloodiness == 100) //Bonus for "pristine" bloodpools, also to prevent cheese with footprint spam
+				temp += 30
+			else
+				temp += max((B.bloodiness ** 2) / 800, 1)
+		new /obj/effect/temp_visual/cult/turf/open/floor(get_turf(B))
+		qdel(B)
+	for(var/obj/effect/decal/cleanable/trail_holder/TH in range(T, 2))
+		new /obj/effect/temp_visual/cult/turf/open/floor(get_turf(TH))
+		qdel(TH)
+	if(temp)
+		user.Beam(T, icon_state = "drainbeam", time = 15)
+		new /obj/effect/temp_visual/cult/sparks(get_turf(user))
+		playsound(T, 'sound/misc/enter_blood.ogg', 50, extrarange = SOUND_RANGE_SET(7))
+		temp = round(temp)
+		to_chat(user, SPAN_CULTITALIC("Your blood rite has gained [temp] charge\s from blood sources around you!"))
+		uses += max(1, temp)
 
-/obj/item/melee/blood_magic/manipulator/attack_self(mob/living/user)
+/obj/item/melee/blood_magic/manipulator/attack_self__legacy__attackchain(mob/living/user)
 	if(user.holy_check())
 		return
 	var/list/options = list("Blood Orb (50)" = image(icon = 'icons/obj/cult.dmi', icon_state = "summoning_orb"),
@@ -890,14 +950,14 @@
 	switch(choice)
 		if("Blood Orb (50)")
 			if(uses < BLOOD_ORB_COST)
-				to_chat(user, "<span class='warning'>You need [BLOOD_ORB_COST] charges to perform this rite.</span>")
+				to_chat(user, SPAN_WARNING("You need [BLOOD_ORB_COST] charges to perform this rite."))
 			else
 				var/ammount = input("How much blood would you like to transfer? You have [uses] blood.", "How much blood?", 50) as null|num
 				if(ammount < 50) // No 1 blood orbs, 50 or more.
-					to_chat(user, "<span class='warning'>You need to give up at least 50 blood.</span>")
+					to_chat(user, SPAN_WARNING("You need to give up at least 50 blood."))
 					return
 				if(ammount > uses) // No free blood either
-					to_chat(user, "<span class='warning'>You do not have that much blood to give!</span>")
+					to_chat(user, SPAN_WARNING("You do not have that much blood to give!"))
 					return
 				uses -= ammount
 				var/turf/T = get_turf(user)
@@ -905,45 +965,45 @@
 				var/obj/item/blood_orb/rite = new(T)
 				rite.blood = ammount
 				if(user.put_in_hands(rite))
-					to_chat(user, "<span class='cult'>A [rite.name] appears in your hand!</span>")
+					to_chat(user, SPAN_CULT("A [rite.name] appears in your hand!"))
 				else
-					user.visible_message("<span class='warning'>A [rite.name] appears at [user]'s feet!</span>",
-					"<span class='cult'>A [rite.name] materializes at your feet.</span>")
+					user.visible_message(SPAN_WARNING("A [rite.name] appears at [user]'s feet!"),
+					SPAN_CULT("A [rite.name] materializes at your feet."))
 
 		if("Blood Recharge (75)")
 			if(uses < BLOOD_RECHARGE_COST)
-				to_chat(user, "<span class='cultitalic'>You need [BLOOD_RECHARGE_COST] charges to perform this rite.</span>")
+				to_chat(user, SPAN_CULTITALIC("You need [BLOOD_RECHARGE_COST] charges to perform this rite."))
 			else
 				var/obj/rite = new /obj/item/melee/blood_magic/empower()
 				uses -= BLOOD_RECHARGE_COST
 				qdel(src)
 				if(user.put_in_hands(rite))
-					to_chat(user, "<span class='cult'>Your hand glows with power!</span>")
+					to_chat(user, SPAN_CULT("Your hand glows with power!"))
 				else
-					to_chat(user, "<span class='warning'>You need a free hand for this rite!</span>")
+					to_chat(user, SPAN_WARNING("You need a free hand for this rite!"))
 					uses += BLOOD_RECHARGE_COST // Refund the charges
 					qdel(rite)
 
 		if("Blood Spear (150)")
 			if(uses < BLOOD_SPEAR_COST)
-				to_chat(user, "<span class='warning'>You need [BLOOD_SPEAR_COST] charges to perform this rite.</span>")
+				to_chat(user, SPAN_WARNING("You need [BLOOD_SPEAR_COST] charges to perform this rite."))
 			else
 				uses -= BLOOD_SPEAR_COST
 				var/turf/T = get_turf(user)
 				qdel(src)
 				var/datum/action/innate/cult/spear/S = new(user)
-				var/obj/item/twohanded/cult_spear/rite = new(T)
+				var/obj/item/cult_spear/rite = new(T)
 				S.Grant(user, rite)
 				rite.spear_act = S
 				if(user.put_in_hands(rite))
-					to_chat(user, "<span class='cult'>A [rite.name] appears in your hand!</span>")
+					to_chat(user, SPAN_CULT("A [rite.name] appears in your hand!"))
 				else
-					user.visible_message("<span class='warning'>A [rite.name] appears at [user]'s feet!</span>",
-					"<span class='cult'>A [rite.name] materializes at your feet.</span>")
+					user.visible_message(SPAN_WARNING("A [rite.name] appears at [user]'s feet!"),
+					SPAN_CULT("A [rite.name] materializes at your feet."))
 
 		if("Blood Bolt Barrage (300)")
 			if(uses < BLOOD_BARRAGE_COST)
-				to_chat(user, "<span class='cultitalic'>You need [BLOOD_BARRAGE_COST] charges to perform this rite.</span>")
+				to_chat(user, SPAN_CULTITALIC("You need [BLOOD_BARRAGE_COST] charges to perform this rite."))
 			else
 				var/obj/rite = new /obj/item/gun/projectile/shotgun/boltaction/enchanted/arcane_barrage/blood()
 				uses -= BLOOD_BARRAGE_COST
@@ -951,8 +1011,9 @@
 				user.swap_hand()
 				user.drop_item()
 				if(user.put_in_hands(rite))
-					to_chat(user, "<span class='cult'>Both of your hands glow with power!</span>")
+					to_chat(user, SPAN_CULT("Both of your hands glow with power!"))
 				else
-					to_chat(user, "<span class='warning'>You need a free hand for this rite!</span>")
+					to_chat(user, SPAN_WARNING("You need a free hand for this rite!"))
 					uses += BLOOD_BARRAGE_COST // Refund the charges
 					qdel(rite)
+	source.build_all_button_icons()

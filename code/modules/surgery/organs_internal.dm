@@ -23,8 +23,6 @@
 		/datum/surgery_step/generic/cauterize
 	)
 	possible_locs = list(BODY_ZONE_CHEST, BODY_ZONE_HEAD)
-	requires_organic_bodypart = TRUE
-	requires_bodypart = TRUE
 
 /datum/surgery/organ_manipulation/soft
 	possible_locs = list(BODY_ZONE_PRECISE_GROIN, BODY_ZONE_PRECISE_EYES, BODY_ZONE_PRECISE_MOUTH)
@@ -46,23 +44,6 @@
 		/datum/surgery_step/proxy/manipulate_organs,
 		/datum/surgery_step/generic/cauterize
 	)
-	requires_organic_bodypart = TRUE
-
-/datum/surgery/organ_manipulation/alien
-	name = "Alien Organ Manipulation"
-	requires_bodypart = FALSE  // xenos just don't have "bodyparts"
-	possible_locs = list(BODY_ZONE_CHEST, BODY_ZONE_HEAD, BODY_ZONE_PRECISE_GROIN, BODY_ZONE_PRECISE_EYES, BODY_ZONE_PRECISE_MOUTH, BODY_ZONE_L_ARM, BODY_ZONE_R_ARM)
-	target_mobtypes = list(/mob/living/carbon/alien/humanoid)
-	steps = list(
-		/datum/surgery_step/saw_carapace,
-		/datum/surgery_step/cut_carapace,
-		/datum/surgery_step/retract_carapace,
-		/datum/surgery_step/proxy/manipulate_organs/alien,
-		/datum/surgery_step/generic/seal_carapace
-	)
-
-
-
 
 /datum/surgery/organ_manipulation/can_start(mob/user, mob/living/carbon/target)
 	. = ..()
@@ -92,7 +73,6 @@
 
 // Intermediate steps for branching organ manipulation.
 /datum/surgery/intermediate/manipulate
-	requires_bodypart = TRUE
 
 	possible_locs = list(BODY_ZONE_CHEST, BODY_ZONE_HEAD, BODY_ZONE_PRECISE_GROIN, BODY_ZONE_PRECISE_EYES, BODY_ZONE_PRECISE_MOUTH, BODY_ZONE_L_ARM, BODY_ZONE_R_ARM)
 
@@ -132,12 +112,6 @@
 	)
 
 // have to redefine all of these because xenos don't technically have bodyparts.
-/datum/surgery/intermediate/manipulate/extract/xeno
-	requires_bodypart = FALSE
-
-/datum/surgery/intermediate/manipulate/implant/xeno
-	requires_bodypart = FALSE
-
 /datum/surgery/intermediate/manipulate/mend/xeno
 	requires_bodypart = FALSE
 
@@ -147,10 +121,8 @@
 /datum/surgery_step/proxy/manipulate_organs/alien
 	name = "Manipulate Organs Xeno (proxy)"
 	branches = list(
-		/datum/surgery/intermediate/manipulate/extract/xeno,
-		/datum/surgery/intermediate/manipulate/implant/xeno,
 		/datum/surgery/intermediate/manipulate/mend/xeno,
-		/datum/surgery/intermediate/manipulate/clean/xeno
+		/datum/surgery/intermediate/manipulate/clean/xeno,
 	)
 
 // Internal surgeries.
@@ -182,6 +154,8 @@
 		/obj/item/stack/nanopaste = 100
 	)
 
+	preop_sound = 'sound/surgery/organ1.ogg'
+
 /datum/surgery_step/internal/manipulate_organs/mend/proc/get_tool_name(obj/item/tool)
 	var/tool_name = "[tool]"
 	if(istype(tool, /obj/item/stack/medical/bruise_pack))
@@ -197,7 +171,7 @@
 	var/tool_name = get_tool_name(tool)
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
 
-	if(!hasorgans(target))
+	if(!iscarbon(target))
 		to_chat(user, "They do not have organs to mend!")
 		// note that we want to return skip here so we can go "back" to the proxy step
 		return SURGERY_BEGINSTEP_SKIP
@@ -225,15 +199,14 @@
 		return SURGERY_BEGINSTEP_SKIP
 
 	if(affected)
-		var/mob/living/carbon/C = target
-		C.custom_pain("The pain in your [affected.name] is living hell!")
+		affected.custom_pain("The pain in your [affected.name] is living hell!")
 
 	return ..()
 
 /datum/surgery_step/internal/manipulate_organs/mend/end_step(mob/living/user, mob/living/carbon/human/target, target_zone, obj/item/tool, datum/surgery/surgery)
 	var/tool_name = get_tool_name(tool)
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
-	if(!hasorgans(target))
+	if(!iscarbon(target))
 		return SURGERY_STEP_INCOMPLETE
 
 	var/list/organs = get_organ_list(target_zone, target, affected)
@@ -244,27 +217,31 @@
 		if(I && I.damage)
 			if(!I.is_robotic() && !istype(tool, /obj/item/stack/nanopaste))
 				user.visible_message(
-					"<span class='notice'> [user] treats damage to [target]'s [I.name] with [tool_name].</span>",
-					"<span class='notice'> You treat damage to [target]'s [I.name] with [tool_name].</span>"
+					SPAN_NOTICE("[user] treats damage to [target]'s [I.name] with [tool_name]."),
+					SPAN_NOTICE("You treat damage to [target]'s [I.name] with [tool_name]."),
+					chat_message_type = MESSAGE_TYPE_COMBAT
 				)
-				I.damage = 0
+				I.heal_internal_damage(I.max_damage)
+
 			else if(I.is_robotic() && istype (tool, /obj/item/stack/nanopaste))
 				user.visible_message(
-					"<span class='notice'> [user] treats damage to [target]'s [I.name] with [tool_name].</span>",
-					"<span class='notice'> You treat damage to [target]'s [I.name] with [tool_name].</span>"
+					SPAN_NOTICE("[user] treats damage to [target]'s [I.name] with [tool_name]."),
+					SPAN_NOTICE("You treat damage to [target]'s [I.name] with [tool_name]."),
+					chat_message_type = MESSAGE_TYPE_COMBAT
 				)
-				I.damage = 0
+				I.rejuvenate()
 	return SURGERY_STEP_CONTINUE
 
 /datum/surgery_step/internal/manipulate_organs/mend/fail_step(mob/living/user, mob/living/carbon/human/target, target_zone, obj/item/tool, datum/surgery/surgery)
-	if(!hasorgans(target))
+	if(!iscarbon(target))
 		return SURGERY_STEP_INCOMPLETE
 
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
 
 	user.visible_message(
-		"<span class='warning'> [user]'s hand slips, getting messy and tearing the inside of [target]'s [parse_zone(target_zone)] with [tool]!</span>",
-		"<span class='warning'> Your hand slips, getting messy and tearing the inside of [target]'s [parse_zone(target_zone)] with [tool]!</span>"
+		SPAN_WARNING("[user]'s hand slips, getting messy and tearing the inside of [target]'s [parse_zone(target_zone)] with [tool]!"),
+		SPAN_WARNING("Your hand slips, getting messy and tearing the inside of [target]'s [parse_zone(target_zone)] with [tool]!"),
+		chat_message_type = MESSAGE_TYPE_COMBAT
 	)
 
 	var/dam_amt = 2
@@ -290,15 +267,18 @@
 	name = "extract organ"
 	allowed_tools = list(
 		TOOL_HEMOSTAT = 100,
+		/obj/item/wirecutters = 70,
 		/obj/item/kitchen/utensil/fork = 70
 	)
 
+	preop_sound = 'sound/surgery/organ1.ogg'
+	success_sound = 'sound/surgery/organ2.ogg'
 	var/obj/item/organ/internal/extracting = null
 
 /datum/surgery_step/internal/manipulate_organs/extract/begin_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
 	var/list/organs = target.get_organs_zone(target_zone)
 	if(!length(organs))
-		to_chat(user, "<span class='notice'>There are no removeable organs in [target]'s [parse_zone(target_zone)]!</span>")
+		to_chat(user, SPAN_NOTICE("There are no removable organs in [target]'s [parse_zone(target_zone)]!"))
 		return SURGERY_BEGINSTEP_SKIP
 
 	for(var/obj/item/organ/internal/O in organs)
@@ -308,19 +288,25 @@
 		organs -= O
 		organs[O.name] = O
 
-	var/obj/item/organ/internal/I = input("Remove which organ?", "Surgery", null, null) as null|anything in organs
+	var/obj/item/organ/internal/I = tgui_input_list(user, "Remove which organ?", "Surgery", organs)
 	if(I && user && target && user.Adjacent(target) && user.get_active_hand() == tool)
 		extracting = organs[I]
 		if(!extracting)
 			return SURGERY_BEGINSTEP_SKIP
+		if(extracting && extracting.owner)
+			var/obj/item/organ/external/affected = extracting.owner.get_organ(target_zone)
+			if(affected && affected.internal_organs)
+				if(istype(extracting, /obj/item/organ/internal/zombietumor))
+					src.time = 40 SECONDS
 		user.visible_message(
 			"[user] starts to separate [target]'s [I] with [tool].",
-			"You start to separate [target]'s [I] with [tool] for removal."
+			"You start to separate [target]'s [I] with [tool] for removal.",
+			chat_message_type = MESSAGE_TYPE_COMBAT
 		)
 		var/mob/living/carbon/human/H = target
 		var/obj/item/organ/affected = H.get_organ(user.zone_selected)
 		if(H && affected)
-			H.custom_pain("The pain in your [affected.name] is living hell!")
+			affected.custom_pain("The pain in your [affected.name] is living hell!")
 	else
 		return SURGERY_BEGINSTEP_SKIP
 
@@ -329,14 +315,16 @@
 /datum/surgery_step/internal/manipulate_organs/extract/end_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
 	if(!extracting || extracting.owner != target)
 		user.visible_message(
-			"<span class='notice'>[user] can't seem to extract anything from [target]'s [parse_zone(target_zone)]!</span>",
-			"<span class='notice'>You can't extract anything from [target]'s [parse_zone(target_zone)]!</span>"
+			SPAN_NOTICE("[user] can't seem to extract anything from [target]'s [parse_zone(target_zone)]!"),
+			SPAN_NOTICE("You can't extract anything from [target]'s [parse_zone(target_zone)]!"),
+			chat_message_type = MESSAGE_TYPE_COMBAT
 		)
 		return SURGERY_STEP_CONTINUE
 
 	user.visible_message(
-		"<span class='notice'> [user] has separated and extracts [target]'s [extracting] with [tool].</span>",
-		"<span class='notice'> You have separated and extracted [target]'s [extracting] with [tool].</span>"
+		SPAN_NOTICE("[user] has separated and extracts [target]'s [extracting] with [tool]."),
+		SPAN_NOTICE("You have separated and extracted [target]'s [extracting] with [tool]."),
+		chat_message_type = MESSAGE_TYPE_COMBAT
 	)
 
 	add_attack_logs(user, target, "Surgically removed [extracting.name]. INTENT: [uppertext(user.a_intent)]")
@@ -357,20 +345,23 @@
 		var/obj/item/organ/affected = H.get_organ(user.zone_selected)
 		if(affected)
 			user.visible_message(
-				"<span class='warning'> [user]'s hand slips, damaging [target]'s [affected.name] with [tool]!</span>",
-				"<span class='warning'> Your hand slips, damaging [target]'s [affected.name] with [tool]!</span>"
+				SPAN_WARNING("[user]'s hand slips, damaging [target]'s [affected.name] with [tool]!"),
+				SPAN_WARNING("Your hand slips, damaging [target]'s [affected.name] with [tool]!"),
+				chat_message_type = MESSAGE_TYPE_COMBAT
 			)
 			affected.receive_damage(20)
 		else
 			user.visible_message(
-				"<span class='warning'> [user]'s hand slips, damaging [target]'s [parse_zone(target_zone)] with [tool]!</span>",
-				"<span class='warning'> Your hand slips, damaging [target]'s [parse_zone(target_zone)] with [tool]!</span>"
+				SPAN_WARNING("[user]'s hand slips, damaging [target]'s [parse_zone(target_zone)] with [tool]!"),
+				SPAN_WARNING("Your hand slips, damaging [target]'s [parse_zone(target_zone)] with [tool]!"),
+				chat_message_type = MESSAGE_TYPE_COMBAT
 			)
 		return SURGERY_STEP_RETRY
 	else
 		user.visible_message(
 			"[user] can't seem to extract anything from [target]'s [parse_zone(target_zone)]!",
-			"<span class='notice'>You can't extract anything from [target]'s [parse_zone(target_zone)]!</span>"
+			SPAN_NOTICE("You can't extract anything from [target]'s [parse_zone(target_zone)]!"),
+			chat_message_type = MESSAGE_TYPE_COMBAT
 		)
 	return SURGERY_STEP_CONTINUE
 
@@ -378,12 +369,15 @@
 	name = "implant an organ"
 	allowed_tools = list(
 		/obj/item/organ/internal = 100,
-		/obj/item/reagent_containers/food/snacks/organ = 0  // there for the flavor text
+		/obj/item/food/organ = 0  // there for the flavor text
 	)
 
+	preop_sound = 'sound/surgery/organ2.ogg'
+	success_sound = 'sound/surgery/organ1.ogg'
+
 /datum/surgery_step/internal/manipulate_organs/implant/begin_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
-	if(istype(tool, /obj/item/reagent_containers/food/snacks/organ))
-		to_chat(user, "<span class='warning'>[tool] was bitten by someone! It's too damaged to use!</span>")
+	if(istype(tool, /obj/item/food/organ))
+		to_chat(user, SPAN_WARNING("[tool] was bitten by someone! It's too damaged to use!"))
 		return SURGERY_BEGINSTEP_SKIP
 
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
@@ -394,33 +388,43 @@
 		return SURGERY_BEGINSTEP_SKIP
 
 	if(I.requires_robotic_bodypart)
-		to_chat(user, "<span class='warning'>[I] is an organ that requires a robotic interface! [target]'s [parse_zone(target_zone)] does not have one.</span>")
+		to_chat(user, SPAN_WARNING("[I] is an organ that requires a robotic interface! [target]'s [parse_zone(target_zone)] does not have one."))
+		return SURGERY_BEGINSTEP_SKIP
+
+	if(I.requires_machine_person && !ismachineperson(target))
+		to_chat(user, SPAN_WARNING("[I] is an organ that requires an IPC interface! [target]'s [parse_zone(target_zone)] does not have one."))
+		return SURGERY_BEGINSTEP_SKIP
+
+	if(I.requires_golem_person && !isgolem(target))
+		to_chat(user, SPAN_WARNING("[I] requires a Golem body! [I] won't fit into [target]'s body."))
 		return SURGERY_BEGINSTEP_SKIP
 
 	if(target_zone != I.parent_organ || target.get_organ_slot(I.slot))
-		to_chat(user, "<span class='notice'>There is no room for [I] in [target]'s [parse_zone(target_zone)]!</span>")
+		to_chat(user, SPAN_NOTICE("There is no room for [I] in [target]'s [parse_zone(target_zone)]!"))
 		return SURGERY_BEGINSTEP_SKIP
 
 	if(I.damage > (I.max_damage * 0.75))
-		to_chat(user, "<span class='notice'> [I] is in no state to be transplanted.</span>")
-		return SURGERY_BEGINSTEP_SKIP
-
-	if(target.get_int_organ(I))
-		to_chat(user, "<span class='warning'> [target] already has [I].</span>")
+		to_chat(user, SPAN_NOTICE("[I] is in no state to be transplanted."))
 		return SURGERY_BEGINSTEP_SKIP
 
 	if(affected)
 		user.visible_message(
 			"[user] starts transplanting [tool] into [target]'s [affected.name].",
-			"You start transplanting [tool] into [target]'s [affected.name]."
+			"You start transplanting [tool] into [target]'s [affected.name].",
+			chat_message_type = MESSAGE_TYPE_COMBAT
 		)
-		var/mob/living/carbon/human/H = target
-		H.custom_pain("Someone's rooting around in your [affected.name]!")
+		affected.custom_pain("Someone's rooting around in your [affected.name]!")
 	else
 		user.visible_message(
 			"[user] starts transplanting [tool] into [target]'s [parse_zone(target_zone)].",
-			"You start transplanting [tool] into [target]'s [parse_zone(target_zone)]."
+			"You start transplanting [tool] into [target]'s [parse_zone(target_zone)].",
+			chat_message_type = MESSAGE_TYPE_COMBAT
 		)
+	if(I.warning)
+		if(tgui_alert(user, "This is a permanent action, guaranteeing this person will be removed from the round. Are you sure?", "Insert [I]", list("Yes", "No")) != "Yes")
+			return
+		log_admin("[key_name(user)] has inserted a [I] into [key_name(target)]!")
+		log_attack(user, target, "Inserted [I]")
 	return ..()
 
 /datum/surgery_step/internal/manipulate_organs/implant/end_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
@@ -429,27 +433,37 @@
 	if(!istype(tool))
 		return SURGERY_STEP_INCOMPLETE
 	if(I.requires_robotic_bodypart)
-		to_chat(user, "<span class='warning'>[I] is an organ that requires a robotic interface[target].</span>")
+		to_chat(user, SPAN_WARNING("[I] requires a robotic interface."))
+		return SURGERY_STEP_INCOMPLETE
+	if(I.requires_machine_person && !ismachineperson(target))
+		to_chat(user, SPAN_WARNING("[I] requires an IPC interface!"))
+		return SURGERY_STEP_INCOMPLETE
+	if(I.requires_golem_person && !isgolem(target))
+		to_chat(user, SPAN_WARNING("[I] requires a Golem body! [I] won't fit into [target]'s body."))
 		return SURGERY_STEP_INCOMPLETE
 	if(!user.drop_item())
-		to_chat(user, "<span class='warning'>[I] is stuck to your hand, you can't put it in [target]!</span>")
+		to_chat(user, SPAN_WARNING("[I] is stuck to your hand, you can't put it in [target]!"))
 		return SURGERY_STEP_INCOMPLETE
+	SSblackbox.record_feedback("tally", "o_implant_organic", 1, "[I.type]")
 	I.insert(target)
 	spread_germs_to_organ(I, user, tool)
 
 	if(affected)
-		user.visible_message("<span class='notice'> [user] has transplanted [tool] into [target]'s [affected.name].</span>",
-		"<span class='notice'> You have transplanted [tool] into [target]'s [affected.name].</span>")
+		user.visible_message(SPAN_NOTICE("[user] has transplanted [tool] into [target]'s [affected.name]."),
+		SPAN_NOTICE("You have transplanted [tool] into [target]'s [affected.name]."),
+		chat_message_type = MESSAGE_TYPE_COMBAT)
 	else
-		user.visible_message("<span class='notice'> [user] has transplanted [tool] into [target]'s [parse_zone(target_zone)].</span>",
-		"<span class='notice'> You have transplanted [tool] into [target]'s [parse_zone(target_zone)].</span>")
+		user.visible_message(SPAN_NOTICE("[user] has transplanted [tool] into [target]'s [parse_zone(target_zone)]."),
+		SPAN_NOTICE("You have transplanted [tool] into [target]'s [parse_zone(target_zone)]."),
+		chat_message_type = MESSAGE_TYPE_COMBAT)
 
 	return SURGERY_STEP_CONTINUE
 
 /datum/surgery_step/internal/manipulate_organs/implant/fail_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
 	user.visible_message(
-		"<span class='warning'>[user]'s hand slips, damaging [tool]!</span>",
-		"<span class='warning'>Your hand slips, damaging [tool]!</span>"
+		SPAN_WARNING("[user]'s hand slips, damaging [tool]!"),
+		SPAN_WARNING("Your hand slips, damaging [tool]!"),
+		chat_message_type = MESSAGE_TYPE_COMBAT
 	)
 	var/obj/item/organ/internal/I = tool
 	if(istype(I) && !I.tough)
@@ -464,8 +478,8 @@
 		/obj/item/reagent_containers/dropper = 100,
 		/obj/item/reagent_containers/syringe = 100,
 		/obj/item/reagent_containers/glass/bottle = 90,
-		/obj/item/reagent_containers/food/drinks/drinkingglass = 85,
-		/obj/item/reagent_containers/food/drinks/bottle = 80,
+		/obj/item/reagent_containers/drinks/drinkingglass = 85,
+		/obj/item/reagent_containers/drinks/bottle = 80,
 		/obj/item/reagent_containers/glass/beaker = 75,
 		/obj/item/reagent_containers/spray = 60,
 		/obj/item/reagent_containers/glass/bucket = 50
@@ -495,12 +509,12 @@
 			msg = "[user] begins injecting [tool] into [target]'s [I.name]."
 			self_msg = "You begin injecting [tool] into [target]'s [I.name]."
 		user.visible_message(msg, self_msg)
-		target.custom_pain("Something burns horribly in your [parse_zone(target_zone)]!")
+		affected.custom_pain("Something burns horribly in your [parse_zone(target_zone)]!")
 
 	return ..()
 
 /datum/surgery_step/internal/manipulate_organs/clean/end_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
-	if(!hasorgans(target))
+	if(!iscarbon(target))
 		return SURGERY_STEP_INCOMPLETE
 	if(!istype(tool, /obj/item/reagent_containers))
 		return SURGERY_STEP_INCOMPLETE
@@ -531,7 +545,7 @@
 			to_chat(user, "[I] does not appear to need chemical treatment.")
 			continue
 		if(!spaceacillin && !ethanol && !mito_tot)
-			to_chat(user, "<span class='warning'>[C] doesn't have anything in it that would be worth applying!</span>")
+			to_chat(user, SPAN_WARNING("[C] doesn't have anything in it that would be worth applying!"))
 			break
 		var/success = FALSE
 		if(I.germ_level >= INFECTION_LEVEL_ONE / 2)
@@ -544,7 +558,7 @@
 				success = TRUE // we actually injected some chemicals
 
 			else if(!(I.status & ORGAN_DEAD)) // Not dead and got nothing to disinfect the organ with. Don't waste the other chems
-				to_chat(user, "<span class='warning'>[I] does appear mildly infected but [C] does not seem to contain disinfectants. You decide to not inject the chemicals into [I].</span>")
+				to_chat(user, SPAN_WARNING("[I] does appear mildly infected but [C] does not seem to contain disinfectants. You decide to not inject the chemicals into [I]."))
 				continue
 
 		var/mito_trans
@@ -552,20 +566,22 @@
 			mito_trans = min(mito_tot, C.amount_per_transfer_from_this / length(R.reagent_list)) // How much mito is actually transfered
 			success = TRUE
 		if(!success)
-			to_chat(user, "<span class='warning'>[C] does not seem to have the chemicals needed to clean [I]. You decide against wasting chemicals.</span>")
+			to_chat(user, SPAN_WARNING("[C] does not seem to have the chemicals needed to clean [I]. You decide against wasting chemicals."))
 			continue
 
 		// now try actually injecting.
 
 		if(istype(C, /obj/item/reagent_containers/syringe))
 			user.visible_message(
-				"<span class='notice'> [user] has injected [tool] into [target]'s [I.name].</span>",
-				"<span class='notice'> You have injected [tool] into [target]'s [I.name].</span>"
+				SPAN_NOTICE("[user] has injected [tool] into [target]'s [I.name]."),
+				SPAN_NOTICE("You have injected [tool] into [target]'s [I.name]."),
+				chat_message_type = MESSAGE_TYPE_COMBAT
 			)
 		else
 			user.visible_message(
-				"<span class='notice'> [user] has poured some of [tool] over [target]'s [I.name].</span>",
-				"<span class='notice'> You have poured some of [tool] over [target]'s [I.name].</span>"
+				SPAN_NOTICE("[user] has poured some of [tool] over [target]'s [I.name]."),
+				SPAN_NOTICE("You have poured some of [tool] over [target]'s [I.name]."),
+				chat_message_type = MESSAGE_TYPE_COMBAT
 			)
 
 		R.reaction(target, REAGENT_INGEST, R.total_volume / C.amount_per_transfer_from_this)
@@ -577,9 +593,9 @@
 				continue
 			if(mito_trans >= MITO_REVIVAL_COST)
 				I.rejuvenate() // Just like splashing it onto it
-				user.visible_message("<span class='warning'>\The [I] seems to regain its lively luster!</span>")
+				user.visible_message(SPAN_WARNING("\The [I] seems to regain its lively luster!"))
 			else
-				to_chat(user, "<span class='warning'>[I] does not seem to respond to the amount of mitocholide inside the injection. Try injecting more next time.</span>")
+				to_chat(user, SPAN_WARNING("[I] does not seem to respond to the amount of mitocholide inside the injection. Try injecting more next time."))
 
 	return SURGERY_STEP_CONTINUE
 
@@ -605,8 +621,9 @@
 	R.reaction(target, REAGENT_INGEST)
 
 	user.visible_message(
-		"<span class='warning'> [user]'s hand slips, splashing the contents of [tool] all over [target][affected ? "'s [affected.name]" : ""] incision!</span>",
-		"<span class='warning'> Your hand slips, splashing the contents of [tool] all over [target][affected ? "'s [affected.name]" : ""] incision!</span>"
+		SPAN_WARNING("[user]'s hand slips, splashing the contents of [tool] all over [target][affected ? "'s [affected.name]" : ""] incision!"),
+		SPAN_WARNING("Your hand slips, splashing the contents of [tool] all over [target][affected ? "'s [affected.name]" : ""] incision!"),
+		chat_message_type = MESSAGE_TYPE_COMBAT
 	)
 	// continue here since we want to keep moving in the surgery
 	return SURGERY_STEP_CONTINUE
@@ -620,20 +637,24 @@
 		TOOL_CROWBAR = 90
 	)
 
+	preop_sound = 'sound/surgery/retractor1.ogg'
+	success_sound = 'sound/surgery/retractor2.ogg'
+
 /datum/surgery_step/internal/manipulate_organs/finish/begin_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
 	var/mob/living/carbon/human/H = target
 	var/obj/item/organ/external/affected = target.get_organ(target_zone)
+	var/msg
+	var/self_msg
 	if(affected && affected.encased)
-		var/msg = "[user] starts bending [target]'s [affected.encased] back into place with [tool]."
-		var/self_msg = "You start bending [target]'s [affected.encased] back into place with [tool]."
-		user.visible_message(msg, self_msg)
+		msg = "[user] starts bending [target]'s [affected.encased] back into place with [tool]."
+		self_msg = "You start bending [target]'s [affected.encased] back into place with [tool]."
 	else
-		var/msg = "[user] starts pulling [target]'s skin back into place with [tool]."
-		var/self_msg = "You start pulling [target]'s skin back into place with [tool]."
-		user.visible_message(msg, self_msg)
+		msg = "[user] starts pulling [target]'s skin back into place with [tool]."
+		self_msg = "You start pulling [target]'s skin back into place with [tool]."
+	user.visible_message(msg, self_msg, chat_message_type = MESSAGE_TYPE_COMBAT)
 
 	if(H && affected)
-		H.custom_pain("Something hurts horribly in your [affected.name]!")
+		affected.custom_pain("Something hurts horribly in your [affected.name]!")
 
 	return ..()
 
@@ -642,14 +663,14 @@
 	var/msg
 	var/self_msg
 	if(affected && affected.encased)
-		msg = "<span class='notice'>[user] bends [target]'s [affected.encased] back into place with [tool].</span>"
-		self_msg = "<span class='notice'> You bend [target]'s [affected.encased] back into place with [tool].</span>"
+		msg = SPAN_NOTICE("[user] bends [target]'s [affected.encased] back into place with [tool].")
+		self_msg = SPAN_NOTICE("You bend [target]'s [affected.encased] back into place with [tool].")
 		affected.open = ORGAN_ORGANIC_ENCASED_OPEN
 	else
-		msg = "<span class='notice'>[user] pulls [target]'s flesh back into place with [tool].</span>"
-		self_msg = "<span class='notice'>You pull [target]'s flesh back into place with [tool].</span>"
+		msg = SPAN_NOTICE("[user] pulls [target]'s flesh back into place with [tool].")
+		self_msg = SPAN_NOTICE("You pull [target]'s flesh back into place with [tool].")
 
-	user.visible_message(msg, self_msg)
+	user.visible_message(msg, self_msg, chat_message_type = MESSAGE_TYPE_COMBAT)
 	return SURGERY_STEP_CONTINUE
 
 /datum/surgery_step/internal/manipulate_organs/finish/fail_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
@@ -657,15 +678,15 @@
 	var/msg
 	var/self_msg
 	if(affected && affected.encased)
-		msg = "<span class='warning'> [user]'s hand slips, bending [target]'s [affected.encased] the wrong way!</span>"
-		self_msg = "<span class='warning'> Your hand slips, bending [target]'s [affected.encased] the wrong way!</span>"
+		msg = SPAN_WARNING("[user]'s hand slips, bending [target]'s [affected.encased] the wrong way!")
+		self_msg = SPAN_WARNING("Your hand slips, bending [target]'s [affected.encased] the wrong way!")
 		affected.fracture()
 	else
-		msg = "<span class='warning'> [user]'s hand slips, tearing the skin!</span>"
-		self_msg = "<span class='warning'> Your hand slips, tearing skin!</span>"
+		msg = SPAN_WARNING("[user]'s hand slips, tearing the skin!")
+		self_msg = SPAN_WARNING("Your hand slips, tearing skin!")
 	if(affected)
 		affected.receive_damage(20)
-	user.visible_message(msg, self_msg)
+	user.visible_message(msg, self_msg, chat_message_type = MESSAGE_TYPE_COMBAT)
 	return SURGERY_STEP_RETRY
 
 //////////////////////////////////////////////////////////////////
@@ -677,9 +698,19 @@
 	allowed_tools = list(
 		TOOL_SAW = 100,
 		/obj/item/melee/energy/sword/cyborg/saw = 100,
-		/obj/item/hatchet = 90
+		/obj/item/hatchet = 90,
+		/obj/item/chainsaw = 90,
+		TOOL_WIRECUTTER = 35
 	)
 
+	preop_sound = list(
+		TOOL_SAW = 'sound/surgery/saw.ogg',
+		/obj/item/hatchet = 'sound/surgery/scalpel1.ogg',
+		/obj/item/chainsaw = 'sound/weapons/chainsaw.ogg',
+		TOOL_WIRECUTTER = 'sound/surgery/scalpel1.ogg'
+	)
+
+	success_sound = 'sound/surgery/organ2.ogg'
 	time = 5.4 SECONDS
 
 
@@ -694,16 +725,16 @@
 /datum/surgery_step/saw_carapace/end_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
 
 	user.visible_message(
-		"<span class='notice'> [user] has cut [target]'s [target_zone] open with [tool].</span>",
-		"<span class='notice'> You have cut [target]'s [target_zone] open with [tool].</span>"
+		SPAN_NOTICE("[user] has cut [target]'s [target_zone] open with [tool]."),
+		SPAN_NOTICE("You have cut [target]'s [target_zone] open with [tool].")
 	)
 	return SURGERY_STEP_CONTINUE
 
 /datum/surgery_step/saw_carapace/fail_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
 
 	user.visible_message(
-		"<span class='warning'> [user]'s hand slips, cracking [target]'s [target_zone] with [tool]!</span>",
-		"<span class='warning'> Your hand slips, cracking [target]'s [target_zone] with [tool]!</span>"
+		SPAN_WARNING("[user]'s hand slips, cracking [target]'s [target_zone] with [tool]!"),
+		SPAN_WARNING("Your hand slips, cracking [target]'s [target_zone] with [tool]!")
 	)
 	return SURGERY_STEP_RETRY
 
@@ -712,35 +743,43 @@
 	allowed_tools = list(
 		TOOL_SCALPEL = 100,
 		/obj/item/kitchen/knife = 90,
+		/obj/item/kitchen/knife/shiv = 70,
 		/obj/item/shard = 60,
+		TOOL_WIRECUTTER = 35,
 		/obj/item/scissors = 12,
-		/obj/item/twohanded/chainsaw = 1,
 		/obj/item/claymore = 6,
 		/obj/item/melee/energy = 6,
-		/obj/item/pen/edagger = 6
+		/obj/item/pen/edagger = 6,
+		/obj/item/chainsaw = 1,
 	)
 
+	preop_sound = 'sound/surgery/scalpel1.ogg'
+	success_sound = 'sound/surgery/scalpel2.ogg'
+	failure_sound = 'sound/surgery/organ2.ogg'
 	time = 1.6 SECONDS
 
 /datum/surgery_step/cut_carapace/begin_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
 
 	user.visible_message("[user] starts the incision on [target]'s [target_zone] with [tool].", \
-	"You start the incision on [target]'s [target_zone] with [tool].")
+	"You start the incision on [target]'s [target_zone] with [tool].",
+	chat_message_type = MESSAGE_TYPE_COMBAT)
 	return ..()
 
 /datum/surgery_step/cut_carapace/end_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
 
 	user.visible_message(
-		"<span class='notice'> [user] has made an incision on [target]'s [target_zone] with [tool].</span>",
-		"<span class='notice'> You have made an incision on [target]'s [target_zone] with [tool].</span>"
+		SPAN_NOTICE("[user] has made an incision on [target]'s [target_zone] with [tool]."),
+		SPAN_NOTICE("You have made an incision on [target]'s [target_zone] with [tool]."),
+		chat_message_type = MESSAGE_TYPE_COMBAT
 	)
 	return SURGERY_STEP_CONTINUE
 
 /datum/surgery_step/cut_carapace/fail_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
 
 	user.visible_message(
-		"<span class='warning'>[user]'s hand slips, slicing open [target]'s [target_zone] in a wrong spot with [tool]!</span>",
-		"<span class='warning'>Your hand slips, slicing open [target]'s [target_zone] in a wrong spot with [tool]!</span>"
+		SPAN_WARNING("[user]'s hand slips, slicing open [target]'s [target_zone] in a wrong spot with [tool]!"),
+		SPAN_WARNING("Your hand slips, slicing open [target]'s [target_zone] in a wrong spot with [tool]!"),
+		chat_message_type = MESSAGE_TYPE_COMBAT
 	)
 	return SURGERY_STEP_RETRY
 
@@ -754,6 +793,8 @@
 		/obj/item/kitchen/utensil/fork = 60
 	)
 
+	preop_sound = 'sound/surgery/retractor1.ogg'
+	success_sound = 'sound/surgery/retractor2.ogg'
 	time = 2.4 SECONDS
 
 /datum/surgery_step/retract_carapace/begin_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
@@ -765,31 +806,31 @@
 	if(target_zone == BODY_ZONE_PRECISE_GROIN)
 		msg = "[user] starts to pry open the incision and rearrange the organs in [target]'s lower abdomen with [tool]."
 		self_msg = "You start to pry open the incision and rearrange the organs in [target]'s lower abdomen with [tool]."
-	user.visible_message(msg, self_msg)
+	user.visible_message(msg, self_msg, chat_message_type = MESSAGE_TYPE_COMBAT)
 	return ..()
 
 /datum/surgery_step/retract_carapace/end_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
-	var/msg = "<span class='notice'> [user] keeps the incision open on [target]'s [target_zone] with [tool].</span>"
-	var/self_msg = "<span class='notice'> You keep the incision open on [target]'s [target_zone] with [tool].</span>"
+	var/msg = SPAN_NOTICE("[user] keeps the incision open on [target]'s [target_zone] with [tool].")
+	var/self_msg = SPAN_NOTICE("You keep the incision open on [target]'s [target_zone] with [tool].")
 	if(target_zone == BODY_ZONE_CHEST)
-		msg = "<span class='notice'> [user] keeps the ribcage open on [target]'s torso with [tool].</span>"
-		self_msg = "<span class='notice'> You keep the ribcage open on [target]'s torso with [tool].</span>"
+		msg = SPAN_NOTICE("[user] keeps the ribcage open on [target]'s torso with [tool].")
+		self_msg = SPAN_NOTICE("You keep the ribcage open on [target]'s torso with [tool].")
 	if(target_zone == BODY_ZONE_PRECISE_GROIN)
-		msg = "<span class='notice'> [user] keeps the incision open on [target]'s lower abdomen with [tool].</span>"
-		self_msg = "<span class='notice'> You keep the incision open on [target]'s lower abdomen with [tool].</span>"
-	user.visible_message(msg, self_msg)
+		msg = SPAN_NOTICE("[user] keeps the incision open on [target]'s lower abdomen with [tool].")
+		self_msg = SPAN_NOTICE("You keep the incision open on [target]'s lower abdomen with [tool].")
+	user.visible_message(msg, self_msg, chat_message_type = MESSAGE_TYPE_COMBAT)
 	return SURGERY_STEP_CONTINUE
 
 /datum/surgery_step/generic/retract_carapace/fail_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
-	var/msg = "<span class='warning'> [user]'s hand slips, tearing the edges of incision on [target]'s [target_zone] with [tool]!</span>"
-	var/self_msg = "<span class='warning'> Your hand slips, tearing the edges of incision on [target]'s [target_zone] with [tool]!</span>"
+	var/msg = SPAN_WARNING("[user]'s hand slips, tearing the edges of incision on [target]'s [target_zone] with [tool]!")
+	var/self_msg = SPAN_WARNING("Your hand slips, tearing the edges of incision on [target]'s [target_zone] with [tool]!")
 	if(target_zone == BODY_ZONE_CHEST)
-		msg = "<span class='warning'> [user]'s hand slips, damaging several organs in [target]'s torso with [tool]!</span>"
-		self_msg = "<span class='warning'> Your hand slips, damaging several organs in [target]'s torso with [tool]!</span>"
+		msg = SPAN_WARNING("[user]'s hand slips, damaging several organs in [target]'s torso with [tool]!")
+		self_msg = SPAN_WARNING("Your hand slips, damaging several organs in [target]'s torso with [tool]!")
 	if(target_zone == BODY_ZONE_PRECISE_GROIN)
-		msg = "<span class='warning'> [user]'s hand slips, damaging several organs in [target]'s lower abdomen with [tool]</span>"
-		self_msg = "<span class='warning'> Your hand slips, damaging several organs in [target]'s lower abdomen with [tool]!</span>"
-	user.visible_message(msg, self_msg)
+		msg = SPAN_WARNING("[user]'s hand slips, damaging several organs in [target]'s lower abdomen with [tool]")
+		self_msg = SPAN_WARNING("Your hand slips, damaging several organs in [target]'s lower abdomen with [tool]!")
+	user.visible_message(msg, self_msg, chat_message_type = MESSAGE_TYPE_COMBAT)
 	return SURGERY_STEP_RETRY
 
 // redefine cauterize for every step because of course it relies on get_organ()
@@ -801,9 +842,13 @@
 		TOOL_CAUTERY = 100,
 		/obj/item/clothing/mask/cigarette = 90,
 		/obj/item/lighter = 60,
-		TOOL_WELDER = 30
+		TOOL_WELDER = 30,
+		/obj/item/flamethrower = 1
 	)
 
+	preop_sound = 'sound/surgery/cautery1.ogg'
+	success_sound = 'sound/surgery/cautery2.ogg'
+	failure_sound = 'sound/items/welder.ogg'
 	time = 2.4 SECONDS
 
 /datum/surgery_step/generic/seal_carapace/proc/zone_name(target_zone)
@@ -820,27 +865,32 @@
 	var/zone = zone_name(target_zone)
 	user.visible_message(
 		"[user] is beginning to cauterize the incision on [target]'s [zone] with \the [tool].",
-		"You are beginning to cauterize the incision on [target]'s [zone] with \the [tool]."
+		"You are beginning to cauterize the incision on [target]'s [zone] with \the [tool].",
+		chat_message_type = MESSAGE_TYPE_COMBAT
 	)
-	target.custom_pain("Your [zone] is being burned!")
+	to_chat(user, SPAN_USERDANGER("Your [zone] is being burned!")) // No custom pain because xenos are special
 	return ..()
 
 /datum/surgery_step/generic/seal_carapace/end_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
 	var/zone = zone_name(target_zone)
 	user.visible_message(
-		"<span class='notice'>[user] cauterizes the incision on [target]'s [zone] with \the [tool].</span>",
-		"<span class='notice'>You cauterize the incision on [target]'s [zone] with \the [tool].</span>"
+		SPAN_NOTICE("[user] cauterizes the incision on [target]'s [zone] with \the [tool]."),
+		SPAN_NOTICE("You cauterize the incision on [target]'s [zone] with \the [tool]."),
+		chat_message_type = MESSAGE_TYPE_COMBAT
 	)
 	return SURGERY_STEP_CONTINUE
 
 /datum/surgery_step/generic/seal_carapace/fail_step(mob/living/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
 	var/zone = zone_name(target_zone)
 	user.visible_message(
-		"<span class='warning'>[user]'s hand slips, leaving a small burn on [target]'s [zone] with \the [tool]!</span>",
-		"<span class='warning'>Your hand slips, leaving a small burn on [target]'s [zone] with \the [tool]!</span>"
+		SPAN_WARNING("[user]'s hand slips, leaving a small burn on [target]'s [zone] with \the [tool]!"),
+		SPAN_WARNING("Your hand slips, leaving a small burn on [target]'s [zone] with \the [tool]!"),
+		chat_message_type = MESSAGE_TYPE_COMBAT
 	)
 	target.apply_damage(3, BURN, target_zone)
 	return SURGERY_STEP_RETRY
 
 
 #undef MITO_REVIVAL_COST
+
+#undef GHETTO_DISINFECT_AMOUNT

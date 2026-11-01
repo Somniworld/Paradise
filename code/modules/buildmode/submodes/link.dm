@@ -27,10 +27,10 @@
 	..()
 
 /datum/buildmode_mode/link/show_help(mob/user)
-	to_chat(user, "<span class='notice'>***********************************************************</span>")
-	to_chat(user, "<span class='notice'>Left Mouse Button on obj  = Select button to link</span>")
-	to_chat(user, "<span class='notice'>Right Mouse Button on obj = Link/unlink to selected button")
-	to_chat(user, "<span class='notice'>***********************************************************</span>")
+	to_chat(user, SPAN_NOTICE("***********************************************************"))
+	to_chat(user, SPAN_NOTICE("Left Mouse Button on obj  = Select button to link"))
+	to_chat(user, SPAN_NOTICE("Right Mouse Button on obj = Link/unlink to selected button"))
+	to_chat(user, SPAN_NOTICE("***********************************************************"))
 
 // FIXME: this probably would work better with something component-based
 /datum/buildmode_mode/link/handle_click(mob/user, params, obj/object)
@@ -54,7 +54,7 @@
 				speed_execute()
 				return
 			if(!M.normaldoorcontrol)
-				if(link_lines.len && alert(user, "Warning: This will disable links to connected pod doors. Continue?", "Buildmode", "Yes", "No") == "No")
+				if(length(link_lines) && alert(user, "Warning: This will disable links to connected pod doors. Continue?", "Buildmode", "Yes", "No") == "No")
 					speed_execute()
 					return
 				M.normaldoorcontrol = TRUE
@@ -76,7 +76,7 @@
 				speed_execute()
 				return
 			if(M.normaldoorcontrol)
-				if(link_lines.len && alert(user, "Warning: This will disable links to connected airlocks. Continue?", "Buildmode", "Yes", "No") == "No")
+				if(length(link_lines) && alert(user, "Warning: This will disable links to connected airlocks. Continue?", "Buildmode", "Yes", "No") == "No")
 					speed_execute()
 					return
 				M.normaldoorcontrol = FALSE

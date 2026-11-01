@@ -29,17 +29,40 @@
 	var/list/product_list = list()
 	/// The [/datum/design]'s categories which can be produced by this machine and can be uploaded via a disk.
 	var/static/list/categories = list("Food", "Botany Chemicals", "Organic Materials", "Leather and Cloth")
+	var/static/list/acceptable_items = typecacheof(list(
+		/obj/item/seeds,
+		/obj/item/unsorted_seeds,
+		/obj/item/food/grown,
+		/obj/item/grown,
+		/obj/item/food/grown/ash_flora,
+		/obj/item/food/honeycomb))
 
 /obj/machinery/biogenerator/Initialize(mapload)
 	. = ..()
 	files = new(src)
+	initialize_parts()
+	RefreshParts()
+
+/obj/machinery/biogenerator/proc/initialize_parts()
 	component_parts = list()
 	component_parts += new /obj/item/circuitboard/biogenerator(null)
 	component_parts += new /obj/item/stock_parts/matter_bin(null)
 	component_parts += new /obj/item/stock_parts/manipulator(null)
 	component_parts += new /obj/item/stack/sheet/glass(null)
 	component_parts += new /obj/item/stack/cable_coil(null, 1)
-	RefreshParts()
+
+/obj/machinery/biogenerator/loaded/Initialize(mapload)
+	. = ..()
+	container = new /obj/item/reagent_containers/glass/bucket(null)
+	update_icon(UPDATE_ICON_STATE)
+
+/obj/machinery/biogenerator/loaded/upgraded/initialize_parts()
+	component_parts = list()
+	component_parts += new /obj/item/circuitboard/biogenerator(null)
+	component_parts += new /obj/item/stock_parts/matter_bin/bluespace(null)
+	component_parts += new /obj/item/stock_parts/manipulator/femto(null)
+	component_parts += new /obj/item/stack/sheet/glass(null)
+	component_parts += new /obj/item/stack/cable_coil(null, 1)
 
 /obj/machinery/biogenerator/Destroy()
 	QDEL_NULL(container)
@@ -95,86 +118,95 @@
 /obj/machinery/biogenerator/crowbar_act(mob/living/user, obj/item/I)
 	return default_deconstruction_crowbar(user, I)
 
-/obj/machinery/biogenerator/attackby(obj/item/O, mob/user, params)
+/obj/machinery/biogenerator/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	// TODO: This feels off, no where else do we have a blanket "print a
+	// message for any other kind of item interaction attempt" that's keyed to intent
+	// See if this can be made more sensible after everything's been migrated
+	// to the new attack chain
 	if(user.a_intent == INTENT_HARM)
 		return ..()
+
+	if(istype(used, /obj/item/storage/part_replacer))
+		return ..()
+
 	if(processing)
-		to_chat(user, "<span class='warning'>[src] is currently processing.</span>")
-		return
-	if(exchange_parts(user, O))
-		return
+		to_chat(user, SPAN_WARNING("[src] is currently processing."))
+		return ITEM_INTERACT_COMPLETE
 
-	if(istype(O, /obj/item/reagent_containers/glass))
+	if(istype(used, /obj/item/reagent_containers/glass))
 		if(panel_open)
-			to_chat(user, "<span class='warning'>Close the maintenance panel first.</span>")
-			return
-		if(container)
-			to_chat(user, "<span class='warning'>A container is already loaded into [src].</span>")
-			return
-		if(!user.drop_item())
-			return
+			to_chat(user, SPAN_WARNING("Close the maintenance panel first."))
+			return ITEM_INTERACT_COMPLETE
 
-		O.forceMove(src)
-		container = O
-		to_chat(user, "<span class='notice'>You add the [container] to [src].</span>")
+		if(container)
+			to_chat(user, SPAN_WARNING("A container is already loaded into [src]."))
+			return ITEM_INTERACT_COMPLETE
+
+		if(!user.drop_item())
+			return ITEM_INTERACT_COMPLETE
+
+		used.forceMove(src)
+		container = used
+		to_chat(user, SPAN_NOTICE("You add the [container] to [src]."))
 		update_icon(UPDATE_ICON_STATE)
 		SStgui.update_uis(src)
-		return TRUE
+		return ITEM_INTERACT_COMPLETE
 
-	else if(istype(O, /obj/item/storage/bag/plants))
+	else if(istype(used, /obj/item/storage/bag/plants))
 		if(length(stored_plants) >= max_storable_plants)
-			to_chat(user, "<span class='warning'>[src] can't hold any more plants!</span>")
-			return
+			to_chat(user, SPAN_WARNING("[src] can't hold any more plants!"))
+			return ITEM_INTERACT_COMPLETE
 
-		var/obj/item/storage/bag/plants/PB = O
-		for(var/obj/item/reagent_containers/food/snacks/grown/G in PB.contents)
+		var/obj/item/storage/bag/plants/PB = used
+		for(var/obj/item/P in PB.contents)
+			// No need to filter here, because plant bags should have the same list of acceptable items we do.
 			if(length(stored_plants) >= max_storable_plants)
 				break
-			PB.remove_from_storage(G, src)
-			stored_plants += G
+			PB.remove_from_storage(P, src)
+			stored_plants += P
 
 		if(length(stored_plants) < max_storable_plants)
-			to_chat(user, "<span class='info'>You empty [PB] into [src].</span>")
+			to_chat(user, SPAN_NOTICE("You empty [PB] into [src]."))
 		else
-			to_chat(user, "<span class='info'>You fill [src] to its capacity.</span>")
+			to_chat(user, SPAN_NOTICE("You fill [src] to its capacity."))
 
 		SStgui.update_uis(src)
-		return TRUE
+		return ITEM_INTERACT_COMPLETE
 
-	else if(istype(O, /obj/item/reagent_containers/food/snacks/grown))
+	else if(is_type_in_typecache(used, acceptable_items))
 		if(length(stored_plants) >= max_storable_plants)
-			to_chat(user, "<span class='warning'>[src] can't hold any more plants!</span>")
-			return
-		if(!user.unEquip(O))
-			return
+			to_chat(user, SPAN_WARNING("[src] can't hold any more plants!"))
+			return ITEM_INTERACT_COMPLETE
+		if(!user.transfer_item_to(used, src))
+			return ITEM_INTERACT_COMPLETE
 
-		O.forceMove(src)
-		stored_plants += O
-		to_chat(user, "<span class='info'>You put [O] in [src].</span>")
+		stored_plants += used
+		to_chat(user, SPAN_NOTICE("You put [used] in [src]."))
 		SStgui.update_uis(src)
-		return TRUE
+		return ITEM_INTERACT_COMPLETE
 
-	else if(istype(O, /obj/item/disk/design_disk))
-		user.visible_message("[user] begins to load [O] in [src]...",
-			"You begin to load a design from [O]...",
+	else if(istype(used, /obj/item/disk/design_disk))
+		user.visible_message("[user] begins to load [used] in [src]...",
+			"You begin to load a design from [used]...",
 			"You hear the chatter of a floppy drive.")
 		processing = TRUE
 		SStgui.update_uis(src)
 
-		var/obj/item/disk/design_disk/D = O
+		var/obj/item/disk/design_disk/D = used
 		if(do_after(user, 1 SECONDS, target = src))
 			files.AddDesign2Known(D.blueprint)
 
 		processing = FALSE
-		update_ui_product_list()
-		return TRUE
-	else
-		to_chat(user, "<span class='warning'>You cannot put this in [name]!</span>")
+		update_ui_product_list(user)
+		return ITEM_INTERACT_COMPLETE
+
+	to_chat(user, SPAN_WARNING("You cannot put [used] in [src]!"))
+	return ITEM_INTERACT_COMPLETE
 
 /**
  * Builds/Updates the `product_list` used by the UI.
  */
-/obj/machinery/biogenerator/proc/update_ui_product_list()
+/obj/machinery/biogenerator/proc/update_ui_product_list(mob/user)
 	product_list = list()
 	for(var/category in categories)
 		product_list[category] = list()
@@ -190,7 +222,8 @@
 				"cost" = D.materials[MAT_BIOMASS] / efficiency
 			)
 
-	SStgui.update_uis(src, update_static_data = TRUE)
+	update_static_data(user)
+	SStgui.update_uis(src)
 
 /obj/machinery/biogenerator/attack_hand(mob/user)
 	if(..())
@@ -200,10 +233,13 @@
 /obj/machinery/biogenerator/attack_ghost(mob/user)
 	ui_interact(user)
 
-/obj/machinery/biogenerator/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/biogenerator/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/biogenerator/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "Biogenerator", "Biogenerator", 390, 600, master_ui, state)
+		ui = new(user, src, "Biogenerator", "Biogenerator")
 		ui.set_autoupdate(FALSE)
 		ui.open()
 
@@ -254,7 +290,7 @@
 	if(stat & (NOPOWER | BROKEN))
 		return
 	if(processing)
-		to_chat(user, "<span class='warning'>[src] is currently processing!</span>")
+		to_chat(user, SPAN_WARNING("[src] is currently processing!"))
 		return
 
 	processing = TRUE
@@ -262,15 +298,17 @@
 	update_icon(UPDATE_ICON_STATE)
 
 	var/plants_processed = length(stored_plants)
+	var/new_biomass = 0
 	for(var/obj/plant as anything in stored_plants)
-		var/plant_biomass = plant.reagents.get_reagent_amount("nutriment") + plant.reagents.get_reagent_amount("plantmatter")
-		biomass += max(plant_biomass, 0.1) * 10 * productivity
+		var/plant_biomass = plant.reagents?.get_reagent_amount("nutriment") + plant.reagents?.get_reagent_amount("plantmatter")
+		new_biomass += max(plant_biomass, 0.1)
 		qdel(plant)
+	biomass += new_biomass * 10 * productivity
 
 	stored_plants.Cut()
-	playsound(loc, 'sound/machines/blender.ogg', 50, 1)
+	playsound(loc, 'sound/machines/blender.ogg', 50, TRUE)
 	use_power(plants_processed * 150)
-	addtimer(CALLBACK(src, PROC_REF(end_processing)), (plants_processed * 5) / productivity)
+	addtimer(CALLBACK(src, PROC_REF(end_processing)), min(20 SECONDS, new_biomass))
 
 /obj/machinery/biogenerator/proc/end_processing()
 	processing = FALSE
@@ -336,7 +374,7 @@
 		for(var/R in D.make_reagents)
 			container.reagents.add_reagent(R, D.make_reagents[R] * amount)
 
-	// Creating all other items, such as monkey cubes or nutriment bottles.
+	// Creating all other items, such as monkey cubes or nutrient bottles.
 	else
 		if(!check_cost(D, amount))
 			return

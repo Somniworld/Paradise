@@ -21,7 +21,7 @@
  */
 /datum/reagents
 	/// All contained reagents. More specifically, references to the reagent datums.
-	var/list/datum/reagent/reagent_list = new/list()
+	var/list/datum/reagent/reagent_list = list()
 	/// The total volume of all reagents in this holder.
 	var/total_volume = 0
 	/// This is the maximum volume of the holder.
@@ -31,24 +31,18 @@
 	var/chem_temp = T20C
 	var/temperature_min = 0
 	var/temperature_max = 10000
-	var/list/datum/reagent/addiction_list = new/list()
-	var/list/addiction_threshold_accumulated = new/list()
+	var/list/datum/reagent/addiction_list = list()
+	var/list/addiction_threshold_accumulated = list()
 	var/flags
 
-/datum/reagents/New(maximum = 100, temperature_minimum, temperature_maximum)
+/datum/reagents/New(maximum = 100, temperature_minimum, temperature_maximum, atom/_my_atom = null)
+	my_atom = _my_atom
 	maximum_volume = maximum
 	if(temperature_minimum)
 		temperature_min = temperature_minimum
 	if(temperature_maximum)
 		temperature_max = temperature_maximum
 	//I dislike having these here but map-objects are initialised before world/New() is called. >_>
-	if(!GLOB.chemical_reagents_list)
-		//Chemical Reagents - Initialises all /datum/reagent into a list indexed by reagent id
-		var/paths = subtypesof(/datum/reagent)
-		GLOB.chemical_reagents_list = list()
-		for(var/path in paths)
-			var/datum/reagent/D = new path()
-			GLOB.chemical_reagents_list[D.id] = D
 	if(!GLOB.chemical_reactions_list)
 		//Chemical Reactions - Initialises all /datum/chemical_reaction into a list
 		// It is filtered into multiple lists within a list.
@@ -63,9 +57,10 @@
 			var/datum/chemical_reaction/D = new path()
 			var/list/reaction_ids = list()
 
-			if(D && length(D.required_reagents))
-				for(var/reaction in D.required_reagents)
-					reaction_ids += reaction
+			if(D && (length(D.required_reagents) || length(D.required_catalysts)))
+				var/list/all_requirements = D.required_reagents + D.required_catalysts
+				for(var/reagent_id in all_requirements)
+					reaction_ids += reagent_id
 
 			// Create filters based on each reagent id in the required reagents list
 			for(var/id in reaction_ids)
@@ -73,6 +68,9 @@
 					GLOB.chemical_reactions_list[id] = list()
 				GLOB.chemical_reactions_list[id] += D
 				break // Don't bother adding ourselves to other reagent ids, it is redundant.
+	if(my_atom)
+		RegisterSignal(my_atom, COMSIG_ATOM_RAD_ACT, PROC_REF(radiation_react))
+		ADD_TRAIT(my_atom, TRAIT_ABSORB_RADS, "reagents_holder_[UID()]")
 
 /**
  * Removes reagents from the holder until the passed amount is matched.
@@ -171,11 +169,16 @@
 		if(!O.reagents)
 			return
 		R = O.reagents
+		if(isliving(my_atom))
+			var/atom/thing = target
+			SEND_SIGNAL(thing, COMSIG_MOB_REAGENT_EXCHANGE, my_atom)
 	else if(isliving(target))
 		var/mob/living/M = target
 		if(!M.reagents)
 			return
 		R = M.reagents
+		if(isobj(my_atom))
+			SEND_SIGNAL(my_atom, COMSIG_MOB_REAGENT_EXCHANGE, target)
 	else if(istype(target, /datum/reagents))
 		R = target
 	else
@@ -186,7 +189,6 @@
 	var/trans_data = null
 	for(var/A in reagent_list)
 		var/datum/reagent/current_reagent = A
-
 		var/current_reagent_transfer = current_reagent.volume * part
 		if(preserve_data)
 			trans_data = copy_data(current_reagent)
@@ -199,6 +201,8 @@
 	if(!no_react)
 		R.handle_reactions()
 		handle_reactions()
+		R.temperature_react()
+		temperature_react()
 	return amount
 
 /datum/reagents/proc/copy_to(obj/target, amount = 1, multiplier = 1, preserve_data = TRUE, safety = FALSE)
@@ -215,12 +219,15 @@
 		var/current_reagent_transfer = current_reagent.volume * part
 		if(preserve_data)
 			trans_data = copy_data(current_reagent)
+
 		R.add_reagent(current_reagent.id, (current_reagent_transfer * multiplier), trans_data)
 
 	update_total()
 	R.update_total()
 	R.handle_reactions()
 	handle_reactions()
+	R.temperature_react()
+	temperature_react()
 	return amount
 
 /datum/reagents/proc/set_reagent_temp(new_temp = T0C, react = TRUE)
@@ -230,9 +237,16 @@
 		handle_reactions()
 
 /datum/reagents/proc/temperature_react() //Calls the temperature reaction procs without changing the temp.
+	if(chem_temp > VIRUS_DISINFECTION_TEMP && isobj(my_atom))
+		SEND_SIGNAL(my_atom, COMSIG_ATOM_DISINFECTED)
 	for(var/A in reagent_list)
 		var/datum/reagent/current_reagent = A
 		current_reagent.reaction_temperature(chem_temp, 100)
+
+/datum/reagents/proc/radiation_react(atom/source, amount, emission_type)
+	SIGNAL_HANDLER // COMSIG_ATOM_RAD_ACT
+	for(var/datum/reagent/current_reagent in reagent_list)
+		current_reagent.reaction_radiation(amount, emission_type)
 
 /datum/reagents/proc/temperature_reagents(exposed_temperature, divisor = 35, change_cap = 15) //This is what you use to change the temp of a reagent holder.
 	//Do not manually change the reagent unless you know what youre doing.
@@ -246,6 +260,17 @@
 	chem_temp = max(min(chem_temp, temperature_max), temperature_min) //Cap for the moment.
 	temperature_react()
 
+	handle_reactions()
+
+/datum/reagents/proc/adjust_reagent_temp(amount, temperature_bound)
+	if(chem_temp == temperature_bound || !amount) // We don't need to do the mathy math
+		return
+	if(!isnull(temperature_bound)) // If we have a target temp, we only go until that temperature
+		chem_temp = directional_bounded_sum(chem_temp, amount, temperature_bound, temperature_bound)
+	else
+		chem_temp += amount
+	chem_temp = clamp(chem_temp, temperature_min, temperature_max)
+	temperature_react()
 	handle_reactions()
 
 /**
@@ -264,6 +289,8 @@
 	if(get_reagent_amount(reagent) < amount)
 		amount = get_reagent_amount(reagent)
 	amount = min(amount, R.maximum_volume - R.total_volume)
+	if(isliving(my_atom))
+		SEND_SIGNAL(target,COMSIG_MOB_REAGENT_EXCHANGE , my_atom)
 	var/trans_data = null
 	for(var/A in reagent_list)
 		var/datum/reagent/current_reagent = A
@@ -277,25 +304,16 @@
 	update_total()
 	R.update_total()
 	R.handle_reactions()
+	R.temperature_react()
 	return amount
 
-/datum/reagents/proc/can_metabolize(mob/living/carbon/human/H, datum/reagent/R)
-	if(!H.dna.species || !H.dna.species.reagent_tag)
-		return FALSE
-	if((R.process_flags & SYNTHETIC) && (H.dna.species.reagent_tag & PROCESS_SYN))		//SYNTHETIC-oriented reagents require PROCESS_SYN
-		return TRUE
-	if((R.process_flags & ORGANIC) && (H.dna.species.reagent_tag & PROCESS_ORG))		//ORGANIC-oriented reagents require PROCESS_ORG
-		return TRUE
-	//Species with PROCESS_DUO are only affected by reagents that affect both organics and synthetics, like acid and hellwater
-	if((R.process_flags & ORGANIC) && (R.process_flags & SYNTHETIC) && (H.dna.species.reagent_tag & PROCESS_DUO))
-		return TRUE
 
 /**
  * Called by `/mob/living/proc/Life`. You shouldn't have to use this one directly.
  */
 /datum/reagents/proc/metabolize(mob/living/M)
 	if(M)
-		temperature_reagents(M.bodytemperature - 30)
+		temperature_reagents(M.bodytemperature)
 		M.absorb_blood()
 
 	for(var/datum/reagent/R as anything in addiction_threshold_accumulated)
@@ -316,7 +334,7 @@
 		if(ishuman(M))
 			var/mob/living/carbon/human/H = M
 			//Check if this mob's species is set and can process this type of reagent
-			var/can_process = can_metabolize(H, R)
+			var/can_process = H.can_metabolize(R)
 			//If handle_reagents returns 0, it's doing the reagent removal on its own
 			var/species_handled = !(H.dna.species.handle_reagents(H, R))
 			can_process = can_process && !species_handled
@@ -341,6 +359,7 @@
 				update_flags |= R.on_mob_overdose_life(M) //We want to drain reagents but not do the entire mob life.
 			if(R.volume < R.overdose_threshold && R.overdosed)
 				R.overdosed = FALSE
+				R.overdose_end(M)
 			if(R.overdosed)
 				var/list/overdose_results = R.overdose_process(M, R.volume >= R.overdose_threshold * 2 ? 2 : 1)
 				if(overdose_results) // to protect against poorly-coded overdose procs
@@ -367,7 +386,7 @@
 					if(5)
 						update_flags |= R.addiction_act_stage5(M)
 			if(prob(20) && (world.timeofday > (R.last_addiction_dose + ADDICTION_TIME))) //Each addiction lasts 8 minutes before it can end
-				to_chat(M, "<span class='notice'>You no longer feel reliant on [R.name]!</span>")
+				to_chat(M, SPAN_NOTICE("You no longer feel reliant on [R.name]!"))
 				addiction_list.Remove(R)
 				qdel(R)
 
@@ -378,7 +397,7 @@
 		M.update_stat("reagent metabolism")
 	if(update_flags & STATUS_UPDATE_STAMINA)
 		M.update_stamina()
-		M.update_health_hud()
+		M.update_stamina_hud()
 	if(update_flags & STATUS_UPDATE_BLIND)
 		M.update_blind_effects()
 	if(update_flags & STATUS_UPDATE_NEARSIGHTED)
@@ -451,7 +470,7 @@
 				var/total_matching_catalysts = 0
 				var/matching_container = FALSE
 				var/matching_other = FALSE
-				var/list/multipliers = new/list()
+				var/list/multipliers = list()
 				var/min_temp = C.min_temp			//Minimum temperature required for the reaction to occur (heat to/above this)
 				var/max_temp = C.max_temp			//Maximum temperature allowed for the reaction to occur (cool to/below this)
 				for(var/B in C.required_reagents)
@@ -484,11 +503,13 @@
 					min_temp = chem_temp
 
 				if(total_matching_reagents == total_required_reagents && total_matching_catalysts == total_required_catalysts && matching_container && matching_other && chem_temp <= max_temp && chem_temp >= min_temp)
+					if(!C.last_can_react_check(src))
+						continue
 					var/multiplier = min(multipliers)
 					var/preserved_data = null
 					for(var/B in C.required_reagents)
 						if(!preserved_data)
-							preserved_data = get_data(B)
+							preserved_data = copy_data_by_id(B)
 						remove_reagent(B, (multiplier * C.required_reagents[B]), safety = TRUE)
 
 					var/created_volume = C.result_amount*multiplier
@@ -505,14 +526,14 @@
 					var/list/seen = viewers(4, get_turf(my_atom))
 					for(var/mob/living/M in seen)
 						if(C.mix_message)
-							to_chat(M, "<span class='notice'>[bicon(my_atom)] [C.mix_message]</span>")
+							to_chat(M, SPAN_NOTICE("[bicon(my_atom)] [C.mix_message]"))
 
 					if(istype(my_atom, /obj/item/slime_extract))
 						var/obj/item/slime_extract/ME2 = my_atom
 						ME2.Uses--
 						if(ME2.Uses <= 0) // give the notification that the slime core is dead
 							for(var/mob/living/M in seen)
-								to_chat(M, "<span class='notice'>[bicon(my_atom)] [my_atom]'s power is consumed in the reaction.</span>")
+								to_chat(M, SPAN_NOTICE("[bicon(my_atom)] [my_atom]'s power is consumed in the reaction."))
 								ME2.name = "used slime extract"
 								ME2.desc = "This extract has been used up."
 
@@ -545,9 +566,10 @@
 	for(var/A in cached_reagents)
 		var/datum/reagent/R = A
 		if(R.id == reagent)
-			if(ishuman(my_atom) && can_metabolize(my_atom, R))
-				var/mob/living/carbon/human/M = my_atom
-				R.on_mob_delete(M)
+			if(ishuman(my_atom))
+				var/mob/living/carbon/human/human = my_atom
+				if(human.can_metabolize(R))
+					R.on_mob_delete(human)
 			cached_reagents -= A
 			qdel(A)
 			update_total()
@@ -631,24 +653,24 @@
 			if(affecting)
 				if(chem_temp > H.dna.species.heat_level_1)
 					if(H.reagent_safety_check())
-						to_chat(H, "<span class='danger'>You are scalded by the hot chemicals!</span>")
+						to_chat(H, SPAN_DANGER("You are scalded by the hot chemicals!"))
 						affecting.receive_damage(0, round(log(chem_temp / 50) * 10))
 						H.emote("scream")
 						H.adjust_bodytemperature(min(max((chem_temp - T0C) - 20, 5), 500))
 				else if(chem_temp < H.dna.species.cold_level_1)
 					if(H.reagent_safety_check(FALSE))
-						to_chat(H, "<span class='danger'>You are frostbitten by the freezing cold chemicals!</span>")
+						to_chat(H, SPAN_DANGER("You are frostbitten by the freezing cold chemicals!"))
 						affecting.receive_damage(0, round(log(T0C - chem_temp / 50) * 10))
 						H.emote("scream")
 						H.adjust_bodytemperature(- min(max(T0C - chem_temp - 20, 5), 500))
 
 		if(method == REAGENT_INGEST)
 			if(chem_temp > H.dna.species.heat_level_1)
-				to_chat(H, "<span class='danger'>You scald yourself trying to consume the boiling hot substance!</span>")
+				to_chat(H, SPAN_DANGER("You scald yourself trying to consume the boiling hot substance!"))
 				H.adjustFireLoss(7)
 				H.adjust_bodytemperature(min(max((chem_temp - T0C) - 20, 5), 700))
 			else if(chem_temp < H.dna.species.cold_level_1)
-				to_chat(H, "<span class='danger'>You frostburn yourself trying to consume the freezing cold substance!</span>")
+				to_chat(H, SPAN_DANGER("You frostburn yourself trying to consume the freezing cold substance!"))
 				H.adjustFireLoss(7)
 				H.adjust_bodytemperature(- min(max((T0C - chem_temp) - 20, 5), 700))
 
@@ -670,6 +692,9 @@
 		var/amt = list_reagents[r_id]
 		add_reagent(r_id, amt, data)
 
+/datum/reagents/proc/get_free_space()
+	return maximum_volume - total_volume
+
 /**
  * Attempts to add X of the matching reagent to the holder.
  *
@@ -682,6 +707,9 @@
 	if(total_volume + amount > maximum_volume) amount = (maximum_volume - total_volume) //Doesnt fit in. Make it disappear. Shouldnt happen. Will happen.
 	if(amount <= 0)
 		return FALSE
+	// Contaminate the container with viruses if the reagent has any. We do this here rather than a reaction because it only depends on the data, and not necessarily the reagent.
+	if(data && length(data["viruses"]) && isobj(my_atom))
+		my_atom.AddComponent(/datum/component/viral_contamination, data["viruses"])
 	chem_temp = clamp((chem_temp * total_volume + reagtemp * amount) / (total_volume + amount), temperature_min, temperature_max) //equalize with new chems
 
 	var/list/cached_reagents = reagent_list
@@ -700,20 +728,29 @@
 
 	var/datum/reagent/D = GLOB.chemical_reagents_list[reagent]
 	if(D)
-
 		var/datum/reagent/R = new D.type()
 		cached_reagents += R
 		R.holder = src
 		R.volume = amount
-		R.on_new(data)
+		if(ishuman(my_atom))
+			var/mob/living/carbon/human/human = my_atom
+			if(human.can_metabolize(R))
+				R.on_new(data)
+		else
+			R.on_new(data)
+
 		if(data)
 			R.data = data
 
-		if(ishuman(my_atom) && can_metabolize(my_atom, R))
-			R.on_mob_add(my_atom) //Must occur befor it could posibly run on_mob_delete
+		if(ishuman(my_atom))
+			var/mob/living/carbon/human/human = my_atom
+			if(human.can_metabolize(R))
+				R.on_mob_add(my_atom) //Must occur before it could posibly run on_mob_delete
+
 		update_total()
 		if(my_atom)
 			my_atom.on_reagent_change()
+
 		if(!no_react)
 			temperature_react()
 			handle_reactions()
@@ -769,6 +806,9 @@
 					return FALSE
 	return FALSE
 
+/datum/reagents/proc/is_empty()
+	return length(reagent_list) == 0
+
 /**
  * Returns the amount of the matching reagent inside the holder.
  *
@@ -792,6 +832,15 @@
 
 /datum/reagents/proc/get_reagent(type)
 	. = locate(type) in reagent_list
+
+/datum/reagents/proc/get_reagent_by_id(id)
+	var/list/cached_reagents = reagent_list
+	for(var/A in cached_reagents)
+		var/datum/reagent/R = A
+		if(R.id == id)
+			return R
+
+	return
 
 /datum/reagents/proc/remove_all_type(reagent_type, amount, strict = FALSE, safety = TRUE) // Removes all reagent of X type. @strict set to 1 determines whether the childs of the type are included.
 	if(!isnum(amount))
@@ -859,6 +908,11 @@
 		if(R.id == reagent_id)
 			R.data = new_data
 
+/datum/reagents/proc/copy_data_by_id(reagent_id)
+	for(var/datum/reagent/candidate in reagent_list)
+		if(candidate.id == reagent_id)
+			return(copy_data(candidate))
+
 /datum/reagents/proc/copy_data(datum/reagent/current_reagent)
 	if(!current_reagent || !current_reagent.data)
 		return null
@@ -881,19 +935,19 @@
 		trans_data["viruses"] = temp
 	return trans_data
 
-/datum/reagents/proc/generate_taste_message(minimum_percent = TASTE_SENSITIVITY_NORMAL)
+/datum/reagents/proc/generate_taste_message(minimum_percent = TASTE_SENSITIVITY_NORMAL, taste_category = TASTE_CATEGORY_ORGANIC)
 	var/list/out = list()
 	var/list/reagent_tastes = list() //in the form reagent_tastes["descriptor"] = strength
 	//mobs should get this message when either they cannot taste, the tastes are all too weak for them to detect, or the tastes somehow don't have any strength
 	var/no_taste_text = "something indescribable"
-	if(minimum_percent > 100)
+	if(minimum_percent > 100 || taste_category == TASTE_CATEGORY_NONE)
 		return no_taste_text
 	for(var/A in reagent_list)
 		var/datum/reagent/R = A
 		if(!R.taste_mult)
 			continue
 		//nutriment carries a list of tastes that originates from the snack food that the nutriment came from
-		if(istype(R, /datum/reagent/consumable/nutriment))
+		if(istype(R, /datum/reagent/consumable/nutriment) && taste_category & TASTE_CATEGORY_ORGANIC)
 			var/list/nutriment_taste_data = R.data
 			for(var/nutriment_taste in nutriment_taste_data)
 				var/ratio = nutriment_taste_data[nutriment_taste]
@@ -903,14 +957,18 @@
 				else
 					reagent_tastes[nutriment_taste] = amount
 		else
-			var/taste_desc = R.taste_description
+			var/taste_desc = R.yuck_description
+			if(taste_category & R.taste_flag) // if they can taste this category, give them the real taste description
+				taste_desc = R.taste_description
+			if(!taste_desc) // if the description ends up empty, skip this taste
+				continue
 			var/taste_amount = R.volume * R.taste_mult
 			if(taste_desc in reagent_tastes)
 				reagent_tastes[taste_desc] += taste_amount
 			else
 				reagent_tastes[taste_desc] = taste_amount
 	//deal with percentages
-	//TODO: may want to sort these from strong to weak
+	sortTim(reagent_tastes, cmp = GLOBAL_PROC_REF(cmp_numeric_dsc), associative = TRUE)
 	var/total_taste = counterlist_sum(reagent_tastes)
 	if(total_taste <= 0)
 		return no_taste_text
@@ -918,7 +976,7 @@
 		var/percent = (reagent_tastes[taste_desc] / total_taste) * 100
 		if(percent < minimum_percent) //the lower the minimum percent, the more sensitive the message is
 			continue
-		var/intensity_desc = "a hint of"
+		var/intensity_desc = pick("a hint of", "a dash of", "a bit of")
 		if(percent > minimum_percent * 3 && percent != 100)
 			intensity_desc = "a strong flavor of"
 		else if(percent > minimum_percent * 2 || percent == 100)
@@ -937,16 +995,28 @@
 // Convenience proc to create a reagents holder for an atom
 // Max vol is maximum volume of holder
 /atom/proc/create_reagents(max_vol, temperature_minimum, temperature_maximum)
-	reagents = new /datum/reagents(max_vol, temperature_minimum, temperature_maximum)
-	reagents.my_atom = src
+	reagents = new /datum/reagents(max_vol, temperature_minimum, temperature_maximum, src)
 
 /proc/get_random_reagent_id()	// Returns a random reagent ID minus blacklisted reagents
-	var/static/list/random_reagents = list()
+	var/static/list/random_reagents
 	if(!length(random_reagents))
-		for(var/thing  in subtypesof(/datum/reagent))
-			var/datum/reagent/R = thing
-			if(initial(R.can_synth))
-				random_reagents += initial(R.id)
+		random_reagents = list()
+		for(var/datum/reagent/thing as anything in subtypesof(/datum/reagent))
+			var/R = initial(thing.id)
+			if(R in GLOB.blocked_chems)
+				continue
+			random_reagents += R
+	var/picked_reagent = pick(random_reagents)
+	return picked_reagent
+
+/// Returns a random reagent ID, with real non blacklisted balance boosting action!
+/proc/get_unrestricted_random_reagent_id()
+	var/static/list/random_reagents
+	if(!length(random_reagents))
+		random_reagents = list()
+		for(var/datum/reagent/thing as anything in subtypesof(/datum/reagent))
+			var/R = initial(thing.id)
+			random_reagents += R
 	var/picked_reagent = pick(random_reagents)
 	return picked_reagent
 
@@ -970,6 +1040,12 @@
 	reagent_list = null
 	QDEL_LIST_CONTENTS(addiction_list)
 	addiction_list = null
-	if(my_atom && my_atom.reagents == src)
-		my_atom.reagents = null
+	if(my_atom)
+		UnregisterSignal(my_atom, COMSIG_ATOM_RAD_ACT)
+		REMOVE_TRAIT(my_atom, TRAIT_ABSORB_RADS, "reagents_holder_[UID()]")
+		if(my_atom.reagents == src)
+			my_atom.reagents = null
 	my_atom = null
+
+#undef ADDICTION_TIME
+#undef MINIMUM_REAGENT_AMOUNT

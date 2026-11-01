@@ -42,13 +42,11 @@
 	convertable_children = list(/obj/item/organ/external/foot/right/diona)
 
 /obj/item/organ/external/foot/diona
-	name = "left foot"
 	max_damage = 20
 	min_broken_damage = 10
 	amputation_point = "branch"
 
 /obj/item/organ/external/foot/right/diona
-	name = "right foot"
 	max_damage = 20
 	min_broken_damage = 10
 	amputation_point = "branch"
@@ -71,40 +69,46 @@
 /obj/item/organ/diona/process()
 	return
 
-/obj/item/organ/internal/heart/diona // Turns into a nymph instantly, no transplanting possible.
-	name = "neural strata"
+/// Turns into a nymph instantly, no transplanting possible.
+/obj/item/organ/internal/heart/diona
+	name = "circulatory siphonostele"
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "nymph"
 
 /obj/item/organ/internal/lungs/diona
-	name = "respiratory vacuoles"
+	name = "respiratory nodules"
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "nymph"
 
-/obj/item/organ/internal/brain/diona // Turns into a nymph instantly, no transplanting possible.
-	name = "gas bladder"
+/// Turns into a nymph instantly, no transplanting possible.
+/obj/item/organ/internal/brain/diona
+	name = "neural strata"
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "nymph"
 
-/obj/item/organ/internal/kidneys/diona // Turns into a nymph instantly, no transplanting possible.
-	name = "polyp segment"
+/// Turns into a nymph instantly, no transplanting possible.
+/obj/item/organ/internal/kidneys/diona
+	name = "sieve-tube bundles"
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "nymph"
 
-/obj/item/organ/internal/appendix/diona // Turns into a nymph instantly, no transplanting possible.
-	name = "anchoring ligament"
+/// Turns into a nymph instantly, no transplanting possible.
+/obj/item/organ/internal/appendix/diona
+	name = "auxiliary bud"
 	icon = 'icons/obj/objects.dmi'
 	icon_state = "nymph"
 
-/obj/item/organ/internal/eyes/diona // Turns into a nymph instantly, no transplanting possible.
+/// Turns into a nymph instantly, no transplanting possible.
+/obj/item/organ/internal/eyes/diona
 	name = "receptor node"
 	icon = 'icons/mob/alien.dmi'
 	icon_state = "claw"
 
 //TODO:Make absorb rads on insert
 
-/obj/item/organ/internal/liver/diona // Turns into a nymph instantly, no transplanting possible.
-	name = "nutrient vessel"
+/// Turns into a nymph instantly, no transplanting possible.
+/obj/item/organ/internal/liver/diona
+	name = "nutrient sac"
 	icon = 'icons/mob/alien.dmi'
 	icon_state = "claw"
 	alcohol_intensity = 0.5

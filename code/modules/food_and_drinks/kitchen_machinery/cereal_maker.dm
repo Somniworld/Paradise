@@ -19,6 +19,9 @@
 	setme.desc = "[name.desc] It has been [thiscooktype]"
 
 /obj/machinery/cooker/cerealmaker/gettype()
-	var/obj/item/reagent_containers/food/snacks/cereal/type = new(get_turf(src))
+	var/obj/item/food/cereal/type = new(get_turf(src))
 	return type
 
+/obj/machinery/cooker/cerealmaker/wrench_act(mob/user, obj/item/I)
+	if(default_unfasten_wrench(user, I))
+		return TRUE

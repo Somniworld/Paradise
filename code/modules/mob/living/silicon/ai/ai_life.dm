@@ -10,7 +10,7 @@
 
 	var/turf/T = get_turf(src)
 	if(stat != CONSCIOUS) //ai's fucked
-		cameraFollow = null
+		camera_follow = null
 		reset_perspective(null)
 		unset_machine()
 
@@ -22,11 +22,22 @@
 	if(!eyeobj || QDELETED(eyeobj) || !eyeobj.loc)
 		view_core()
 
-	if(machine)
-		machine.check_eye(src)
+	// Do holopad AI checks
+	if(istype(machine, /obj/machinery/hologram))
+		check_holopad_eye()
+
+	// Enhanced Tracking
+	if(enhanced_tracking && tracked_mob && !tracker_alert_cooldown)
+		if(can_see(tracked_mob))
+			var/area/A = get_area(tracked_mob)
+			if(A)
+				addtimer(CALLBACK(src, PROC_REF(raise_tracking_alert), A, tracked_mob), enhanced_tracking_delay)
+				// To prevent spam, start a cooldown.
+				tracker_alert_cooldown = TRUE
+				addtimer(CALLBACK(src, PROC_REF(reset_tracker_cooldown)), tracking_alert_interval)
 
 	if(malfhack && malfhack.aidisabled)
-		to_chat(src, "<span class='danger'>ERROR: APC access disabled, hack attempt canceled.</span>")
+		to_chat(src, SPAN_DANGER("ERROR: APC access disabled, hack attempt canceled."))
 		deltimer(malfhacking)
 		// This proc handles cleanup of screen notifications and
 		// messenging the client
@@ -37,21 +48,25 @@
 	else
 		adjustOxyLoss(-1)
 
-	var/area/my_area = get_area(src)
+	if(player_logged > 0 && stat != DEAD && job)
+		handle_ssd()
 
+	var/area/my_area = get_area(src)
 	if(!lacks_power())
 		if(aiRestorePowerRoutine > 1)
 			update_blind_effects()
 			aiRestorePowerRoutine = 0
 			update_sight()
 			to_chat(src, "Alert cancelled. Power has been restored[aiRestorePowerRoutine == 2 ? "without our assistance" : ""].")
+			apc_override = FALSE
 	else
 		if(lacks_power())
 			if(!aiRestorePowerRoutine)
+				disconnect_shell()
 				update_blind_effects()
 				aiRestorePowerRoutine = 1
 				update_sight()
-				to_chat(src, "<span class='danger'>You have lost power!</span>")
+				to_chat(src, SPAN_DANGER("You have lost power!"))
 				if(!is_special_character(src))
 					set_zeroth_law("")
 
@@ -121,28 +136,40 @@
 								to_chat(src, "Receiving control information from APC.")
 								sleep(2)
 								//bring up APC dialog
-								apc_override = 1
+								apc_override = TRUE
 								theAPC.attack_ai(src)
-								apc_override = 0
 								aiRestorePowerRoutine = 3
 						sleep(50)
 						theAPC = null
+
+/mob/living/silicon/ai/proc/handle_ssd()
+	player_logged++ // No auto cryo, but this will give the AI SSD protection after the value of `SSD_WARNING_TIMER` is reached.
 
 /mob/living/silicon/ai/updatehealth(reason = "none given")
 	if(status_flags & GODMODE)
 		health = 100
 		set_stat(CONSCIOUS)
 	else
-		health = 100 - getOxyLoss() - getToxLoss() - getFireLoss() - getBruteLoss()
+		var/old_health = health
+		health = 100 - getOxyLoss() - getToxLoss() - getBruteLoss() - getFireLoss()
+		var/old_stat = stat
 		update_stat("updatehealth([reason])")
 		diag_hud_set_health()
-
+		if(old_health > health || old_stat != stat) // Only disconnect if we lose health or change stat.
+			disconnect_shell()
 
 /mob/living/silicon/ai/proc/lacks_power()
 	var/turf/T = get_turf(src)
 	var/area/A = get_area(src)
+	if(controlled_mech)
+		return controlled_mech.get_charge() <= 0
 	return (!A.powernet.equipment_powered && A.requires_power || isspaceturf(T)) && !isitem(loc)
 
 /mob/living/silicon/ai/rejuvenate()
 	..()
 	add_ai_verbs(src)
+
+#undef POWER_RESTORATION_OFF
+#undef POWER_RESTORATION_START
+#undef POWER_RESTORATION_SEARCH_APC
+#undef POWER_RESTORATION_APC_FOUND

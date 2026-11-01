@@ -1,14 +1,22 @@
 //objective defines
-#define TARGET_INVALID_IS_OWNER		1
-#define TARGET_INVALID_NOT_HUMAN	2
-#define TARGET_INVALID_DEAD			3
-#define TARGET_INVALID_NOCKEY		4
-#define TARGET_INVALID_UNREACHABLE	5
-#define TARGET_INVALID_GOLEM		6
-#define TARGET_INVALID_EVENT		7
-#define TARGET_INVALID_IS_TARGET	8
-#define TARGET_INVALID_BLACKLISTED	9
-#define TARGET_INVALID_CHANGELING	10
+#define TARGET_INVALID_IS_OWNER			1
+#define TARGET_INVALID_NOT_HUMAN		2
+#define TARGET_INVALID_DEAD				3
+#define TARGET_INVALID_NOCKEY			4
+#define TARGET_INVALID_UNREACHABLE		5
+#define TARGET_INVALID_GOLEM			6
+#define TARGET_INVALID_EVENT			7
+#define TARGET_INVALID_IS_TARGET		8
+#define TARGET_INVALID_BLACKLISTED		9
+#define TARGET_INVALID_CHANGELING		10
+#define TARGET_INVALID_NOTHEAD			11
+#define TARGET_INVALID_CULTIST			12
+#define TARGET_INVALID_CULT_CONVERTABLE	13
+#define TARGET_CRYOING					14
+#define TARGET_INVALID_HEAD				15
+#define TARGET_INVALID_ANTAG			16
+#define TARGET_INVALID_CONFLICTING_OBJECTIVE	17
+#define TARGET_INVALID_HERETIC			18
 
 //gamemode istype helpers
 #define GAMEMODE_IS_CULT		(SSticker && istype(SSticker.mode, /datum/game_mode/cult))
@@ -42,8 +50,10 @@
 #define SPECIAL_ROLE_SYNDICATE_DEATHSQUAD "Syndicate Commando"
 #define SPECIAL_ROLE_TRAITOR "Traitor"
 #define SPECIAL_ROLE_VAMPIRE "Vampire"
+#define SPECIAL_ROLE_MIND_FLAYER "Mind Flayer"
 #define SPECIAL_ROLE_VAMPIRE_THRALL "Vampire Thrall"
 #define SPECIAL_ROLE_WIZARD "Wizard"
+#define SPECIAL_ROLE_WIZARD_ADEPT "Wizard Adept"
 #define SPECIAL_ROLE_WIZARD_APPRENTICE "Wizard Apprentice"
 #define SPECIAL_ROLE_XENOMORPH "Xenomorph"
 #define SPECIAL_ROLE_XENOMORPH_QUEEN "Xenomorph Queen"
@@ -51,4 +61,36 @@
 #define SPECIAL_ROLE_XENOMORPH_DRONE "Xenomorph Drone"
 #define SPECIAL_ROLE_XENOMORPH_SENTINEL "Xenomorph Sentinel"
 #define SPECIAL_ROLE_XENOMORPH_LARVA "Xenomorph Larva"
+#define SPECIAL_ROLE_ZOMBIE "Zombie"
+#define SPECIAL_ROLE_UPLIFTED_PRIMITIVE "Uplifted Primitive"
+#define SPECIAL_ROLE_TOURIST "Tourist"
+#define SPECIAL_ROLE_HERETIC "Heretic"
 #define SPECIAL_ROLE_EVENTMISC "Event Role"
+#define SPECIAL_ROLE_NINJA "Space Ninja"
+#define SPECIAL_ROLE_FLOCK "Divine Flock"
+#define SPECIAL_ROLE_IRRADIATED_MOUSE "Irradiated Mouse"
+
+// Constants used by code which checks the status of nuclear blasts during a
+// round, regardless of original game mode, e.g. setting the ending cinematic.
+
+/// The bomb is on-station.
+#define NUKE_SITE_ON_STATION 0
+/// The bomb is on station z-level, but not a station tile.
+#define NUKE_SITE_ON_STATION_ZLEVEL 1
+/// The bomb is off station z-level.
+#define NUKE_SITE_OFF_STATION_ZLEVEL 2
+/// The bomb's location cannot be found.
+#define NUKE_SITE_INVALID 3
+
+/**
+ * Dynamic Gamemode Defines
+ */
+#define DYNAMIC_RULESET_NORMAL "Normal"
+#define DYNAMIC_RULESET_FORCED "<b>Forced</b>"
+#define DYNAMIC_RULESET_BANNED "<b>Banned</b>"
+
+#define RULESET_FAILURE_BUDGET "Not enough budget"
+#define RULESET_FAILURE_ANTAG_BUDGET "Not enough antag budget"
+#define RULESET_FAILURE_NO_PLAYERS "No drafted players"
+#define RULESET_FAILURE_MUTUAL_RULESET "No banned mutual rulesets"
+#define RULESET_FAILURE_CHANGELING_SECONDARY_RULESET "Needs a secondary ruleset in rotation"

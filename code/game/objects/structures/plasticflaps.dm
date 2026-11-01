@@ -3,38 +3,37 @@
 	desc = "Completely impassable - or are they?"
 	icon = 'icons/obj/stationobjs.dmi'
 	icon_state = "plasticflaps"
-	density = FALSE
 	anchored = TRUE
 	layer = 4
-	armor = list(melee = 100, bullet = 80, laser = 80, energy = 100, bomb = 50, bio = 100, rad = 100, fire = 50, acid = 50)
+	armor = list(MELEE = 100, BULLET = 80, LASER = 80, ENERGY = 100, BOMB = 50, RAD = 100, FIRE = 50, ACID = 50)
 	var/state = PLASTIC_FLAPS_NORMAL
 
 /obj/structure/plasticflaps/examine(mob/user)
 	. = ..()
 	switch(state)
 		if(PLASTIC_FLAPS_NORMAL)
-			. += "<span class='notice'>[src] are <b>screwed</b> to the floor.</span>"
+			. += SPAN_NOTICE("[src] are <b>screwed</b> to the floor.")
 		if(PLASTIC_FLAPS_DETACHED)
-			. += "<span class='notice'>[src] are no longer <i>screwed</i> to the floor, and the flaps can be <b>sliced</b> apart.</span>"
+			. += SPAN_NOTICE("[src] are no longer <i>screwed</i> to the floor, and the flaps can be <b>sliced</b> apart.")
 
 /obj/structure/plasticflaps/screwdriver_act(mob/user, obj/item/I)
 	. = TRUE
 	if(!I.tool_use_check(user, 0))
 		return
 	if(state == PLASTIC_FLAPS_NORMAL)
-		user.visible_message("<span class='warning'>[user] starts unscrewing [src] from the floor...</span>", "<span class='notice'>You start to unscrew [src] from the floor...</span>", "You hear rustling noises.")
+		user.visible_message(SPAN_WARNING("[user] starts unscrewing [src] from the floor..."), SPAN_NOTICE("You start to unscrew [src] from the floor..."), "You hear rustling noises.")
 		if(!I.use_tool(src, user, 180, volume = I.tool_volume) || state != PLASTIC_FLAPS_NORMAL)
 			return
 		state = PLASTIC_FLAPS_DETACHED
 		anchored = FALSE
-		to_chat(user, "<span class='notice'>You unscrew [src] from the floor.</span>")
+		to_chat(user, SPAN_NOTICE("You unscrew [src] from the floor."))
 	else if(state == PLASTIC_FLAPS_DETACHED)
-		user.visible_message("<span class='warning'>[user] starts screwing [src] to the floor.</span>", "<span class='notice'>You start to screw [src] to the floor...</span>", "You hear rustling noises.")
+		user.visible_message(SPAN_WARNING("[user] starts screwing [src] to the floor."), SPAN_NOTICE("You start to screw [src] to the floor..."), "You hear rustling noises.")
 		if(!I.use_tool(src, user, 40, volume = I.tool_volume) || state != PLASTIC_FLAPS_DETACHED)
 			return
 		state = PLASTIC_FLAPS_NORMAL
 		anchored = TRUE
-		to_chat(user, "<span class='notice'>You screw [src] to the floor.</span>")
+		to_chat(user, SPAN_NOTICE("You screw [src] to the floor."))
 
 /obj/structure/plasticflaps/welder_act(mob/user, obj/item/I)
 	if(state != PLASTIC_FLAPS_DETACHED)
@@ -76,17 +75,16 @@
 	return ..()
 
 
-/obj/structure/plasticflaps/CanPathfindPass(obj/item/card/id/ID, to_dir, caller, no_id = FALSE)
-	if(isliving(caller))
-		if(isbot(caller))
-			return TRUE
+/obj/structure/plasticflaps/CanPathfindPass(to_dir, datum/can_pass_info/pass_info)
+	if(pass_info.is_bot || pass_info.is_drone)
+		return TRUE
 
-		var/mob/living/M = caller
-		if(!M.ventcrawler && M.mob_size != MOB_SIZE_TINY)
-			return FALSE
-	var/atom/movable/M = caller
-	if(M && M.pulling)
-		return CanPathfindPass(ID, to_dir, M.pulling)
+	if(!pass_info.can_ventcrawl && pass_info.mob_size != MOB_SIZE_TINY)
+		return FALSE
+
+	if(pass_info.pulling_info)
+		return CanPathfindPass(to_dir, pass_info.pulling_info)
+
 	return TRUE //diseases, stings, etc can pass
 
 /obj/structure/plasticflaps/deconstruct(disassembled = TRUE)
@@ -94,18 +92,19 @@
 		new /obj/item/stack/sheet/plastic/five(loc)
 	qdel(src)
 
-/obj/structure/plasticflaps/mining //A specific type for mining that doesn't allow airflow because of them damn crates
+/// A specific type for mining that doesn't allow airflow because of them damn crates
+/obj/structure/plasticflaps/mining
 	name = "airtight plastic flaps"
 	desc = "Heavy duty, airtight, plastic flaps."
 
-/obj/structure/plasticflaps/mining/Initialize()
-	air_update_turf(TRUE)
-	..()
+/obj/structure/plasticflaps/mining/Initialize(mapload)
+	. = ..()
+	recalculate_atmos_connectivity()
 
 /obj/structure/plasticflaps/mining/Destroy()
 	var/turf/T = get_turf(src)
 	. = ..()
-	T.air_update_turf(TRUE)
+	T.recalculate_atmos_connectivity()
 
-/obj/structure/plasticflaps/mining/CanAtmosPass(turf/T)
+/obj/structure/plasticflaps/mining/CanAtmosPass(direction)
 	return FALSE

@@ -6,6 +6,11 @@
 #define WANTED_NOTICE_DESC_MAX_LENGTH 512
 #define STORIES_PER_LOAD 9999 // TODO during QP...
 
+/// The feed network singleton. Contains all channels (which contain all stories).
+GLOBAL_DATUM_INIT(news_network, /datum/feed_network, new)
+/// Global list that contains all existing newscasters in the world.
+GLOBAL_LIST_EMPTY(allNewscasters)
+
 /**
   * # Newscaster
   *
@@ -19,10 +24,8 @@
 	desc = "A standard Nanotrasen-licensed newsfeed handler for use in commercial space stations. All the news you absolutely have no use for, in one place!"
 	icon = 'icons/obj/terminals.dmi'
 	icon_state = "newscaster_off"
-	armor = list(MELEE = 50, BULLET = 0, LASER = 0, ENERGY = 0, BOMB = 0, BIO = 0, RAD = 0, FIRE = 50, ACID = 30)
-	max_integrity = 200
+	armor = list(MELEE = 50, BULLET = 0, LASER = 0, ENERGY = 0, BOMB = 0, RAD = 0, FIRE = 50, ACID = 30)
 	integrity_failure = 50
-	light_range = 0
 	anchored = TRUE
 	/// The current screen index in the UI.
 	var/screen = NEWSCASTER_HEADLINES
@@ -85,6 +88,10 @@
 			/datum/job/syndicateofficer
 		)
 
+/obj/machinery/newscaster/examine(mob/user)
+	. = ..()
+	. += SPAN_NOTICE("<b>Alt-Click</b> to remove the photo currently inside it.")
+
 /obj/machinery/newscaster/Destroy()
 	GLOB.allNewscasters -= src
 	viewing_channel = null
@@ -136,17 +143,17 @@
 	. = TRUE
 	if(!I.tool_use_check(user, 0))
 		return
-	to_chat(user, "<span class='notice'>Now [anchored ? "un" : ""]securing [name]</span>")
+	to_chat(user, SPAN_NOTICE("Now [anchored ? "un" : ""]securing [name]"))
 	if(!I.use_tool(src, user, 2 SECONDS, volume = I.tool_volume))
 		return
 	playsound(loc, 'sound/items/deconstruct.ogg', 50, TRUE)
 	if(stat & BROKEN)
-		to_chat(user, "<span class='warning'>The broken remains of [src] fall on the ground.</span>")
+		to_chat(user, SPAN_WARNING("The broken remains of [src] fall on the ground."))
 		new /obj/item/stack/sheet/metal(loc, 5)
 		new /obj/item/shard(loc)
 		new /obj/item/shard(loc)
 	else
-		to_chat(user, "<span class='notice'>You [anchored ? "un" : ""]secure [name].</span>")
+		to_chat(user, SPAN_NOTICE("You [anchored ? "un" : ""]secure [name]."))
 		new /obj/item/mounted/frame/display/newscaster_frame(loc)
 	qdel(src)
 
@@ -187,12 +194,15 @@
 		return
 	ui_interact(user)
 
-/obj/machinery/newscaster/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = TRUE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
+/obj/machinery/newscaster/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/newscaster/ui_interact(mob/user, datum/tgui/ui = null)
 	if(can_scan(user))
 		scanned_user = get_scanned_user(user)["name"]
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "Newscaster", name, 800, 600)
+		ui = new(user, src, "Newscaster", name)
 		ui.open()
 		ui.set_autoupdate(FALSE)
 
@@ -239,7 +249,7 @@
 				for(var/m in stories)
 					if(now >= m["publish_time"])
 						var/datum/feed_message/FM = locateUID(m["uid"])
-						if(FM && !(FM.censor_flags & CENSOR_STORY))
+						if(FM && !(FM.censor_flags & NEWSCASTER_CENSOR_STORY))
 							if(isliving(user))
 								FM.view_count++
 							m["view_count"] = FM.view_count
@@ -262,22 +272,22 @@
 				if(job.is_position_available())
 					var/list/opening_data = list("title" = job.title)
 					// Is the job a command job?
-					if(job.title in GLOB.command_positions)
+					if(job.job_department_flags & DEP_FLAG_COMMAND)
 						opening_data["is_command"] = TRUE
 					// Add the job opening to the corresponding categories
 					// Ugly!
 					opening_data = list(opening_data)
-					if(job.is_security)
+					if(job.job_department_flags & DEP_FLAG_SECURITY)
 						jobs["security"] += opening_data
-					if(job.is_engineering)
+					if(job.job_department_flags & DEP_FLAG_ENGINEERING)
 						jobs["engineering"] += opening_data
-					if(job.is_medical)
+					if(job.job_department_flags & DEP_FLAG_MEDICAL)
 						jobs["medical"] += opening_data
-					if(job.is_science)
+					if(job.job_department_flags & DEP_FLAG_SCIENCE)
 						jobs["science"] += opening_data
-					if(job.is_service)
+					if(job.job_department_flags & DEP_FLAG_SERVICE)
 						jobs["service"] += opening_data
-					if(job.is_supply)
+					if(job.job_department_flags & DEP_FLAG_SUPPLY)
 						jobs["supply"] += opening_data
 
 	// Append temp photo
@@ -327,14 +337,14 @@
   * * M - Optional. The user to send the story's photo to if it exists
   */
 /obj/machinery/newscaster/proc/get_message_data(datum/feed_message/FM, mob/M)
-	if(!(FM.censor_flags & CENSOR_STORY) && M && FM.img)
+	if(!(FM.censor_flags & NEWSCASTER_CENSOR_STORY) && M && FM.img)
 		M << browse_rsc(FM.img, "story_photo_[FM.UID()].png")
 	return list(list(
 		uid = FM.UID(),
-		author = (FM.censor_flags & CENSOR_AUTHOR) ? "" : FM.author,
+		author = (FM.censor_flags & NEWSCASTER_CENSOR_AUTHOR) ? "" : FM.author,
 		author_ckey = (is_admin(M) ? FM.author_ckey : "N/A"),
-		title = (FM.censor_flags & CENSOR_STORY) ? "" : FM.title,
-		body = (FM.censor_flags & CENSOR_STORY) ? "" : FM.body,
+		title = (FM.censor_flags & NEWSCASTER_CENSOR_STORY) ? "" : FM.title,
+		body = (FM.censor_flags & NEWSCASTER_CENSOR_STORY) ? "" : FM.body,
 		admin_locked = FM.admin_locked,
 		censor_flags = FM.censor_flags,
 		view_count = FM.view_count,
@@ -374,11 +384,10 @@
 				return
 			if(ishuman(usr))
 				var/obj/item/photo/P = usr.get_active_hand()
-				if(istype(P) && usr.unEquip(P))
+				if(istype(P) && usr.transfer_item_to(P, src))
 					photo = P
-					P.forceMove(src)
-					usr.visible_message("<span class='notice'>[usr] inserts [P] into [src]'s photo slot.</span>",\
-										"<span class='notice'>You insert [P] into [src]'s photo slot.</span>")
+					usr.visible_message(SPAN_NOTICE("[usr] inserts [P] into [src]'s photo slot."),\
+										SPAN_NOTICE("You insert [P] into [src]'s photo slot."))
 					playsound(loc, 'sound/machines/terminal_insert_disc.ogg', 30, TRUE)
 			else if(issilicon(usr))
 				var/mob/living/silicon/M = usr
@@ -389,14 +398,14 @@
 				P.construct(selection)
 				P.forceMove(src)
 				photo = P
-				visible_message("<span class='notice'>[src]'s photo slot quietly whirs as it prints [P] inside it.</span>")
+				visible_message(SPAN_NOTICE("[src]'s photo slot quietly whirs as it prints [P] inside it."))
 				playsound(loc, 'sound/goonstation/machines/printer_thermal.ogg', 15, TRUE)
 		if("eject_photo")
 			eject_photo(usr)
 			return FALSE // Updating handled in that proc
 		if("censor_channel")
 			if(is_security && !get_scanned_user(usr)["security"])
-				set_temp("You do not have permission to perform this action. Please ensure your ID has appropiate access.", "danger")
+				set_temp("You do not have permission to perform this action. Please ensure your ID has appropriate access.", "danger")
 				return
 			var/datum/feed_channel/FC = locateUID(params["uid"])
 			if(!istype(FC))
@@ -407,7 +416,7 @@
 			FC.censored = !FC.censored
 		if("censor_author", "censor_story")
 			if(is_security && !get_scanned_user(usr)["security"])
-				set_temp("You do not have permission to perform this action. Please ensure your ID has appropiate access.", "danger")
+				set_temp("You do not have permission to perform this action. Please ensure your ID has appropriate access.", "danger")
 				return
 			var/datum/feed_message/FM = locateUID(params["uid"])
 			if(!istype(FM))
@@ -416,14 +425,14 @@
 				set_temp("This story has been locked by CentComm and thus cannot be censored in any way.", "danger")
 				return
 			if(action == "censor_author")
-				FM.censor_flags = (FM.censor_flags & CENSOR_AUTHOR) ? (FM.censor_flags & ~CENSOR_AUTHOR) : (FM.censor_flags|CENSOR_AUTHOR)
+				FM.censor_flags = (FM.censor_flags & NEWSCASTER_CENSOR_AUTHOR) ? (FM.censor_flags & ~NEWSCASTER_CENSOR_AUTHOR) : (FM.censor_flags|NEWSCASTER_CENSOR_AUTHOR)
 			else if(action == "censor_story")
-				FM.censor_flags = (FM.censor_flags & CENSOR_STORY) ? (FM.censor_flags & ~CENSOR_STORY) : (FM.censor_flags|CENSOR_STORY)
+				FM.censor_flags = (FM.censor_flags & NEWSCASTER_CENSOR_STORY) ? (FM.censor_flags & ~NEWSCASTER_CENSOR_STORY) : (FM.censor_flags|NEWSCASTER_CENSOR_STORY)
 			else
 				return FALSE
 		if("clear_wanted_notice")
 			if(is_security && !get_scanned_user(usr)["security"])
-				set_temp("You do not have permission to perform this action. Please ensure your ID has appropiate access.", "danger")
+				set_temp("You do not have permission to perform this action. Please ensure your ID has appropriate access.", "danger")
 				return
 			var/datum/feed_message/WN = GLOB.news_network.wanted_issue
 			if(!WN)
@@ -510,7 +519,7 @@
 						// Redirect
 						screen = NEWSCASTER_CHANNEL
 						viewing_channel = FC
-					else if (id == "manage_channel") // Channel management
+					else if(id == "manage_channel") // Channel management
 						FC = locateUID(arguments["uid"])
 						if(!FC || !FC.can_modify(usr, get_scanned_user(usr)["name"]))
 							return
@@ -606,9 +615,9 @@
 	photo = null
 	P.forceMove(loc)
 	if(ishuman(user) && user.put_in_active_hand(P))
-		visible_message("<span class='notice'>[src] ejects [P] from its photo slot into [user]'s hand.")
+		visible_message(SPAN_NOTICE("[src] ejects [P] from its photo slot into [user]'s hand."))
 	else
-		visible_message("<span class='notice'>[src] ejects [P] from its photo slot.")
+		visible_message(SPAN_NOTICE("[src] ejects [P] from its photo slot."))
 	playsound(loc, 'sound/machines/terminal_insert_disc.ogg', 30, TRUE)
 	SStgui.update_uis(src)
 
@@ -633,18 +642,9 @@
 /obj/machinery/newscaster/proc/get_scanned_user(mob/user)
 	. = list(name = "Unknown", security = user.can_admin_interact())
 	if(ishuman(user))
-		var/mob/living/carbon/human/M = user
-		// No ID, no luck
-		if(!M.wear_id)
-			return
-		// Try to get the ID
-		var/obj/item/card/id/ID
-		if(istype(M.wear_id, /obj/item/pda))
-			var/obj/item/pda/P = M.wear_id
-			ID = P.id
-		else if(istype(M.wear_id, /obj/item/card/id))
-			ID = M.wear_id
-		if(istype(ID))
+		var/mob/living/carbon/human/human_user = user
+		var/obj/item/card/id/ID = human_user.get_id_card()
+		if(ID)
 			return list(name = "[ID.registered_name] ([ID.assignment])", security = has_access(list(), list(ACCESS_SECURITY), ID.access))
 	else if(issilicon(user))
 		var/mob/living/silicon/ai_user = user
@@ -672,7 +672,7 @@
 	// Print it
 	is_printing = TRUE
 	playsound(loc, 'sound/goonstation/machines/printer_dotmatrix.ogg', 50, TRUE)
-	visible_message("<span class='notice'>[src] whirs as it prints a newspaper.</span>")
+	visible_message(SPAN_NOTICE("[src] whirs as it prints a newspaper."))
 	addtimer(CALLBACK(src, PROC_REF(print_newspaper_finish)), 5 SECONDS)
 
 /**
@@ -723,15 +723,13 @@
 /**
   * Ejects the currently loaded photo if there is one.
   */
-/obj/machinery/newscaster/verb/eject_photo_verb()
-	set name = "Eject Photo"
-	set category = "Object"
-	set src in oview(1)
-
-	if(usr.incapacitated())
+/obj/machinery/newscaster/AltClick(mob/user)
+	if(user.stat || HAS_TRAIT(user, TRAIT_HANDS_BLOCKED) || !Adjacent(user))
 		return
+	eject_photo(user)
 
-	eject_photo(usr)
+MAPPING_DIRECTIONAL_HELPERS(/obj/machinery/newscaster, 30, 30)
+MAPPING_DIRECTIONAL_HELPERS(/obj/machinery/newscaster/security_unit, 30, 30)
 
 #undef CHANNEL_NAME_MAX_LENGTH
 #undef CHANNEL_DESC_MAX_LENGTH

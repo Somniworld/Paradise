@@ -3,11 +3,10 @@
 	icon = 'icons/obj/items.dmi' //mapping
 	icon_state = "syndballoon"
 	invisibility = INVISIBILITY_ABSTRACT
-	anchored = TRUE
 	var/list/elements
-	var/floor_type = /turf/simulated/floor/vault
+	var/floor_type = /turf/simulated/floor/vault/lavaland_air
 	var/finished = FALSE
-	var/reward_type = /obj/item/reagent_containers/food/snacks/cookie
+	var/reward_type = /obj/item/food/cookie
 	var/element_type = /obj/structure/puzzle_element
 	var/auto_setup = TRUE
 	var/empty_tile_id
@@ -57,7 +56,7 @@
 	if(finished)
 		return
 
-	if(elements.len < 8) //Someone broke it
+	if(length(elements) < 8) //Someone broke it
 		qdel(src)
 
 	//Check if everything is in place
@@ -98,13 +97,13 @@
 		current_ordering += E.id
 
 	var/swap_tally = 0
-	for(var/i in 1 to current_ordering.len)
+	for(var/i in 1 to length(current_ordering))
 		var/checked_value = current_ordering[i]
-		for(var/j in i to current_ordering.len)
+		for(var/j in i to length(current_ordering))
 			if(current_ordering[j] < checked_value)
 				swap_tally++
 
-	return swap_tally % 2 == 0
+	return ISEVEN(swap_tally)
 
 //swap two tiles in same row
 /obj/effect/sliding_puzzle/proc/make_solvable()
@@ -171,7 +170,7 @@
 	//Setup random empty tile
 	empty_tile_id = pick_n_take(left_ids)
 	var/turf/empty_tile_turf = get_turf_for_id(empty_tile_id)
-	empty_tile_turf.ChangeTurf(floor_type, keep_icon = FALSE, ignore_air = FALSE)
+	empty_tile_turf.ChangeTurf(floor_type, keep_icon = FALSE, ignore_air = TRUE)
 	var/mutable_appearance/MA = new(puzzle_pieces["[empty_tile_id]"])
 	MA.layer = empty_tile_turf.layer + 0.1
 	empty_tile_turf.add_overlay(MA)
@@ -180,7 +179,7 @@
 	var/list/empty_spots = left_ids.Copy()
 	for(var/spot_id in empty_spots)
 		var/turf/T = get_turf_for_id(spot_id)
-		T = T.ChangeTurf(floor_type, keep_icon = FALSE, ignore_air = FALSE)
+		T = T.ChangeTurf(floor_type, keep_icon = FALSE, ignore_air = TRUE)
 		var/obj/structure/puzzle_element/E = new element_type(T)
 		elements += E
 		var/chosen_id = pick_n_take(left_ids)
@@ -197,7 +196,6 @@
 	desc = "Puzzling..."
 	icon = 'icons/obj/lavaland/artefacts.dmi'
 	icon_state = "puzzle_pillar"
-	anchored = FALSE
 	density = TRUE
 	var/id = 0
 	var/obj/effect/sliding_puzzle/source
@@ -240,6 +238,8 @@
 
 /obj/structure/puzzle_element/Moved()
 	. = ..()
+	if(!source)
+		return
 	source.validate()
 
 //Admin abuse version so you can pick the icon before it sets up
@@ -254,7 +254,7 @@
 
 //Ruin version
 /obj/effect/sliding_puzzle/lavaland
-	reward_type = /obj/structure/closet/crate/necropolis/puzzle
+	reward_type = /obj/structure/closet/crate/necropolis/tendril
 
 /obj/effect/sliding_puzzle/lavaland/dispense_reward()
 	if(prob(25))
@@ -280,7 +280,7 @@
 
 /obj/effect/sliding_puzzle/prison/Destroy()
 	if(prisoner)
-		to_chat(prisoner,"<span class='userdanger'>With the cube broken by force, you can feel your body falling apart.</span>")
+		to_chat(prisoner,SPAN_USERDANGER("With the cube broken by force, you can feel your body falling apart."))
 		prisoner.death()
 		qdel(prisoner)
 	. = ..()
@@ -292,7 +292,7 @@
 
 //Some armor so it's harder to kill someone by mistake.
 /obj/structure/puzzle_element/prison
-	armor = list(MELEE = 50, BULLET = 50, LASER = 50, ENERGY = 50, BOMB = 50, BIO = 50, RAD = 50, FIRE = 50, ACID = 50)
+	armor = list(MELEE = 50, BULLET = 50, LASER = 50, ENERGY = 50, BOMB = 50, RAD = 50, FIRE = 50, ACID = 50)
 
 /obj/structure/puzzle_element/prison/relaymove(mob/user)
 	return
@@ -302,22 +302,25 @@
 	desc = "Dusty cube with humanoid imprint on it."
 	icon = 'icons/obj/lavaland/artefacts.dmi'
 	icon_state = "prison_cube"
+	new_attack_chain = TRUE
 
-/obj/item/prisoncube/afterattack(atom/target, mob/user, proximity_flag, click_parameters)
-	. = ..()
-	if(!proximity_flag || !isliving(target))
-		return
-	var/mob/living/victim = target
-	var/mob/living/carbon/carbon_victim = victim
+/obj/item/prisoncube/interact_with_atom(atom/target, mob/living/user, list/modifiers)
+	if(!isliving(target))
+		return NONE
+
+	var/mob/living/carbon/carbon_victim = target
 	//Handcuffed or unconcious
-	if(istype(carbon_victim) && carbon_victim.handcuffed || victim.stat != CONSCIOUS)
-		if(!puzzle_imprison(target))
-			to_chat(user,"<span class='warning'>[src] does nothing.</span>")
-			return
-		to_chat(user,"<span class='warning'>You trap [victim] in the prison cube!</span>")
-		qdel(src)
-	else
-		to_chat(user,"<span class='notice'>[src] only accepts restrained or unconscious prisoners.</span>")
+	if(!(istype(carbon_victim) && carbon_victim.handcuffed || carbon_victim.stat != CONSCIOUS))
+		to_chat(user,SPAN_NOTICE("[src] only accepts restrained or unconscious prisoners."))
+		return ITEM_INTERACT_COMPLETE
+
+	if(!puzzle_imprison(target))
+		to_chat(user,SPAN_WARNING("[src] does nothing."))
+		return ITEM_INTERACT_COMPLETE
+
+	to_chat(user,SPAN_WARNING("You trap [target] in [src]!"))
+	qdel(src)
+	return ITEM_INTERACT_COMPLETE
 
 /proc/puzzle_imprison(mob/living/prisoner)
 	var/turf/T = get_turf(prisoner)
@@ -329,7 +332,7 @@
 	//First grab the prisoner and move them temporarily into the generator so they won't get thrown around.
 	prisoner.notransform = TRUE
 	prisoner.forceMove(cube)
-	to_chat(prisoner,"<span class='userdanger'>You're trapped by the prison cube! You will remain trapped until someone solves it.</span>")
+	to_chat(prisoner,SPAN_USERDANGER("You're trapped by the prison cube! You will remain trapped until someone solves it."))
 
 	//Clear the area from objects (and cube user)
 	var/list/things_to_throw = list()
@@ -349,3 +352,5 @@
 	var/obj/structure/puzzle_element/E = pick(cube.elements)
 	prisoner.forceMove(E)
 	return TRUE
+
+#undef COLLAPSE_DURATION

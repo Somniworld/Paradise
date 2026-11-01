@@ -6,7 +6,7 @@
 	var/list/gamemode_names = list()
 	/// Assoc list of gamemode probabilities  (key: config-tag | value: probability)
 	var/list/probabilities = list()
-	/// List of all gamemodes that can be voted for (value: config-tag)
+	/// List of all gamemodes that can be voted for, (value: config-tag)
 	var/list/votable_modes = list()
 	/// Should antags be restricted based on account age?
 	var/antag_account_age_restriction = FALSE
@@ -20,6 +20,14 @@
 	var/traitor_objectives_amount = 2
 	/// Enable player limits on gamemodes? Disabling can be useful for testing
 	var/enable_gamemode_player_limit = TRUE
+	/// Should we generate random station traits at game start?
+	var/add_random_station_traits = TRUE
+	/// Minimum readied up players required for roundstart hijack objectives
+	var/min_players_hijack_roundstart = 30
+	/// Minimum alive crew required for midround hijack objectives
+	var/min_players_hijack_midround = 20
+	/// Minimum living security required for midround hijack objectives
+	var/min_security_hijack_midround = 2
 
 // Dynamically setup a list of all gamemodes
 /datum/configuration_section/gamemode_configuration/New()
@@ -51,8 +59,13 @@
 	CONFIG_LOAD_BOOL(prevent_mindshield_antags, data["prevent_mindshield_antag"])
 	CONFIG_LOAD_BOOL(disable_certain_round_early_end, data["disable_certain_round_early_end"])
 	CONFIG_LOAD_BOOL(enable_gamemode_player_limit, data["enable_gamemode_player_limit"])
+	CONFIG_LOAD_BOOL(add_random_station_traits, data["add_random_station_traits"])
 
 	CONFIG_LOAD_NUM(traitor_objectives_amount, data["traitor_objective_amount"])
+
+	CONFIG_LOAD_NUM(min_players_hijack_roundstart, data["min_players_hijack_roundstart"])
+	CONFIG_LOAD_NUM(min_players_hijack_midround, data["min_players_hijack_midround"])
+	CONFIG_LOAD_NUM(min_security_hijack_midround, data["min_security_hijack_midround"])
 
 	// Load gamemode probabilities
 	if(islist(data["gamemode_probabilities"]))
@@ -75,7 +88,7 @@
 	return new /datum/game_mode/extended()
 
 /datum/configuration_section/gamemode_configuration/proc/get_runnable_modes()
-	var/list/datum/game_mode/runnable_modes = new
+	var/list/datum/game_mode/runnable_modes = list()
 	for(var/T in subtypesof(/datum/game_mode))
 		var/datum/game_mode/M = new T()
 

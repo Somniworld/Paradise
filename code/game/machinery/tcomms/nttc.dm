@@ -26,15 +26,29 @@
 		"Robot" = "airadio",
 		// Assistant
 		"Assistant" = "radio",
+		"Off-Duty" = "radio",
+		"Retired" = "radio",
+		"Intern" = "radio",
 		// Command (Solo command, not department heads)
 		"Blueshield" = "comradio",
+		"Blueshield Officer" = "comradio",
+		"Bodyguard" = "comradio",
+		"Command Escort" = "comradio",
 		"Captain" = "comradio",
-		"Head of Personnel" = "comradio",
+		"Station Commander" = "comradio",
+		"Head of Command" = "comradio",
+		"Commanding Officer" = "comradio",
 		"Nanotrasen Representative" = "comradio",
 		// Engineeering
 		"Atmospheric Technician" = "engradio",
+		"Firefighter" = "engradio",
 		"Chief Engineer" = "engradio",
+		"Engineering Director" = "engradio",
+		"Senior Engineer" = "engradio",
+		"Engine Foreman" = "engradio",
 		"Electrician" = "engradio",
+		"Mechanic" = "engradio",
+		"Repairman" = "engradio",
 		"Engine Technician" = "engradio",
 		"Life Support Specialist" = "engradio",
 		"Maintenance Technician" = "engradio",
@@ -56,24 +70,33 @@
 		"Nanotrasen Navy Representative" = "dsquadradio",
 		"Research Officer" = "dsquadradio",
 		"Special Operations Officer" = "dsquadradio",
-		"Sol Trader" = "dsquadradio",
-		"Solar Federation General" = "dsquadradio",
-		"Solar Federation Representative" = "dsquadradio",
-		"Solar Federation Specops Lieutenant" = "dsquadradio",
-		"Solar Federation Specops Marine" = "dsquadradio",
-		"Solar Federation Lieutenant" = "dsquadradio",
-		"Solar Federation Marine" = "dsquadradio",
+		"Trans-Solar Federation Trader" = "dsquadradio",
+		"Trans-Solar Federation General" = "dsquadradio",
+		"Trans-Solar Federation Representative" = "dsquadradio",
+		"MARSOC Lieutenant" = "dsquadradio",
+		"MARSOC Marine" = "dsquadradio",
+		"TSF Lieutenant" = "dsquadradio",
+		"TSF Marine" = "dsquadradio",
 		"Supreme Commander" = "dsquadradio",
 		"Thunderdome Overseer" = "dsquadradio",
 		"VIP Guest" = "dsquadradio",
 		// Medical
 		"Chemist" = "medradio",
 		"Chief Medical Officer" = "medradio",
+		"Medical Director" = "medradio",
+		"Senior Physician" = "medradio",
 		"Coroner" = "medradio",
+		"Mortician" = "medradio",
 		"Medical Doctor" = "medradio",
+		"Medical Resident" = "medradio",
+		"Medical Student" = "medradio",
 		"Microbiologist" = "medradio",
 		"Nurse" = "medradio",
+		"Physician" = "medradio",
 		"Paramedic" = "medradio",
+		"Emergency Medical Technician" = "medradio",
+		"First Responder" = "medradio",
+		"Rescue Technician" = "medradio",
 		"Pathologist" = "medradio",
 		"Pharmacologist" = "medradio",
 		"Pharmacist" = "medradio",
@@ -87,37 +110,88 @@
 		"Biomechanical Engineer" = "sciradio",
 		"Chemical Researcher" = "sciradio",
 		"Geneticist" = "sciradio",
+		"Genetic Researcher" = "sciradio",
 		"Mechatronic Engineer" = "sciradio",
 		"Plasma Researcher" = "sciradio",
 		"Research Director" = "sciradio",
+		"Senior Researcher" = "sciradio",
+		"Chief Research Officer" = "sciradio",
 		"Roboticist" = "sciradio",
 		"Scientist" = "sciradio",
 		"Xenoarcheologist" = "sciradio",
 		"Xenobiologist" = "sciradio",
+		"Slime Cultivator" = "sciradio",
+		"Slime Rancher" = "sciradio",
 		// Security
 		"Detective" = "secradio",
+		"Investigator" = "secradio",
 		"Forensic Technician" = "secradio",
 		"Head of Security" = "secradio",
+		"Sheriff" = "secradio",
+		"Security Director" = "secradio",
 		"Human Resources Agent" = "secradio",
+		"Inspector" = "secradio",
 		"Internal Affairs Agent" = "secradio",
 		"Magistrate" = "secradio",
+		"Judge" = "secradio",
 		"Security Officer" = "secradio",
+		"Ranger" = "secradio",
+		"Deputy" = "secradio",
+		"Constable" = "secradio",
 		"Warden" = "secradio",
+		"Bailiff" = "secradio",
+		"Correctional Officer" = "secradio",
+		"Armorer" = "secradio",
 		// Supply
 		"Quartermaster" = "supradio",
+		"Supply Director" = "supradio",
+		"Chief Logistics Officer" = "supradio",
+		"Requisitions Foreman" = "supradio",
 		"Cargo Technician" = "supradio",
+		"Mail Carrier" = "supradio",
+		"Courier" = "supradio",
+		"Logistics Technician" = "supradio",
+		"Requisitions Specialist" = "supradio",
+		"Smith" = "supradio",
+		"Metalworker" = "supradio",
+		"Tinkerer" = "supradio",
 		"Shaft Miner" = "supradio",
 		"Spelunker" = "supradio",
+		"Explorer" = "supradio",
+		"Salvage Technician" = "supradio",
+		"Scavenger" = "supradio",
 		// Service
-		"Barber" = "srvradio",
+		"Head of Personnel" = "srvradio",
+		"Head of Service" = "srvradio",
+		"Crew Relations Officer" = "srvradio",
 		"Bartender" = "srvradio",
+		"Barkeep" = "srvradio",
+		"Waiter" = "srvradio",
+		"Brewmaster" = "srvradio",
+		"Barista" = "srvradio",
 		"Beautician" = "srvradio",
 		"Botanical Researcher" = "srvradio",
 		"Botanist" = "srvradio",
+		"Farmer" = "srvradio",
+		"Gardener" = "srvradio",
 		"Butcher" = "srvradio",
 		"Chaplain" = "srvradio",
+		"Priest" = "srvradio",
+		"Cleric" = "srvradio",
+		"Clergyman" = "srvradio",
+		"Bishop" = "srvradio",
+		"Deacon" = "srvradio",
+		"Reverend" = "srvradio",
+		"Occult Specialist" = "srvradio",
+		"Paranormal Specialist" = "srvradio",
+		"Rabbi" = "srvradio",
+		"Monk" = "srvradio",
+		"Kannushi" = "srvradio",
 		"Chef" = "srvradio",
 		"Clown" = "srvradio",
+		"Jester" = "srvradio",
+		"Entertainer" = "srvradio",
+		"Comedian" = "srvradio",
 		"Cook" = "srvradio",
 		"Culinary Artist" = "srvradio",
 		"Custodial Technician" = "srvradio",
@@ -126,16 +200,25 @@
 		"Janitor" = "srvradio",
 		"Journalist" = "srvradio",
 		"Librarian" = "srvradio",
+		"Reporter" = "srvradio",
+		"News Anchor" = "srvradio",
+		"Antiquarian" = "srvradio",
+		"Curator" = "srvradio",
 		"Mime" = "srvradio",
+		"Pantomime" = "srvradio",
+		"Performer" = "srvradio",
+		"Performance Artist" = "srvradio",
+		// Procedure
+		"Nanotrasen Career Trainer" = "proradio",
 	)
 	/// List of Command jobs
-	var/list/heads = list("Captain", "Head of Personnel", "Nanotrasen Representative", "Blueshield", "Chief Engineer", "Chief Medical Officer", "Research Director", "Head of Security", "Magistrate", "AI")
+	var/list/heads = list("Captain", "Station Commander", "Head of Command", "Commanding Officer", "Head of Personnel", "Head of Service", "Crew Relations Officer", "Nanotrasen Representative", "Blueshield", "Blueshield Officer", "Bodyguard", "Command Escort", "Chief Engineer", "Engineering Director", "Senior Engineer", "Engine Foreman", "Chief Medical Officer", "Medical Director", "Senior Physician", "Research Director", "Chief Research Officer", "Senior Researcher", "Head of Security", "Sheriff", "Security Director", "Magistrate", "Judge", "Quartermaster", "Chief Logistics Officer", "Supply Director", "Requisitions Foreman", "AI")
 	/// List of ERT jobs
 	var/list/ert_jobs = list("Emergency Response Team Officer", "Emergency Response Team Engineer", "Emergency Response Team Medic", "Emergency Response Team Inquisitor", "Emergency Response Team Janitor", "Emergency Response Team Leader", "Emergency Response Team Member")
 	/// List of CentComm jobs
 	var/list/cc_jobs = list("Nanotrasen Navy Officer", "Special Operations Officer", "Syndicate Officer", "Intel Officer", "Medical Officer", "Nanotrasen Navy Captain", "Nanotrasen Navy Representative", "Research Officer", "Supreme Commander", "Thunderdome Overseer")
 	/// List of SolGov Marine jobs
-	var/list/tsf_jobs = list("Solar Federation Specops Lieutenant", "Solar Federation Specops Marine", "Solar Federation Lieutenant", "Solar Federation Marine", "Solar Federation Representative", "Solar Federation General", "VIP Guest")
+	var/list/tsf_jobs = list("MARSOC Lieutenant", "MARSOC Marine", "TSF Lieutenant", "TSF Marine", "Trans-Solar Federation Representative", "Trans-Solar Federation General", "VIP Guest")
 	// Defined so code compiles and incase someone has a non-standard job
 	var/job_class = "radio"
 	// NOW FOR ACTUAL TOGGLES
@@ -207,7 +290,7 @@
 // Fucking broken as shit, someone help me fix this.
 /datum/nttc_configuration/proc/nttc_deserialize(text, ckey)
 	if(word_blacklist.Find(text)) //uh oh, they tried to be naughty
-		message_admins("<span class='danger'>EXPLOIT WARNING: </span> [ckey] attempted to upload an NTTC configuration containing JS abusable tags!")
+		message_admins("[SPAN_DANGER("EXPLOIT WARNING: ")] [ckey] attempted to upload an NTTC configuration containing JS abusable tags!")
 		log_admin("EXPLOIT WARNING: [ckey] attempted to upload an NTTC configuration containing JS abusable tags")
 		return FALSE
 	var/list/var_list = json_decode(text)
@@ -252,11 +335,12 @@
 		var/job = tcm.sender_job
 		var/rank = tcm.sender_rank
 		//if the job title is not custom, just use that to decide the rules of formatting
-		if (job in all_jobs)
+		if(job in all_jobs)
 			job_class = all_jobs[job]
 		else
 			job_class = all_jobs[rank]
 
+	tcm.pre_modify_name = tcm.sender_name
 	if(toggle_name_color)
 		var/new_name = "<span class=\"[job_class]\">[tcm.sender_name]</span>"
 		tcm.sender_name = new_name
@@ -269,25 +353,24 @@
 			job = "ERT"
 		if(toggle_job_color)
 			switch(job_indicator_type)
-				// These must have trailing spaces. No exceptions.
 				if(JOB_STYLE_1)
-					new_name = "[tcm.sender_name] <span class=\"[job_class]\">([job])</span> "
+					new_name = "[tcm.sender_name] <span class=\"[job_class]\">([job])</span>"
 				if(JOB_STYLE_2)
-					new_name = "[tcm.sender_name] - <span class=\"[job_class]\">[job]</span> "
+					new_name = "[tcm.sender_name] - <span class=\"[job_class]\">[job]</span>"
 				if(JOB_STYLE_3)
-					new_name = "<span class=\"[job_class]\"><small>\[[job]\]</small></span> [tcm.sender_name] "
+					new_name = "<span class=\"[job_class]\"><small>\[[job]\]</small></span> [tcm.sender_name]"
 				if(JOB_STYLE_4)
-					new_name = "<span class=[job_class]>([job])</span> [tcm.sender_name] "
+					new_name = "<span class=[job_class]>([job])</span> [tcm.sender_name]"
 		else
 			switch(job_indicator_type)
 				if(JOB_STYLE_1)
-					new_name = "[tcm.sender_name] ([job]) "
+					new_name = "[tcm.sender_name] ([job])"
 				if(JOB_STYLE_2)
-					new_name = "[tcm.sender_name] - [job] "
+					new_name = "[tcm.sender_name] - [job]"
 				if(JOB_STYLE_3)
-					new_name = "<small>\[[job]\]</small> [tcm.sender_name] "
+					new_name = "<small>\[[job]\]</small> [tcm.sender_name]"
 				if(JOB_STYLE_4)
-					new_name = "([job]) [tcm.sender_name] "
+					new_name = "([job]) [tcm.sender_name]"
 
 		// Only change the name if they have a job tag set, otherwise everyone becomes unknown, and thats bad
 		if(new_name != "")

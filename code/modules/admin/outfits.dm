@@ -1,24 +1,16 @@
 GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 
-/client/proc/outfit_manager()
-	set category = "Event"
-	set name = "Outfit Manager"
-
-	if(!check_rights(R_EVENT))
-		return
-	holder.outfit_manager(usr)
-
 /datum/admins/proc/outfit_manager(mob/admin)
-	var/list/dat = list("<ul>")
+	var/list/dat = list("<!DOCTYPE html><ul>")
 	for(var/datum/outfit/O in GLOB.custom_outfits)
 		var/vv = FALSE
 		var/datum/outfit/varedit/VO = O
 		if(istype(VO))
 			vv = length(VO.vv_values)
-		dat += "<li>[O.name][vv ? "(VV)" : ""]</li> <a href='?_src_=holder;save_outfit=1;chosen_outfit=[O.UID()]'>Save</a> <a href='?_src_=holder;delete_outfit=1;chosen_outfit=[O.UID()]'>Delete</a>"
+		dat += "<li>[O.name][vv ? "(VV)" : ""]</li> <a href='byond://?_src_=holder;save_outfit=1;chosen_outfit=[O.UID()]'>Save</a> <a href='byond://?_src_=holder;delete_outfit=1;chosen_outfit=[O.UID()]'>Delete</a>"
 	dat += "</ul>"
-	dat += "<a href='?_src_=holder;create_outfit_menu=1'>Create</a><br>"
-	dat += "<a href='?_src_=holder;load_outfit=1'>Load from file</a>"
+	dat += "<a href='byond://?_src_=holder;create_outfit_menu=1'>Create</a><br>"
+	dat += "<a href='byond://?_src_=holder;load_outfit=1'>Load from file</a>"
 	admin << browse(dat.Join(),"window=outfitmanager")
 
 /datum/admins/proc/save_outfit(mob/admin,datum/outfit/O)
@@ -28,7 +20,7 @@ GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 /datum/admins/proc/delete_outfit(mob/admin,datum/outfit/O)
 	GLOB.custom_outfits -= O
 	qdel(O)
-	to_chat(admin,"<span class='notice'>Outfit deleted.</span>")
+	to_chat(admin,SPAN_NOTICE("Outfit deleted."))
 	outfit_manager(admin)
 
 /datum/admins/proc/load_outfit(mob/admin)
@@ -38,15 +30,15 @@ GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 	var/filedata = wrap_file2text(outfit_file)
 	var/json = json_decode(filedata)
 	if(!json)
-		to_chat(admin,"<span class='warning'>JSON decode error.</span>")
+		to_chat(admin,SPAN_WARNING("JSON decode error."))
 		return
 	var/otype = text2path(json["outfit_type"])
 	if(!ispath(otype,/datum/outfit))
-		to_chat(admin,"<span class='warning'>Malformed/Outdated file.</span>")
+		to_chat(admin,SPAN_WARNING("Malformed/Outdated file."))
 		return
 	var/datum/outfit/O = new otype
 	if(!O.load_from(json))
-		to_chat(admin,"<span class='warning'>Malformed/Outdated file.</span>")
+		to_chat(admin,SPAN_WARNING("Malformed/Outdated file."))
 		return
 	GLOB.custom_outfits += O
 	outfit_manager(admin)
@@ -59,6 +51,7 @@ GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 	var/list/headwear = typesof(/obj/item/clothing/head)
 	var/list/glasses = typesof(/obj/item/clothing/glasses)
 	var/list/masks = typesof(/obj/item/clothing/mask)
+	var/list/neckwear = typesof(/obj/item/clothing/neck)
 	var/list/pdas = typesof(/obj/item/pda)
 	var/list/ids = typesof(/obj/item/card/id)
 
@@ -97,6 +90,12 @@ GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 		mask_select += "<option value=\"[path]\">[path]</option>"
 	mask_select += "</select>"
 
+	var/neckwear_select = "<select name=\"outfit_neckwear\"><option value=\"\">None</option>"
+	for(var/path in neckwear)
+		neckwear_select += "<option value=\"[path]\">[path]</option>"
+	neckwear_select += "</select>"
+
+
 	var/id_select = "<select name=\"outfit_id\"><option value=\"\">None</option>"
 	for(var/path in ids)
 		id_select += "<option value=\"[path]\">[path]</option>"
@@ -108,7 +107,7 @@ GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 	pda_select += "</select>"
 
 	var/dat = {"
-	<html><head><title>Create Outfit</title></head><body>
+	<html><meta charset='utf-8'><head><title>Create Outfit</title></head><body>
 	<form name="outfit" action="byond://?src=[UID()];" method="get">
 	<input type="hidden" name="src" value="[UID()]">
 	<input type="hidden" name="create_outfit_finalize" value="1">
@@ -165,6 +164,12 @@ GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 			<th>Mask:</th>
 			<td>
 				[mask_select]
+			</td>
+		</tr>
+		<tr>
+			<th>Neck:</th>
+			<td>
+				[neckwear_select]
 			</td>
 		</tr>
 		<tr>
@@ -246,6 +251,7 @@ GLOBAL_LIST_EMPTY(custom_outfits) //Admin created outfits
 	O.head = text2path(href_list["outfit_head"])
 	O.back = text2path(href_list["outfit_back"])
 	O.mask = text2path(href_list["outfit_mask"])
+	O.neck = text2path(href_list["outfit_neckwear"])
 	O.glasses = text2path(href_list["outfit_glasses"])
 	O.r_hand = text2path(href_list["outfit_r_hand"])
 	O.l_hand = text2path(href_list["outfit_l_hand"])

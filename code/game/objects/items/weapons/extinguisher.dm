@@ -1,186 +1,213 @@
 /obj/item/extinguisher
 	name = "fire extinguisher"
 	desc = "A traditional red fire extinguisher."
-	icon = 'icons/obj/items.dmi'
 	icon_state = "fire_extinguisher0"
-	item_state = "fire_extinguisher"
+	base_icon_state = "fire_extinguisher"
+	inhand_icon_state = "fire_extinguisher"
 	hitsound = 'sound/weapons/smash.ogg'
 	flags = CONDUCT
 	throwforce = 10
-	w_class = WEIGHT_CLASS_NORMAL
-	throw_speed = 2
-	throw_range = 7
 	force = 10
 	container_type = AMOUNT_VISIBLE
 	materials = list(MAT_METAL = 200)
 	attack_verb = list("slammed", "whacked", "bashed", "thunked", "battered", "bludgeoned", "thrashed")
 	dog_fashion = /datum/dog_fashion/back
 	resistance_flags = FIRE_PROOF
-	var/max_water = 50
-	var/last_use = 1.0
-	var/safety = 1
-	var/refilling = FALSE
-	var/sprite_name = "fire_extinguisher"
-	var/power = 5 //Maximum distance launched water will travel
-	var/precision = 0 //By default, turfs picked from a spray are random, set to 1 to make it always have at least one water effect per row
-	var/cooling_power = 2 //Sets the cooling_temperature of the water reagent datum inside of the extinguisher when it is refilled
+	new_attack_chain = TRUE
+	/// Used to determine the chemical that spawns in the extinguisher
+	var/reagent_id = "water"
+	/// Used to determine the maximum capacity of extinguishers
+	var/reagent_capacity = 50
+	/// If `TRUE`, using in hand will toggle the extinguisher's safety. This must be set to `FALSE` for extinguishers with different firing modes (i.e. backpacks).
+	var/has_safety = TRUE
+	/// If `TRUE`, the extinguisher will not fire.
+	var/safety_active = TRUE
+	/// When `FALSE`, turfs picked from a spray are random. When `TRUE`, it always has at least one water effect per row.
+	var/precision = FALSE
+	/// If FALSE, extinguishers wont appear prefilled by default
+	var/prefilled = TRUE
+	COOLDOWN_DECLARE(last_use)
+
+/obj/item/extinguisher/empty
+	prefilled = FALSE
+
+/obj/item/extinguisher/atmospherics
+	name = "atmospheric fire extinguisher"
+	desc = "An extinguisher coated in yellow paint that is pre-filled with firefighting foam."
+	icon_state = "atmoFE0"
+	base_icon_state = "atmoFE"
+	inhand_icon_state = "atmoFE"
+	materials = list(MAT_TITANIUM = 200)
+	dog_fashion = null
+	reagent_id = "firefighting_foam"
+	reagent_capacity = 65
+
+/obj/item/extinguisher/atmospherics/empty
+	prefilled = FALSE
 
 /obj/item/extinguisher/mini
 	name = "pocket fire extinguisher"
 	desc = "A light and compact fibreglass-framed model fire extinguisher."
 	icon_state = "miniFE0"
-	item_state = "miniFE"
-	hitsound = null	//it is much lighter, after all.
-	flags = null //doesn't CONDUCT
+	base_icon_state = "miniFE"
+	inhand_icon_state = "miniFE"
+	hitsound = null	// It is much lighter, after all.
+	flags = null // Non-conductive, not made of metal.
 	throwforce = 2
 	w_class = WEIGHT_CLASS_SMALL
-	force = 3.0
+	force = 3
 	materials = list()
-	max_water = 30
-	sprite_name = "miniFE"
+	reagent_capacity = 30
 	dog_fashion = null
+
+/obj/item/extinguisher/mini/empty
+	prefilled = FALSE
+
+/obj/item/extinguisher/mini/cyborg
+	name = "integrated fire extinguisher"
+	desc = "A miniature fire extinguisher designed to store firefighting foam."
+	icon_state = "cyborgFE0"
+	base_icon_state = "cyborgFE"
+	reagent_id = "firefighting_foam"
 
 /obj/item/extinguisher/examine(mob/user)
 	. = ..()
-	. += "<span class='notice'>The safety is [safety ? "on" : "off"].</span>"
-
+	if(has_safety)
+		. += SPAN_NOTICE("The safety is [safety_active ? "on" : "off"].")
 
 /obj/item/extinguisher/Initialize(mapload)
 	. = ..()
+	if(!prefilled)
+		create_reagents(reagent_capacity)
+		reagents.add_reagent(reagent_id, 0)
 	if(!reagents)
-		create_reagents(max_water)
-		reagents.add_reagent("water", max_water)
+		create_reagents(reagent_capacity)
+		reagents.add_reagent(reagent_id, reagent_capacity)
+	ADD_TRAIT(src, TRAIT_CAN_POINT_WITH, ROUNDSTART_TRAIT)
 
-/obj/item/extinguisher/attack_self(mob/user as mob)
-	safety = !safety
-	src.icon_state = "[sprite_name][!safety]"
-	src.desc = "The safety is [safety ? "on" : "off"]."
-	to_chat(user, "The safety is [safety ? "on" : "off"].")
-	return
+/obj/item/extinguisher/activate_self(mob/user)
+	if(..())
+		return
 
-/obj/item/extinguisher/attack_obj(obj/O, mob/living/user, params)
-	if(AttemptRefill(O, user))
-		refilling = TRUE
-		return FALSE
-	else
-		return ..()
+	// Backpack extinguishers have no safety mechanism.
+	if(!has_safety)
+		return
 
-/obj/item/extinguisher/proc/AttemptRefill(atom/target, mob/user)
-	if(istype(target, /obj/structure/reagent_dispensers/watertank) && target.Adjacent(user))
-		var/safety_save = safety
-		safety = 1
-		if(reagents.total_volume == reagents.maximum_volume)
-			to_chat(user, "<span class='notice'>\The [src] is already full!</span>")
-			safety = safety_save
-			return 1
-		var/obj/structure/reagent_dispensers/watertank/W = target
-		var/transferred = W.reagents.trans_to(src, max_water)
-		if(transferred > 0)
-			to_chat(user, "<span class='notice'>\The [src] has been refilled by [transferred] units</span>")
-			playsound(src.loc, 'sound/effects/refill.ogg', 50, 1, -6)
-			for(var/datum/reagent/water/R in reagents.reagent_list)
-				R.cooling_temperature = cooling_power
-		else
-			to_chat(user, "<span class='notice'>\The [W] is empty!</span>")
-		safety = safety_save
-		return 1
-	else
-		return 0
+	safety_active = !safety_active
+	icon_state = "[base_icon_state][!safety_active]"
+	to_chat(user, SPAN_NOTICE("You [safety_active ? "enable" : "disable"] [src]'s safety."))
+	return ITEM_INTERACT_COMPLETE
 
-/obj/item/extinguisher/afterattack(atom/target, mob/user , flag)
+/obj/item/extinguisher/interact_with_atom(atom/target, mob/living/user, list/modifiers)
 	. = ..()
-	//TODO; Add support for reagents in water.
-	if(target.loc == user)//No more spraying yourself when putting your extinguisher away
+	if(isstorage(target) || istype(target, /atom/movable/screen))
 		return
 
-	if(refilling)
-		refilling = FALSE
+	if(attempt_refill(target, user))
+		return ITEM_INTERACT_COMPLETE
+
+	if(extinguisher_spray(target, user))
+		return ITEM_INTERACT_COMPLETE
+
+/obj/item/extinguisher/ranged_interact_with_atom(atom/target, mob/living/user, list/modifiers)
+	if(extinguisher_spray(target, user))
+		return ITEM_INTERACT_COMPLETE
+
+/obj/item/extinguisher/proc/attempt_refill(atom/target, mob/user)
+	if(!istype(target, /obj/structure/reagent_dispensers/watertank) || !target.Adjacent(user))
+		return FALSE
+
+	if(reagents.total_volume == reagents.maximum_volume)
+		to_chat(user, SPAN_NOTICE("[src] is already full."))
+		return TRUE
+
+	var/obj/structure/reagent_dispensers/watertank/W = target
+	var/transferred = W.reagents.trans_to(src, reagent_capacity)
+	if(!transferred)
+		to_chat(user, SPAN_NOTICE("\The [W] is empty!"))
+		return TRUE
+
+	to_chat(user, SPAN_NOTICE("[src] has been refilled with [transferred] units."))
+	playsound(loc, 'sound/effects/refill.ogg', 50, TRUE, -6)
+	return TRUE
+
+/obj/item/extinguisher/proc/extinguisher_spray(atom/A, mob/living/user)
+	. = TRUE
+
+	// Violence, please!
+	if(safety_active)
+		return FALSE
+
+	if(!COOLDOWN_FINISHED(src, last_use))
 		return
 
-	if(!safety)
-		if(src.reagents.total_volume < 1)
-			to_chat(usr, "<span class='danger'>\The [src] is empty.</span>")
-			return
+	if(reagents.total_volume < 1)
+		to_chat(user, SPAN_DANGER("[src] is empty."))
+		return
 
-		if(world.time < src.last_use + 20)
-			return
+	if(A.loc == user)
+		return
 
-		src.last_use = world.time
+	COOLDOWN_START(src, last_use, 2 SECONDS)
+	if(reagents.chem_temp > 300 || reagents.chem_temp < 280)
+		add_attack_logs(user, A, "Sprayed with superheated or cooled fire extinguisher at Temperature [reagents.chem_temp]K")
+	playsound(loc, 'sound/effects/extinguish.ogg', 75, TRUE, -3)
 
-		if(reagents.chem_temp > 300 || reagents.chem_temp < 280)
-			add_attack_logs(user, target, "Sprayed with superheated or cooled fire extinguisher at Temperature [reagents.chem_temp]K")
-		playsound(src.loc, 'sound/effects/extinguish.ogg', 75, 1, -3)
+	var/direction = get_dir(src, A)
 
-		var/direction = get_dir(src,target)
-
-		if(usr.buckled && isobj(usr.buckled) && !usr.buckled.anchored && !istype(usr.buckled, /obj/vehicle))
-			spawn(0)
-				var/obj/structure/chair/C = null
-				if(istype(usr.buckled, /obj/structure/chair))
-					C = usr.buckled
-				var/obj/B = usr.buckled
-				var/movementdirection = turn(direction,180)
-				if(C)	C.propelled = 4
-				step(B, movementdirection)
-				sleep(1)
-				step(B, movementdirection)
-				if(C)	C.propelled = 3
-				sleep(1)
-				step(B, movementdirection)
-				sleep(1)
-				step(B, movementdirection)
-				if(C)	C.propelled = 2
-				sleep(2)
-				step(B, movementdirection)
-				if(C)	C.propelled = 1
-				sleep(2)
-				step(B, movementdirection)
-				if(C)	C.propelled = 0
-				sleep(3)
-				step(B, movementdirection)
-				sleep(3)
-				step(B, movementdirection)
-				sleep(3)
-				step(B, movementdirection)
-
-		else user.newtonian_move(turn(direction, 180))
-
-		var/turf/T = get_turf(target)
-		var/turf/T1 = get_step(T,turn(direction, 90))
-		var/turf/T2 = get_step(T,turn(direction, -90))
-		var/list/the_targets = list(T,T1,T2)
-		if(precision)
-			var/turf/T3 = get_step(T1, turn(direction, 90))
-			var/turf/T4 = get_step(T2,turn(direction, -90))
-			the_targets = list(T,T1,T2,T3,T4)
-
-		for(var/a=0, a<5, a++)
-			spawn(0)
-				var/obj/effect/particle_effect/water/W = new /obj/effect/particle_effect/water( get_turf(src) )
-				var/turf/my_target = pick(the_targets)
-				if(precision)
-					the_targets -= my_target
-				var/datum/reagents/R = new/datum/reagents(5)
-				if(!W) return
-				W.reagents = R
-				R.my_atom = W
-				if(!W || !src) return
-				src.reagents.trans_to(W,1)
-				for(var/b=0, b<5, b++)
-					step_towards(W,my_target)
-					if(!W || !W.reagents) return
-					W.reagents.reaction(get_turf(W))
-					for(var/atom/atm in get_turf(W))
-						if(!W) return
-						W.reagents.reaction(atm)
-						if(isliving(atm)) //For extinguishing mobs on fire
-							var/mob/living/M = atm
-							M.ExtinguishMob()
-
-					if(W.loc == my_target) break
-					sleep(2)
+	if(isobj(user.buckled) && !user.buckled.anchored && !istype(user.buckled, /obj/vehicle))
+		INVOKE_ASYNC(src, PROC_REF(buckled_speed_move), user.buckled, direction)
 	else
-		return ..()
+		user.newtonian_move(turn(direction, 180))
+	if(user.mind && HAS_TRAIT(user.mind, TRAIT_FIRE_FIGHTER))
+		precision = TRUE
+	var/turf/T = get_turf(A)
+	var/turf/T1 = get_step(T, turn(direction, 90))
+	var/turf/T2 = get_step(T, turn(direction, -90))
+	var/list/the_targets = list(T, T1, T2)
+	if(precision)
+		var/turf/T3 = get_step(T1, turn(direction, 90))
+		var/turf/T4 = get_step(T2, turn(direction, -90))
+		the_targets = list(T, T1, T2, T3, T4)
+
+	for(var/a in 1 to 5)
+		var/obj/effect/particle_effect/water/water = new /obj/effect/particle_effect/water(get_turf(src))
+		water.create_reagents(5)
+		reagents.trans_to(water, 1)
+		var/turf/new_target = pick(the_targets)
+		if(precision)
+			the_targets -= new_target
+		INVOKE_ASYNC(water, TYPE_PROC_REF(/obj/effect/particle_effect/water, extinguish_move), new_target)
 
 /obj/item/extinguisher/cyborg_recharge(coeff, emagged)
-	reagents.check_and_add("water", max_water, 5 * coeff)
+	reagents.check_and_add(reagent_id, reagent_capacity, 5 * coeff)
+
+/obj/item/extinguisher/proc/buckled_speed_move(obj/structure/chair/buckled_to, direction) // Buckled_to may not be a chair here, but we're assuming so because it makes it easier to typecheck
+	var/movementdirection = turn(direction, 180)
+	if(istype(buckled_to))
+		buckled_to.propelled = 4
+	step(buckled_to, movementdirection)
+	sleep(1)
+	step(buckled_to, movementdirection)
+	if(istype(buckled_to))
+		buckled_to.propelled = 3
+	sleep(1)
+	step(buckled_to, movementdirection)
+	sleep(1)
+	step(buckled_to, movementdirection)
+	if(istype(buckled_to))
+		buckled_to.propelled = 2
+	sleep(2)
+	step(buckled_to, movementdirection)
+	if(istype(buckled_to))
+		buckled_to.propelled = 1
+	sleep(2)
+	step(buckled_to, movementdirection)
+	if(istype(buckled_to))
+		buckled_to.propelled = 0
+	sleep(3)
+	step(buckled_to, movementdirection)
+	sleep(3)
+	step(buckled_to, movementdirection)
+	sleep(3)
+	step(buckled_to, movementdirection)

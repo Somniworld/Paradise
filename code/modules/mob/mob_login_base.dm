@@ -1,6 +1,7 @@
-//handles setting lastKnownIP and computer_id for use by the ban systems as well as checking for multikeying
+//handles setting last_known_ckey, lastKnownIP, and computer_id for use by the ban systems as well as checking for multikeying
 /mob/proc/update_Login_details()
 	//Multikey checks and logging
+	last_known_ckey = ckey
 	lastKnownIP	= client.address
 	computer_id	= client.computer_id
 	log_access_in(client)
@@ -23,15 +24,14 @@
 							alert("You have logged in already with another key this round, please log out of this one NOW or risk being banned!")
 				if(matches)
 					if(M.client)
-						message_admins("<font color='red'><B>Notice: </B><font color='#EB4E00'><A href='?src=[usr.UID()];priv_msg=[src.client.ckey]'>[key_name_admin(src)]</A> has the same [matches] as <A href='?src=[usr.UID()];priv_msg=[M.client.ckey]'>[key_name_admin(M)]</A>.</font>", 1)
+						message_admins("<font color='red'><B>Notice: </B><font color='#EB4E00'><A href='byond://?src=[usr.UID()];priv_msg=[src.client.ckey]'>[key_name_admin(src)]</A> has the same [matches] as <A href='byond://?src=[usr.UID()];priv_msg=[M.client.ckey]'>[key_name_admin(M)]</A>.</font>", 1)
 						log_adminwarn("Notice: [key_name(src)] has the same [matches] as [key_name(M)].")
 					else
-						message_admins("<font color='red'><B>Notice: </B><font color='#EB4E00'><A href='?src=[usr.UID()];priv_msg=[src.client.ckey]'>[key_name_admin(src)]</A> has the same [matches] as [key_name_admin(M)] (no longer logged in). </font>", 1)
+						message_admins("<font color='red'><B>Notice: </B><font color='#EB4E00'><A href='byond://?src=[usr.UID()];priv_msg=[src.client.ckey]'>[key_name_admin(src)]</A> has the same [matches] as [key_name_admin(M)] (no longer logged in). </font>", 1)
 						log_adminwarn("Notice: [key_name(src)] has the same [matches] as [key_name(M)] (no longer logged in).")
 
 /mob/Login()
 	GLOB.player_list |= src
-	last_known_ckey = ckey
 	update_Login_details()
 	world.update_status()
 
@@ -60,17 +60,16 @@
 	// For us, (1,1,1) is a space tile. This means roughly 200,000! calls to Move()
 	// You do not want this
 
+	canon_client = client
+	enable_client_mobs_in_contents(client)
+
+	SEND_SIGNAL(src, COMSIG_MOB_LOGIN)
+
 	reset_perspective(loc)
 
 
 	if((ckey in GLOB.de_admins) || (ckey in GLOB.de_mentors))
-		client.verbs += /client/proc/readmin
-
-	//Clear ability list and update from mob.
-	client.verbs -= GLOB.ability_verbs
-
-	if(abilities)
-		client.verbs |= abilities
+		add_verb(client, /client/proc/readmin)
 
 	client.update_active_keybindings()
 
@@ -80,9 +79,14 @@
 
 	add_click_catcher()
 
-	if(viewing_alternate_appearances && viewing_alternate_appearances.len)
+	if(viewing_alternate_appearances && length(viewing_alternate_appearances))
 		for(var/datum/alternate_appearance/AA in viewing_alternate_appearances)
 			AA.display_to(list(src))
 
 	update_client_colour(0)
 	update_morgue()
+	client.init_verbs()
+	SEND_SIGNAL(src, COMSIG_MOB_LOGIN)
+	SEND_SIGNAL(src, COMSIG_MOB_CLIENT_LOGIN, client)
+
+	update_mousepointer()

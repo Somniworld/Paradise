@@ -5,22 +5,33 @@
 	icon_state = "ntflag"
 	lefthand_file = 'icons/mob/inhands/flags_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/flags_righthand.dmi'
+	layer = ABOVE_MOB_LAYER
 	w_class = WEIGHT_CLASS_BULKY
 	max_integrity = 40
 	resistance_flags = FLAMMABLE
 	custom_fire_overlay = "fire"
 	var/rolled = FALSE
+	new_attack_chain = TRUE
 
-/obj/item/flag/attackby(obj/item/W, mob/user, params)
-	. = ..()
-	if(is_hot(W) && !(resistance_flags & ON_FIRE))
-		user.visible_message("<span class='notice'>[user] lights [src] with [W].</span>", "<span class='notice'>You light [src] with [W].</span>", "<span class='warning'>You hear a low whoosh.</span>")
+/obj/item/flag/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	if(used.get_heat() && !(resistance_flags & ON_FIRE))
+		user.visible_message(
+			SPAN_WARNING("[user] lights [src] with [used]!"),
+			SPAN_NOTICE("You light [src] with [used]."),
+			SPAN_HEAR("You hear a low, firey whoosh.")
+		)
 		fire_act()
+		return ITEM_INTERACT_COMPLETE
+	return ..()
 
-/obj/item/flag/attack_self(mob/user)
+/obj/item/flag/activate_self(mob/user)
+	if(..())
+		return ITEM_INTERACT_COMPLETE
 	rolled = !rolled
-	user.visible_message("<span class='notice'>[user] [rolled ? "rolls up" : "unfurls"] [src].</span>", "<span class='notice'>You [rolled ? "roll up" : "unfurl"] [src].</span>", "<span class='warning'>You hear fabric rustling.</span>")
+	user.visible_message(SPAN_NOTICE("[user] [rolled ? "rolls up" : "unfurls"] [src]."), SPAN_NOTICE("You [rolled ? "roll up" : "unfurl"] [src]."), SPAN_WARNING("You hear fabric rustling."))
 	update_icon()
+	add_fingerprint(user)
+	return ITEM_INTERACT_COMPLETE
 
 /obj/item/flag/fire_act(datum/gas_mixture/air, exposed_temperature, exposed_volume, global_overlay = FALSE)
 	..()
@@ -31,36 +42,29 @@
 	update_icon()
 
 /obj/item/flag/update_icon_state()
-	updateFlagIcon()
-	item_state = icon_state
-	if(rolled)
-		icon_state = "[icon_state]_rolled"
-		custom_fire_overlay = "fire_rolled"
-	else
-		custom_fire_overlay = initial(custom_fire_overlay)
-	if(resistance_flags & ON_FIRE)
-		item_state = "[item_state]_fire"
+	icon_state = "[get_flag_icon()][rolled ? "_rolled" : ""]"
+	inhand_icon_state = "[get_flag_icon()][resistance_flags & ON_FIRE ? "_fire" : ""]"
+	custom_fire_overlay = "[initial(custom_fire_overlay)][rolled ? "_rolled" : ""]"
 	if(ismob(loc))
-		var/mob/M = loc
-		M.update_inv_r_hand()
-		M.update_inv_l_hand()
+		var/mob/mob = loc
+		mob.update_inv_r_hand()
+		mob.update_inv_l_hand()
 
-/obj/item/flag/proc/updateFlagIcon()
-	icon_state = initial(icon_state)
+/obj/item/flag/proc/get_flag_icon()
+	return initial(icon_state)
 
 /obj/item/flag/nt
 	name = "\improper Nanotrasen flag"
 	desc = "A flag proudly boasting the logo of NT."
-	icon_state = "ntflag"
 
 /obj/item/flag/clown
-	name = "\improper Clown Planet flag"
-	desc = "The banner of His Majesty, King Squiggles the Eighth."
+	name = "\improper Clown Unity flag"
+	desc = "The universal banner of clowns everywhere. It smells faintly of bananas."
 	icon_state = "clownflag"
 
 /obj/item/flag/mime
-	name = "\improper Mime Revolution flag"
-	desc = "The banner of the glorious revolutionary forces fighting the oppressors on Clown Planet."
+	name = "\improper Mime Unity flag"
+	desc = "The standard by which all mimes march to war, as cold as ice and silent as the grave."
 	icon_state = "mimeflag"
 
 /obj/item/flag/ian
@@ -141,37 +145,41 @@
 	desc = "An eccentric handmade standard, luxuriously soft due to exotic silks and embossed with lustrous gold. Although inspired by the pride that Nianae take in their baubles, it ultimately feels melancholic. Beauty knows no pain, afterall."
 	icon_state = "nianflag"
 
+/obj/item/flag/species/skulk
+	name = "\improper Collective Flag"
+	desc = "A foreboding flag made with silk and religious fervor. The cloth of this flag undoubtly made by faithful silk-spinners and blessed by Skkula-Kkavan priests. Some would argue its beauty does not befit it, believing it to be a beacon of zealotry that plagues the Silver Collective in its entirety."
+	icon_state = "skulkflag"
+
 //Department Flags
 
 /obj/item/flag/cargo
 	name = "\improper Cargonia flag"
-	desc = "The flag of the independent, sovereign nation of Cargonia."
+	desc = "The flag of the independent, sovereign nation of Cargonia. Merely glimpsing this majestic banner fills you with the urge to buy enough guns to equip a small army."
 	icon_state = "cargoflag"
 
 /obj/item/flag/med
 	name = "\improper Medistan flag"
-	desc = "The flag of the independent, sovereign nation of Medistan."
+	desc = "The flag of the independent, sovereign nation of Medistan. Looking at this beautiful white and green banner fills you with a powerful compulsion to file malpractice lawsuits."
 	icon_state = "medflag"
 
 /obj/item/flag/sec
 	name = "\improper Brigston flag"
-	desc = "The flag of the independent, sovereign nation of Brigston."
+	desc = "The flag of the independent, sovereign nation of Brigston. The red of the flag represents blood shed in defense of the station, the amount of which varies heavily between shifts."
 	icon_state = "secflag"
 
 /obj/item/flag/rnd
 	name = "\improper Scientopia flag"
-	desc = "The flag of the independent, sovereign nation of Scientopia."
+	desc = "The flag of the independent, sovereign nation of Scientopia. Looking at this laminated beauty of a flag fills you with an irresstible urge to perform SCIENCE!."
 	icon_state = "rndflag"
 
 /obj/item/flag/atmos
 	name = "\improper Atmosia flag"
-	desc = "The flag of the independent, sovereign nation of Atmosia."
+	desc = "The flag of the independent, sovereign nation of Atmosia. This flag has survived dozens of plasmafires, and will endure more, if Atmosia has any say in things."
 	icon_state = "atmosflag"
 
 /obj/item/flag/command
 	name = "\improper Command flag"
-	desc = "The flag of the independent, sovereign nation of Command."
-	icon_state = "ntflag"
+	desc = "The flag of the independent, sovereign nation of Command. Apparently the budget was all spent on this flag, rather than a creative name."
 
 //Antags
 
@@ -182,27 +190,27 @@
 
 /obj/item/flag/syndi
 	name = "\improper Syndicate flag"
-	desc = "A flag proudly boasting the logo of the Syndicate, in defiance of NT."
+	desc = "A flag proudly boasting the crimson and black colors of the Syndicate, the largest organized criminal entity in the Sector."
 	icon_state = "syndiflag"
 
 /obj/item/flag/wiz
 	name = "\improper Wizard Federation flag"
-	desc = "A flag proudly boasting the logo of the Wizard Federation, sworn enemies of NT."
+	desc = "A flag proudly boasting the logo of the Wizard Federation, a loose collection of magical terrorist cells."
 	icon_state = "wizflag"
 
 /obj/item/flag/cult
 	name = "\improper Nar'Sie Cultist flag"
-	desc = "A flag proudly boasting the logo of the cultists, sworn enemies of NT."
+	desc = "A flag proudly boasting the unholy symbols of the Cult of Nar'sie. Merely possessing this flag is illegal in many polities."
 	icon_state = "cultflag"
 
 /obj/item/flag/ussp
 	name = "\improper USSP flag"
-	desc = "A flag proudly boasting the logo of the USSP, a noticeable faction in the galaxy."
+	desc = "A flag proudly flying the hammer & sickle of the USSP, a powerful socialist nation in the Sector's North."
 	icon_state = "usspflag"
 
 /obj/item/flag/solgov
 	name = "\improper Trans-Solar Federation flag"
-	desc = "A flag proudly boasting the logo of the SolGov, allied to NT government originated from Earth."
+	desc = "A flag proudly flying the golden sun of the Trans-Solar Federation, the militaristic de-facto superpower of the sector, based on Earth."
 	icon_state = "solgovflag"
 
 //Chameleon
@@ -210,18 +218,17 @@
 /obj/item/flag/chameleon
 	name = "chameleon flag"
 	desc = "A poor recreation of the official NT flag. It seems to shimmer a little."
-	icon_state = "ntflag"
-	origin_tech = "syndicate=1;magnets=4"
+	origin_tech = "materials=5;magnets=4;syndicate=1"
 	var/updated_icon_state = null
 	var/used = FALSE
 	var/obj/item/grenade/boobytrap = null
 	var/mob/trapper = null
 
-/obj/item/flag/chameleon/New()
+/obj/item/flag/chameleon/Initialize(mapload)
+	. = ..()
 	updated_icon_state = icon_state
-	..()
 
-/obj/item/flag/chameleon/attack_self(mob/user)
+/obj/item/flag/chameleon/activate_self(mob/user)
 	if(used)
 		return ..()
 
@@ -234,10 +241,11 @@
 
 	var/list/show_flag = list("EXIT" = null) + sortList(flag)
 
-	var/input_flag = input(user, "Choose a flag to disguise as.", "Choose a flag.") in show_flag
+	var/input_flag = tgui_input_list(user, "Choose a flag to disguise this as.", "Choose a flag.", show_flag)
+	if(!input_flag)
+		return ITEM_INTERACT_COMPLETE
 
-	if(user && (src in user.contents))
-
+	if(user && (src in user.GetAllContents()))
 		var/obj/item/flag/chosen_flag = flag[input_flag]
 
 		if(chosen_flag && !used)
@@ -246,28 +254,36 @@
 			updated_icon_state = icon_state
 			desc = chosen_flag.desc
 			used = TRUE
+			add_fingerprint(user)
+	return ITEM_INTERACT_COMPLETE
 
-/obj/item/flag/chameleon/attackby(obj/item/I, mob/user, params)
-	if(istype(I, /obj/item/grenade) && !boobytrap)
-		if(user.drop_item())
-			boobytrap = I
-			trapper = user
-			I.forceMove(src)
-			to_chat(user, "<span class='notice'>You hide [I] in [src]. It will detonate some time after the flag is lit on fire.</span>")
-			var/turf/bombturf = get_turf(src)
-			var/area/A = get_area(bombturf)
-			log_game("[key_name(user)] has hidden [I] in [src] ready for detonation at [A.name] ([bombturf.x],[bombturf.y],[bombturf.z]).")
-			investigate_log("[key_name(user)] has hidden [I] in [src] ready for detonation at [A.name] ([bombturf.x],[bombturf.y],[bombturf.z]).", INVESTIGATE_BOMB)
-			add_attack_logs(user, src, "has hidden [I] ready for detonation in", ATKLOG_MOST)
-	else if(is_hot(I) && !(resistance_flags & ON_FIRE) && boobytrap && trapper)
+/obj/item/flag/chameleon/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	if(istype(used, /obj/item/grenade) && !boobytrap)
+		if(!user.drop_item())
+			return ITEM_INTERACT_COMPLETE
+		boobytrap = used
+		trapper = user
+		used.forceMove(src)
+		to_chat(user, SPAN_NOTICE("You hide [used] in [src]. It will detonate some time after the flag is lit on fire."))
+		var/turf/bombturf = get_turf(src)
+		var/area/A = get_area(bombturf)
+		log_game("[key_name(user)] has hidden [used] in [src] ready for detonation at [A.name] ([bombturf.x],[bombturf.y],[bombturf.z]).")
+		investigate_log("[key_name(user)] has hidden [used] in [src] ready for detonation at [A.name] ([bombturf.x],[bombturf.y],[bombturf.z]).", INVESTIGATE_BOMB)
+		add_attack_logs(user, src, "has hidden [used] ready for detonation in", ATKLOG_MOST)
+		add_fingerprint(user)
+		return ITEM_INTERACT_COMPLETE
+
+	if(used.get_heat() && !(resistance_flags & ON_FIRE) && boobytrap && trapper)
 		var/turf/bombturf = get_turf(src)
 		var/area/A = get_area(bombturf)
 		log_game("[key_name_admin(user)] has lit [src] trapped with [boobytrap] by [key_name_admin(trapper)] at [A.name] ([bombturf.x],[bombturf.y],[bombturf.z]).")
 		investigate_log("[key_name_admin(user)] has lit [src] trapped with [boobytrap] by [key_name_admin(trapper)] at [A.name] ([bombturf.x],[bombturf.y],[bombturf.z]).", INVESTIGATE_BOMB)
 		add_attack_logs(user, src, "has lit (booby trapped with [boobytrap]", ATKLOG_FEW)
 		burn()
-	else
-		return ..()
+		add_fingerprint(user) // Good luck lifting the print before it explodes, though.
+		return ITEM_INTERACT_COMPLETE
+
+	return ..()
 
 /obj/item/flag/chameleon/screwdriver_act(mob/user, obj/item/I)
 	if(!boobytrap || user != trapper)
@@ -275,7 +291,7 @@
 	. = TRUE
 	if(!I.use_tool(src, user, 0, volume = I.tool_volume))
 		return
-	to_chat(user, "<span class='notice'>You remove [boobytrap] from [src].</span>")
+	to_chat(user, SPAN_NOTICE("You remove [boobytrap] from [src]."))
 	boobytrap.forceMove(get_turf(src))
 	boobytrap = null
 	trapper = null
@@ -293,9 +309,9 @@
 	boobytrap = null
 	burn()
 
-/obj/item/flag/chameleon/updateFlagIcon()
-	icon_state = updated_icon_state
+/obj/item/flag/chameleon/get_flag_icon()
+	return updated_icon_state
 
-/obj/item/flag/chameleon/depot/New()
-	..()
+/obj/item/flag/chameleon/depot/Initialize(mapload)
+	. = ..()
 	boobytrap = new /obj/item/grenade/gas/plasma(src)

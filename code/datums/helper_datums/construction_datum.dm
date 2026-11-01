@@ -1,6 +1,3 @@
-#define FORWARD -1
-#define BACKWARD 1
-#define CONSTRUCTION_TOOL_BEHAVIOURS list(TOOL_CROWBAR, TOOL_SCREWDRIVER, TOOL_WELDER, TOOL_WRENCH)
 
 /datum/construction
 	var/list/steps
@@ -17,15 +14,15 @@
 	if(!holder) //don't want this without a holder
 		spawn
 			qdel(src)
-	set_desc(steps.len)
+	set_desc(length(steps))
 	return
 
 /datum/construction/proc/next_step(mob/user as mob)
 	steps.len--
-	if(!steps.len)
+	if(!length(steps))
 		spawn_result(user)
 	else
-		set_desc(steps.len)
+		set_desc(length(steps))
 	return
 
 /datum/construction/proc/action(atom/used_atom,mob/user as mob)
@@ -40,9 +37,9 @@
 	return 0
 
 /datum/construction/proc/is_right_key(atom/used_atom) // returns current step num if used_atom is of the right type.
-	var/list/L = steps[steps.len]
+	var/list/L = steps[length(steps)]
 	if(do_tool_or_atom_check(used_atom, L["key"]))
-		return steps.len
+		return length(steps)
 	return 0
 
 
@@ -50,7 +47,7 @@
 	if(istype(used_atom, /obj/item/stack/cable_coil))
 		var/obj/item/stack/cable_coil/C = used_atom
 		if(C.get_amount() < 4)
-			to_chat(user, ("<span class='warning'>There's not enough cable to finish the task.</span>"))
+			to_chat(user, (SPAN_WARNING("There's not enough cable to finish the task.")))
 			return 0
 		else
 			C.use(4)
@@ -58,7 +55,7 @@
 	else if(istype(used_atom, /obj/item/stack))
 		var/obj/item/stack/S = used_atom
 		if(S.get_amount() < 5)
-			to_chat(user, ("<span class='warning'>There's not enough material in this stack.</span>"))
+			to_chat(user, (SPAN_WARNING("There's not enough material in this stack.")))
 			return 0
 		else
 			S.use(5)
@@ -70,12 +67,12 @@
 	return 1
 
 /datum/construction/proc/check_all_steps(atom/used_atom,mob/user as mob) //check all steps, remove matching one.
-	for(var/i=1;i<=steps.len;i++)
+	for(var/i=1;i<=length(steps);i++)
 		var/list/L = steps[i]
 		if(do_tool_or_atom_check(used_atom, L["key"]) && custom_action(i, used_atom, user))
 			steps[i]=null;//stupid byond list from list removal...
 			listclearnulls(steps)
-			if(!steps.len)
+			if(!length(steps))
 				spawn_result(user)
 			return 1
 	return 0
@@ -104,7 +101,7 @@
 		if(istype(used_atom,/obj/item/stack/cable_coil))
 			var/obj/item/stack/cable_coil/coil=used_atom
 			if(!coil.use(amount))
-				to_chat(user, "<span class='warning'>You don't have enough cable! You need at least [amount] coils.</span>")
+				to_chat(user, SPAN_WARNING("You don't have enough cable! You need at least [amount] coils."))
 				return 0
 		// TOOLS
 		if(isitem(used_atom))
@@ -116,7 +113,7 @@
 		if(istype(used_atom,/obj/item/stack))
 			var/obj/item/stack/stack=used_atom
 			if(stack.get_amount() < amount)
-				to_chat(user, "<span class='warning'>You don't have enough [stack]! You need at least [amount].</span>")
+				to_chat(user, SPAN_WARNING("You don't have enough [stack]! You need at least [amount]."))
 				return 0
 			stack.use(amount)
 	return 1
@@ -133,7 +130,7 @@
 
 /datum/construction/reversible/New(atom)
 	..()
-	index = steps.len
+	index = length(steps)
 	return
 
 /datum/construction/reversible/proc/update_index(diff as num, mob/user as mob)
@@ -147,9 +144,9 @@
 /datum/construction/reversible/is_right_key(atom/used_atom) // returns index step
 	var/list/L = steps[index]
 	if(do_tool_or_atom_check(used_atom, L["key"]))
-		return FORWARD //to the first step -> forward
+		return CONSTRUCTION_PATH_FORWARDS //to the first step -> forward
 	else if(L["backkey"] && do_tool_or_atom_check(used_atom, L["backkey"]))
-		return BACKWARD //to the last step -> backwards
+		return CONSTRUCTION_PATH_BACKWARDS //to the last step -> backwards
 	return 0
 
 /datum/construction/reversible/check_step(atom/used_atom,mob/user as mob)
@@ -165,8 +162,8 @@
 		return 0
 	return 1
 
-#define state_next "next"
-#define state_prev "prev"
+#define STATE_NEXT "next"
+#define STATE_PREV "prev"
 
 /datum/construction/reversible2
 	var/base_icon = "durand"
@@ -189,18 +186,18 @@
 
 /datum/construction/reversible2/is_right_key(mob/user as mob,atom/used_atom) // returns index step
 	var/list/state = steps[index]
-	if(state_next in state)
-		var/list/step = state[state_next]
+	if(STATE_NEXT in state)
+		var/list/step = state[STATE_NEXT]
 		if(do_tool_or_atom_check(used_atom, step["key"]))
 			//if(L["consume"] && !try_consume(used_atom,L["consume"]))
 			//	return 0
-			return FORWARD //to the first step -> forward
-	else if(state_prev in state)
-		var/list/step = state[state_prev]
+			return CONSTRUCTION_PATH_FORWARDS //to the first step -> forward
+	else if(STATE_PREV in state)
+		var/list/step = state[STATE_PREV]
 		if(do_tool_or_atom_check(used_atom, step["key"]))
 			//if(L["consume"] && !try_consume(used_atom,L["consume"]))
 			//	return 0
-			return BACKWARD //to the first step -> forward
+			return CONSTRUCTION_PATH_BACKWARDS //to the first step -> forward
 	return 0
 
 /datum/construction/reversible2/check_step(atom/used_atom,mob/user as mob)
@@ -222,7 +219,7 @@
 		return 0
 
 	var/list/step = steps[index]
-	var/list/state = step[diff==FORWARD ? state_next : state_prev]
+	var/list/state = step[diff==CONSTRUCTION_PATH_FORWARDS ? STATE_NEXT : STATE_PREV]
 	user.visible_message(fixText(state["vis_msg"],user),fixText(state["self_msg"],user))
 
 	if("delete" in state)
@@ -242,3 +239,6 @@
 
 /datum/construction/reversible2/action(used_atom,user)
 	return check_step(used_atom,user)
+
+#undef STATE_NEXT
+#undef STATE_PREV

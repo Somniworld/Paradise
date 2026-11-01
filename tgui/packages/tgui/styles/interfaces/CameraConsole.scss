@@ -1,54 +1,53 @@
-$color-background: rgba(0, 0, 0, 0.33) !default;
+@use '../base.scss';
 
-.CameraConsole__left {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 220px;
-}
+.CameraConsole {
+  &__toolbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--camera-toolbar-height);
+    line-height: var(--camera-toolbar-height);
+    margin: var(--space-s) var(--space-xl) 0;
 
-.CameraConsole__right {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 220px;
-  right: 0;
-  background-color: $color-background;
-}
+    &--right {
+      left: unset;
+      margin: var(--space-sm) var(--space-m) 0;
+    }
+  }
 
-.CameraConsole__toolbar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 24px;
-  line-height: 24px;
-  margin: 3px 12px 0;
-  // background-color: #0a0;
-}
+  &__left {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: base.em(220px);
+  }
 
-.CameraConsole__toolbarRight {
-  position: absolute;
-  top: 0;
-  right: 0;
-  height: 24px;
-  line-height: 24px;
-  margin: 4px 6px 0;
-  // background-color: #aa0;
-}
+  &__right {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: base.em(220px);
+    right: 0;
+    background-color: var(--color-section);
 
-.CameraConsole__map {
-  position: absolute;
-  top: 26px;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  // background-color: #00a;
-  margin: 6px;
-  text-align: center;
+    &:root {
+      --camera-toolbar-height: 2em;
+    }
+  }
 
-  .NoticeBox {
-    margin-top: calc(50% - 24px);
+  &__map {
+    position: absolute;
+    top: base.em(26px);
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: var(--space-m);
+    text-align: center;
+
+    .NoticeBox {
+      margin-top: calc(50% - 2em);
+    }
   }
 }

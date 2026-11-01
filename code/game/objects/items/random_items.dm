@@ -25,13 +25,12 @@
 	new T(loc)
 	qdel(src)
 
-/obj/item/reagent_containers/food/drinks/bottle/random_drink
+/obj/item/reagent_containers/drinks/bottle/random_drink
 	name = "unlabelled drink"
-	icon = 'icons/obj/drinks.dmi'
 
-/obj/item/reagent_containers/food/drinks/bottle/random_drink/Initialize(mapload)
+/obj/item/reagent_containers/drinks/bottle/random_drink/Initialize(mapload)
 	. = ..()
-	var/list/possible_drinks = GLOB.drinks.Copy()
+	var/list/possible_drinks = GLOB.alcoholic_drinks | GLOB.synthanolic_drinks | GLOB.soft_drinks | GLOB.synthetic_soft_drinks
 	if(prob(50))
 		possible_drinks += list("pancuronium","lsd","omnizine","blood")
 
@@ -39,19 +38,18 @@
 	reagents.add_reagent(R, volume)
 	name = "unlabelled bottle"
 	icon_state = pick("alco-white","alco-green","alco-blue","alco-clear","alco-red")
-	pixel_x = rand(-5, 5)
-	pixel_y = rand(-5, 5)
+	scatter_atom()
 
 /obj/item/storage/pill_bottle/random_meds
 	name = "unlabelled pillbottle"
 	desc = "The sheer recklessness of this bottle's existence astounds you."
 	allow_wrap = FALSE
 	var/labelled = FALSE
+	scatter_distance = 10
 
 /obj/item/storage/pill_bottle/random_meds/Initialize(mapload)
 	. = ..()
-	pixel_x = rand(-10, 10)
-	pixel_y = rand(-10, 10)
+	scatter_atom()
 
 /obj/item/storage/pill_bottle/random_meds/populate_contents()
 	var/list/possible_meds_standard = GLOB.standard_medicines.Copy()
@@ -61,7 +59,7 @@
 		var/possible_meds = is_rare ? possible_meds_rare : possible_meds_standard
 
 		var/datum/reagent/R = pick(possible_meds)
-		var/obj/item/reagent_containers/food/pill/P = new(src)
+		var/obj/item/reagent_containers/pill/P = new(src)
 
 		if(is_rare)
 			P.reagents.add_reagent(R, 10)
@@ -85,7 +83,7 @@
 /obj/item/storage/box/grenades
 	name = "tactical grenades"
 	desc = "A box with 6 tactical grenades."
-	icon_state = "flashbang"
+	icon_state = "grenade_box"
 
 /obj/item/storage/box/grenades/populate_contents()
 	var/static/list/grenadelist = list(
@@ -104,3 +102,6 @@
 	for(var/i in 1 to 6)
 		var/nade = pick(grenadelist)
 		new nade(src)
+
+/obj/item/storage/box/grenades/empty/populate_contents()
+	return

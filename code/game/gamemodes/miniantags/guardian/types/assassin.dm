@@ -1,6 +1,6 @@
 /mob/living/simple_animal/hostile/guardian/assassin
-	melee_damage_lower = 20
-	melee_damage_upper = 20
+	melee_damage_lower = 25
+	melee_damage_upper = 25
 	damage_transfer = 0.6
 	playstyle_string = "As an <b>Assassin</b> type you do medium damage and have moderate damage resistance, but can enter stealth, massively increasing the damage of your next attack and causing it to ignore armor. Stealth is broken when you attack or take damage."
 	magic_fluff_string = "..And draw the Space Ninja, a lethal, invisible assassin."
@@ -12,8 +12,8 @@
 	var/toggle = FALSE
 	var/stealthcooldown = 0
 	var/default_stealth_cooldown = 10 SECONDS
-	var/obj/screen/alert/canstealthalert
-	var/obj/screen/alert/instealthalert
+	var/atom/movable/screen/alert/canstealthalert
+	var/atom/movable/screen/alert/instealthalert
 
 /mob/living/simple_animal/hostile/guardian/assassin/Initialize(mapload, mob/living/host)
 	. = ..()
@@ -25,11 +25,11 @@
 	. = ..()
 	updatestealthalert()
 
-/mob/living/simple_animal/hostile/guardian/assassin/Stat()
-	..()
-	if(statpanel("Status"))
-		if(stealthcooldown >= world.time)
-			stat(null, "Stealth Cooldown Remaining: [max(round((stealthcooldown - world.time)*0.1, 0.1), 0)] seconds")
+/mob/living/simple_animal/hostile/guardian/assassin/get_status_tab_items()
+	var/list/status_tab_data = ..()
+	. = status_tab_data
+	if(stealthcooldown >= world.time)
+		status_tab_data[++status_tab_data.len] = list("Stealth Cooldown Remaining:", "[max(round((stealthcooldown - world.time) * 0.1, 0.1), 0)] seconds")
 
 /mob/living/simple_animal/hostile/guardian/assassin/AttackingTarget()
 	. = ..()
@@ -55,45 +55,45 @@
 	if(toggle)
 		melee_damage_lower = initial(melee_damage_lower)
 		melee_damage_upper = initial(melee_damage_upper)
-		armour_penetration_percentage = initial(armour_penetration_percentage)
+		armor_penetration_percentage = initial(armor_penetration_percentage)
 		obj_damage = initial(obj_damage)
 		environment_smash = initial(environment_smash)
 		alpha = initial(alpha)
 		if(!forced)
-			to_chat(src, "<span class='danger'>You exit stealth.</span>")
+			to_chat(src, SPAN_DANGER("You exit stealth."))
 		else
-			visible_message("<span class='danger'>[src] suddenly appears!</span>")
+			visible_message(SPAN_DANGER("[src] suddenly appears!"))
 			stealthcooldown = world.time + default_stealth_cooldown //we were forced out of stealth and go on cooldown
 			cooldown = world.time + 40 //can't recall for 4 seconds
 		updatestealthalert()
 		toggle = FALSE
 	else if(stealthcooldown <= world.time)
 		if(loc == summoner)
-			to_chat(src, "<span class='notice'>You automatically deploy stealthed!</span>")
+			to_chat(src, SPAN_NOTICE("You automatically deploy stealthed!"))
 			return
 		melee_damage_lower = 50
 		melee_damage_upper = 50
-		armour_penetration_percentage = 100
+		armor_penetration_percentage = 100
 		obj_damage = 0
 		environment_smash = ENVIRONMENT_SMASH_NONE
 		alpha = 10
 		if(!forced)
-			to_chat(src, "<span class='danger'>You enter stealth, becoming mostly invisible, empowering your next attack.</span>")
+			to_chat(src, SPAN_DANGER("You enter stealth, becoming mostly invisible, empowering your next attack."))
 		updatestealthalert()
 		toggle = TRUE
 	else if(!forced)
-		to_chat(src, "<span class='danger'>You cannot yet enter stealth, wait another [max(round((stealthcooldown - world.time)*0.1, 0.1), 0)] seconds!</span>")
+		to_chat(src, SPAN_DANGER("You cannot yet enter stealth, wait another [max(round((stealthcooldown - world.time)*0.1, 0.1), 0)] seconds!"))
 
 /mob/living/simple_animal/hostile/guardian/assassin/proc/updatestealthalert()
 	if(stealthcooldown <= world.time)
 		if(toggle)
 			if(!instealthalert)
-				instealthalert = throw_alert("instealth", /obj/screen/alert/instealth)
+				instealthalert = throw_alert("instealth", /atom/movable/screen/alert/instealth)
 				clear_alert("canstealth")
 				canstealthalert = null
 		else
 			if(!canstealthalert)
-				canstealthalert = throw_alert("canstealth", /obj/screen/alert/canstealth)
+				canstealthalert = throw_alert("canstealth", /atom/movable/screen/alert/canstealth)
 				clear_alert("instealth")
 				instealthalert = null
 	else

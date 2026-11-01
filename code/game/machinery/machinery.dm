@@ -5,22 +5,25 @@
 	pressure_resistance = 15
 	max_integrity = 200
 	layer = BELOW_OBJ_LAYER
-	armor = list(melee = 25, bullet = 10, laser = 10, energy = 0, bomb = 0, bio = 0, rad = 0, fire = 50, acid = 70)
+	armor = list(MELEE = 25, BULLET = 10, LASER = 10, ENERGY = 0, BOMB = 0, RAD = 0, FIRE = 50, ACID = 70)
 	atom_say_verb = "beeps"
+	flags_ricochet = RICOCHET_HARD
+	receive_ricochet_chance_mod = 0.3
+	new_attack_chain = TRUE
 	var/stat = 0
 
 	/// How is this machine currently passively consuming power?
 	var/power_state = IDLE_POWER_USE
-	/// Does this machine require power?
-	var/requires_power = TRUE
-	/// How much power does this machine consume when it is idling
+	/// How much power does this machine consume when it is idling. This should not be set manually, use the helper procs!
 	var/idle_power_consumption = 0
-	/// How much power does this machine consume when it is in use
+	/// How much power does this machine consume when it is in use. This should not be set manually, use the helper procs!
 	var/active_power_consumption = 0
 	/// The power channel this machine uses, idle/passive power consumption will pull from this channel and machine won't work if power channel has no power
 	var/power_channel = PW_CHANNEL_EQUIPMENT
 	/// The powernet this machine is connected to
 	var/datum/local_powernet/machine_powernet = null
+	/// Has power been initialized on this machine? Set in Initialize(), prevents all power updates to the local powernet until this is TRUE to avoid weird numbers.
+	var/power_initialized = FALSE
 
 	/// how badly will it shock you?
 	var/siemens_strength = 0.7
@@ -30,10 +33,13 @@
 	var/interact_offline = FALSE // Can the machine be interacted with while de-powered.
 	/// This is if the machinery is being repaired
 	var/being_repaired = FALSE
+	COOLDOWN_DECLARE(sparks_cooldown)
+
+	new_attack_chain = TRUE
 
 /obj/machinery/Initialize(mapload)
 	. = ..()
-	GLOB.machines += src
+	SSmachines.register_machine(src)
 
 	var/area/machine_area = get_area(src)
 	if(machine_area)
@@ -45,9 +51,10 @@
 		machine_powernet.register_machine(src)
 		switch(power_state)
 			if(IDLE_POWER_USE)
-				add_static_power(power_channel, idle_power_consumption)
+				_add_static_power(power_channel, idle_power_consumption)
 			if(ACTIVE_POWER_USE)
-				add_static_power(power_channel, active_power_consumption)
+				_add_static_power(power_channel, active_power_consumption)
+		power_initialized = TRUE
 
 	if(!speed_process)
 		START_PROCESSING(SSmachines, src)
@@ -75,7 +82,7 @@
 /obj/machinery/Destroy()
 	change_power_mode(NO_POWER_USE) //we want to clear our static power usage on the local powernet
 	machine_powernet?.unregister_machine(src)
-	GLOB.machines.Remove(src)
+	SSmachines.unregister_machine(src)
 	if(!speed_process)
 		STOP_PROCESSING(SSmachines, src)
 	else
@@ -94,25 +101,29 @@
 // returns true if the area has power on given channel (or doesn't require power).
 // defaults to power_channel
 /obj/machinery/proc/has_power(channel = power_channel) // defaults to power_channel
-	if(!requires_power)
+	if(interact_offline)
 		return TRUE
 	if(!machine_powernet)
 		return FALSE
 	return machine_powernet.has_power(channel)	// return power status of the area
 
 // use active power from the local powernet
-/obj/machinery/proc/use_power(channel, amount)
-	if(!has_power())
+/obj/machinery/proc/use_power(amount, channel)
+	if(!has_power() || !power_initialized)
 		return FALSE
 	if(!channel)
 		channel = power_channel
 	return machine_powernet.use_active_power(channel, amount)
 
-/obj/machinery/proc/add_static_power(channel, amount)
-	machine_powernet.adjust_static_power(channel, amount)
+/// Helper proc to positively adjust static power tracking on the machine's powernet, not meant for general use!
+/obj/machinery/proc/_add_static_power(channel, amount)
+	PRIVATE_PROC(TRUE)
+	machine_powernet?.adjust_static_power(channel, amount)
 
-/obj/machinery/proc/remove_static_power(channel, amount)
-	machine_powernet.adjust_static_power(channel, -amount)
+/// Helper proc to negatively adjust static power tracking on the machine's powernet, not meant for general use!
+/obj/machinery/proc/_remove_static_power(channel, amount)
+	PRIVATE_PROC(TRUE)
+	machine_powernet?.adjust_static_power(channel, -amount)
 
 /*
 	* # power_change()
@@ -125,36 +136,55 @@
 */
 /obj/machinery/proc/power_change()
 	var/old_stat = stat
-	if(has_power(power_channel) || !requires_power) //if we don't require power, we don't give a shit about the power channel!
+	if(has_power(power_channel) || interact_offline) //if we don't require power, we don't give a shit about the power channel!
 		stat &= ~NOPOWER
 	else
 		stat |= NOPOWER
 	return old_stat != stat //performance saving for machines that use power_change() to update icons!
 
+/obj/machinery/proc/reregister_machine()
+	if(machine_powernet?.powernet_area != get_area(src))
+		var/area/machine_area = get_area(src)
+		if(machine_area)
+			var/old_power_mode = power_state
+			change_power_mode(NO_POWER_USE) // Take away our current power from the old network
+			machine_powernet?.unregister_machine(src)
+			machine_powernet = machine_area.powernet
+			machine_powernet.register_machine(src)
+			change_power_mode(old_power_mode) // add it to the new network
+
 /// Helper proc to change the machines power usage mode, automatically adjusts static power usage to maintain perfect parity
 /obj/machinery/proc/change_power_mode(use_type = IDLE_POWER_USE)
 	if(isnull(use_type) || use_type == power_state || !machine_powernet || !power_channel) //if there is no powernet/channel, just end it here
 		return
+	if(!power_initialized)
+		return FALSE // we set static power values in Initialize(), do not update static consumption until after initialization or you will get weird values on powernet
 	switch(power_state)
 		if(IDLE_POWER_USE)
-			remove_static_power(power_channel, idle_power_consumption)
+			_remove_static_power(power_channel, idle_power_consumption)
 		if(ACTIVE_POWER_USE)
-			remove_static_power(power_channel, active_power_consumption)
+			_remove_static_power(power_channel, active_power_consumption)
 
 	switch(use_type)
 		if(IDLE_POWER_USE)
-			add_static_power(power_channel, idle_power_consumption)
+			_add_static_power(power_channel, idle_power_consumption)
 		if(ACTIVE_POWER_USE)
-			add_static_power(power_channel, active_power_consumption)
+			_add_static_power(power_channel, active_power_consumption)
 
 	power_state = use_type
 
+/// Safely changes the static power on the local powernet based on an adjustment in idle power
 /obj/machinery/proc/update_idle_power_consumption(channel = power_channel, amount)
+	if(!power_initialized)
+		return FALSE // we set static power values in Initialize(), do not update static consumption until after initialization or you will get weird values on powernet
 	if(power_state == IDLE_POWER_USE)
 		machine_powernet.adjust_static_power(power_channel, amount - idle_power_consumption)
 	idle_power_consumption = amount
 
+/// Safely changes the static power on the local powernet based on an adjustment in active power
 /obj/machinery/proc/update_active_power_consumption(channel = power_channel, amount)
+	if(!power_initialized)
+		return FALSE // we set static power values in Initialize(), do not update static consumption until after initialization or you will get weird values on powernet
 	if(power_state == ACTIVE_POWER_USE)
 		machine_powernet.adjust_static_power(power_channel, amount - active_power_consumption)
 	active_power_consumption = amount
@@ -177,26 +207,13 @@
 	return !inoperable(additional_flags)
 
 /obj/machinery/proc/inoperable(additional_flags = 0)
-	return (stat & (NOPOWER|BROKEN|additional_flags))
+	return ((!interact_offline && (stat & NOPOWER)) || (stat & (BROKEN|additional_flags)))
 
 /obj/machinery/ui_status(mob/user, datum/ui_state/state)
-	if(!interact_offline && (stat & (NOPOWER|BROKEN)))
-		return STATUS_CLOSE
+	if(!is_operational())
+		return UI_CLOSE
 
 	return ..()
-
-/obj/machinery/ui_status(mob/user, datum/ui_state/state)
-	if(!interact_offline && (stat & (NOPOWER|BROKEN)))
-		return STATUS_CLOSE
-
-	return ..()
-
-/obj/machinery/CouldUseTopic(mob/user)
-	..()
-	user.set_machine(src)
-
-/obj/machinery/CouldNotUseTopic(mob/user)
-	usr.unset_machine()
 
 /obj/machinery/proc/dropContents()//putting for swarmers, occupent code commented out, someone can use later.
 	var/turf/T = get_turf(src)
@@ -214,35 +231,53 @@
 		return attack_hand(user)
 
 /obj/machinery/attack_hand(mob/user as mob)
-	if(user.incapacitated())
-		return TRUE
-
-	if(!user.IsAdvancedToolUser())
-		to_chat(user, "<span class='warning'>You don't have the dexterity to do this!</span>")
-		return TRUE
-
-	if(ishuman(user))
-		var/mob/living/carbon/human/H = user
-		if(H.getBrainLoss() >= 60)
-			visible_message("<span class='warning'>[H] stares cluelessly at [src] and drools.</span>")
-			return TRUE
-		else if(prob(H.getBrainLoss()))
-			to_chat(user, "<span class='warning'>You momentarily forget how to use [src].</span>")
-			return TRUE
-
-	if(panel_open)
-		add_fingerprint(user)
-		return FALSE
-
-	if(!interact_offline && stat & (NOPOWER|BROKEN|MAINT))
+	if(try_attack_hand(user))
 		return TRUE
 
 	add_fingerprint(user)
 
 	return ..()
 
+/**
+  * Preprocess machinery interaction.
+  *
+  * If overriding and extending interaction limitations, better call this with ..()
+  * unless you really know what you are doing.
+  *
+  * Returns TRUE when interaction is done due to different limitations and nothing should be done next.
+  * Returns FALSE when interaction can be continued.
+  * Arguments:
+  * * user - the mob interacting with this machinery
+  */
+/obj/machinery/proc/try_attack_hand(mob/user)
+	if(user.incapacitated() && !isobserver(user))
+		return TRUE
+
+	if(!user.IsAdvancedToolUser() && !isobserver(user))
+		to_chat(user, SPAN_WARNING("You don't have the dexterity to do this!"))
+		return TRUE
+
+	if(ishuman(user))
+		var/mob/living/carbon/human/H = user
+		if(H.getBrainLoss() >= 60)
+			visible_message(SPAN_WARNING("[H] stares cluelessly at [src]."))
+			return TRUE
+		else if(prob(H.getBrainLoss()))
+			to_chat(user, SPAN_WARNING("You momentarily forget how to use [src]."))
+			return TRUE
+
+	if(panel_open)
+		if(!isobserver(user))
+			add_fingerprint(user)
+		return FALSE
+
+	if(!is_operational())
+		return TRUE
+
+	return FALSE
+
 /obj/machinery/proc/is_operational()
-	return !(stat & (NOPOWER|BROKEN|MAINT))
+	return !inoperable(MAINT)
 
 /obj/machinery/CheckParts(list/parts_list)
 	..()
@@ -254,7 +289,7 @@
 /obj/machinery/deconstruct(disassembled = TRUE)
 	if(!(flags & NODECONSTRUCT))
 		on_deconstruction()
-		if(component_parts && component_parts.len)
+		if(component_parts && length(component_parts))
 			spawn_frame(disassembled)
 			for(var/obj/item/I in component_parts)
 				I.forceMove(loc)
@@ -262,7 +297,7 @@
 	qdel(src)
 
 /obj/machinery/proc/spawn_frame(disassembled)
-	var/obj/machinery/constructable_frame/machine_frame/M = new /obj/machinery/constructable_frame/machine_frame(loc)
+	var/obj/structure/machine_frame/M = new /obj/structure/machine_frame(loc)
 	. = M
 	M.anchored = anchored
 	if(!disassembled)
@@ -282,7 +317,7 @@
 		return FALSE
 	if((panel_open || ignore_panel) && !(flags & NODECONSTRUCT))
 		deconstruct(TRUE)
-		to_chat(user, "<span class='notice'>You disassemble [src].</span>")
+		to_chat(user, SPAN_NOTICE("You disassemble [src]."))
 		I.play_tool_sound(user, I.tool_volume)
 		return TRUE
 	return FALSE
@@ -296,11 +331,11 @@
 		if(!panel_open)
 			panel_open = TRUE
 			icon_state = icon_state_open
-			to_chat(user, "<span class='notice'>You open the maintenance hatch of [src].</span>")
+			to_chat(user, SPAN_NOTICE("You open the maintenance hatch of [src]."))
 		else
 			panel_open = FALSE
 			icon_state = icon_state_closed
-			to_chat(user, "<span class='notice'>You close the maintenance hatch of [src].</span>")
+			to_chat(user, SPAN_NOTICE("You close the maintenance hatch of [src]."))
 		I.play_tool_sound(user, I.tool_volume)
 		return 1
 	return 0
@@ -312,7 +347,7 @@
 		return FALSE
 	if(panel_open)
 		dir = turn(dir,-90)
-		to_chat(user, "<span class='notice'>You rotate [src].</span>")
+		to_chat(user, SPAN_NOTICE("You rotate [src]."))
 		I.play_tool_sound(user, I.tool_volume)
 		return TRUE
 	return FALSE
@@ -320,93 +355,119 @@
 /obj/machinery/default_unfasten_wrench(mob/user, obj/item/I, time)
 	. = ..()
 	if(.)
+		reregister_machine()
 		power_change()
 
-/obj/machinery/attackby(obj/item/O, mob/user, params)
-	if(istype(O, /obj/item/stack/nanopaste))
-		var/obj/item/stack/nanopaste/N = O
+/obj/machinery/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	if(exchange_parts(user, used))
+		return ITEM_INTERACT_COMPLETE
+
+	if(istype(used, /obj/item/stack/nanopaste))
+		var/obj/item/stack/nanopaste/N = used
 		if(stat & BROKEN)
-			to_chat(user, "<span class='notice'>[src] is too damaged to be fixed with nanopaste!</span>")
-			return
+			to_chat(user, SPAN_NOTICE("[src] is too damaged to be fixed with nanopaste!"))
+			return ITEM_INTERACT_COMPLETE
+
 		if(obj_integrity == max_integrity)
-			to_chat(user, "<span class='notice'>[src] is fully intact.</span>")
-			return
+			to_chat(user, SPAN_NOTICE("[src] is fully intact."))
+			return ITEM_INTERACT_COMPLETE
+
 		if(being_repaired)
-			return
+			return ITEM_INTERACT_COMPLETE
+
 		if(N.get_amount() < 1)
-			to_chat(user, "<span class='warning'>You don't have enough to complete this task!</span>")
-			return
-		to_chat(user, "<span class='notice'>You start applying [O] to [src].</span>")
+			to_chat(user, SPAN_WARNING("You don't have enough to complete this task!"))
+			return ITEM_INTERACT_COMPLETE
+
+		to_chat(user, SPAN_NOTICE("You start applying [used] to [src]."))
 		being_repaired = TRUE
 		var/result = do_after(user, 3 SECONDS, target = src)
 		being_repaired = FALSE
 		if(!result)
-			return
+			return ITEM_INTERACT_COMPLETE
+
 		if(!N.use(1))
-			to_chat(user, "<span class='warning'>You don't have enough to complete this task!</span>") // this is here, as we don't want to use nanopaste until you finish applying
-			return
+			to_chat(user, SPAN_WARNING("You don't have enough to complete this task!")) // this is here, as we don't want to use nanopaste until you finish applying
+			return ITEM_INTERACT_COMPLETE
+
 		obj_integrity = min(obj_integrity + 50, max_integrity)
-		user.visible_message("<span class='notice'>[user] applied some [O] at [src]'s damaged areas.</span>",\
-			"<span class='notice'>You apply some [O] at [src]'s damaged areas.</span>")
-	else
-		return ..()
+		user.visible_message(SPAN_NOTICE("[user] applied some [used] at [src]'s damaged areas."),\
+			SPAN_NOTICE("You apply some [used] at [src]'s damaged areas."))
+
+		return ITEM_INTERACT_COMPLETE
+
+	return ..()
 
 /obj/machinery/proc/exchange_parts(mob/user, obj/item/storage/part_replacer/W)
 	var/shouldplaysound = 0
-	if((flags & NODECONSTRUCT))
+	if(flags & NODECONSTRUCT)
 		return FALSE
-	if(istype(W) && component_parts)
-		if(panel_open || W.works_from_distance)
-			var/obj/item/circuitboard/CB = locate(/obj/item/circuitboard) in component_parts
-			var/P
-			if(W.works_from_distance)
-				to_chat(user, display_parts(user))
-			for(var/obj/item/stock_parts/A in component_parts)
-				for(var/D in CB.req_components)
-					if(ispath(A.type, D))
-						P = D
-						break
-				for(var/obj/item/stock_parts/B in W.contents)
-					if(istype(B, P) && istype(A, P))
-						//If it's cell - check: 1) Max charge is better? 2) Max charge same but current charge better? - If both NO -> next content
-						if(ispath(B.type, /obj/item/stock_parts/cell))
-							var/obj/item/stock_parts/cell/tA = A
-							var/obj/item/stock_parts/cell/tB = B
-							if(!(tB.maxcharge > tA.maxcharge) && !((tB.maxcharge == tA.maxcharge) && (tB.charge > tA.charge)))
-								continue
-						//If it's not cell and not better -> next content
-						else if(B.rating <= A.rating)
-							continue
-						W.remove_from_storage(B, src)
-						W.handle_item_insertion(A, 1)
-						component_parts -= A
-						component_parts += B
-						B.loc = null
-						to_chat(user, "<span class='notice'>[A.name] replaced with [B.name].</span>")
-						shouldplaysound = 1
-						break
-			RefreshParts()
-		else
+
+	if(!istype(W) || !component_parts)
+		return FALSE
+
+	if(panel_open || W.works_from_distance)
+		var/obj/item/circuitboard/CB = locate(/obj/item/circuitboard) in component_parts
+		var/P
+		if(W.works_from_distance)
 			to_chat(user, display_parts(user))
-		if(shouldplaysound)
-			W.play_rped_sound()
-		return 1
+		for(var/obj/item/stock_parts/A in component_parts)
+			for(var/D in CB.req_components)
+				if(ispath(A.type, D))
+					P = D
+					break
+			for(var/obj/item/stock_parts/B in W.contents)
+				if(istype(B, P) && istype(A, P))
+					//If it's cell - check: 1) Max charge is better? 2) Max charge same but current charge better? - If both NO -> next content
+					if(ispath(B.type, /obj/item/stock_parts/cell))
+						var/obj/item/stock_parts/cell/tA = A
+						var/obj/item/stock_parts/cell/tB = B
+						if(!(tB.maxcharge > tA.maxcharge) && !((tB.maxcharge == tA.maxcharge) && (tB.charge > tA.charge)))
+							continue
+					//If it's not cell and not better -> next content
+					else if(B.rating <= A.rating)
+						continue
+					W.remove_from_storage(B, src)
+					W.handle_item_insertion(A, user, TRUE)
+					component_parts -= A
+					component_parts += B
+					B.loc = null
+					to_chat(user, SPAN_NOTICE("[A.name] replaced with [B.name]."))
+					shouldplaysound = TRUE
+					break
+		for(var/obj/item/reagent_containers/glass/beaker/A in component_parts)
+			for(var/obj/item/reagent_containers/glass/beaker/B in W.contents)
+				// If it's not better -> next content
+				if(B.reagents.maximum_volume <= A.reagents.maximum_volume)
+					continue
+				W.remove_from_storage(B, src)
+				W.handle_item_insertion(A, user, TRUE)
+				component_parts -= A
+				component_parts += B
+				B.loc = null
+				to_chat(user, SPAN_NOTICE("[A.name] replaced with [B.name]."))
+				shouldplaysound = TRUE
+				break
+		RefreshParts()
 	else
-		return 0
+		to_chat(user, display_parts(user))
+	if(shouldplaysound)
+		W.play_rped_sound()
+	return TRUE
 
 /obj/machinery/proc/display_parts(mob/user)
-	. = list("<span class='notice'>Following parts detected in the machine:</span>")
+	. = list(SPAN_NOTICE("Following parts detected in the machine:"))
 	for(var/obj/item/C in component_parts)
-		. += "<span class='notice'>[bicon(C)] [C.name]</span>"
+		. += SPAN_NOTICE("[bicon(C)] [C.name]")
 	. = jointext(., "\n")
 
 /obj/machinery/examine(mob/user)
 	. = ..()
 	if(stat & BROKEN)
-		. += "<span class='notice'>It looks broken and non-functional.</span>"
+		. += SPAN_NOTICE("It looks broken and non-functional.")
 	if(!(resistance_flags & INDESTRUCTIBLE))
 		if(resistance_flags & ON_FIRE)
-			. += "<span class='warning'>It's on fire!</span>"
+			. += SPAN_WARNING("It's on fire!")
 		var/healthpercent = (obj_integrity/max_integrity) * 100
 		switch(healthpercent)
 			if(50 to 99)
@@ -414,7 +475,7 @@
 			if(25 to 50)
 				. +=  "It appears heavily damaged."
 			if(0 to 25)
-				. +=  "<span class='warning'>It's falling apart!</span>"
+				. +=  SPAN_WARNING("It's falling apart!")
 	if(user.research_scanner && component_parts)
 		. += display_parts(user)
 
@@ -475,7 +536,9 @@
 		return FALSE
 	if(!prob(prb))
 		return FALSE
-	do_sparks(5, 1, src)
+	if(COOLDOWN_FINISHED(src, sparks_cooldown))
+		do_sparks(5, 1, src)
+		COOLDOWN_START(src, sparks_cooldown, 1 SECONDS)
 	if(electrocute_mob(user, get_area(src), src, siemens_strength, TRUE))
 		return TRUE
 	return FALSE
@@ -487,6 +550,15 @@
 /obj/machinery/proc/on_deconstruction()
 	return
 
+/**
+* Returns the wires of the machine, or null if not declared.
+*
+* Note: `/obj/machinery/` does not contain a `/datum/wires/` variable,
+* and needs to be implemented on any child object with this function overwritten.
+*/
+/obj/machinery/proc/get_internal_wires()
+	return
+
 /obj/machinery/emp_act(severity)
 	if(power_state && !stat)
 		use_power(7500/severity)
@@ -495,7 +567,7 @@
 
 /obj/machinery/zap_act(power, zap_flags)
 	if(prob(85) && (zap_flags & ZAP_MACHINE_EXPLOSIVE) && !(resistance_flags & INDESTRUCTIBLE))
-		explosion(src, 1, 2, 4, flame_range = 2, adminlog = FALSE, smoke = FALSE)
+		explosion(src, 1, 2, 4, flame_range = 2, adminlog = FALSE, cause = "Random Zap Explosion")
 	else if(zap_flags & ZAP_OBJ_DAMAGE)
 		take_damage(power * 0.0005, BURN, ENERGY)
 		if(prob(40))
@@ -505,7 +577,7 @@
 
 /obj/machinery/proc/adjust_item_drop_location(atom/movable/AM)	// Adjust item drop location to a 3x3 grid inside the tile, returns slot id from 0 to 8
 	var/md5 = md5(AM.name)										// Oh, and it's deterministic too. A specific item will always drop from the same slot.
-	for (var/i in 1 to 32)
+	for(var/i in 1 to 32)
 		. += hex2num(md5[i])
 	. = . % 9
 	AM.pixel_x = -8 + ((.%3)*8)
@@ -519,7 +591,7 @@
  */
 /obj/machinery/proc/can_use_shortcut(mob/living/user)
 	if(user.incapacitated())
-		to_chat(user, "<span class='warning'>You can't do that right now!</span>")
+		to_chat(user, SPAN_WARNING("You can't do that right now!"))
 		return FALSE
 	if(ishuman(user) && in_range(src, user))
 		return TRUE
@@ -540,3 +612,9 @@
  */
 /obj/machinery/proc/flicker()
 	return FALSE
+
+/obj/machinery/fall_and_crush(turf/target_turf, crush_damage, should_crit, crit_damage_factor, datum/tilt_crit/forced_crit, weaken_time, knockdown_time, ignore_gravity, should_rotate, angle, rightable, block_interactions)
+	. = ..(target_turf, crush_damage, should_crit, crit_damage_factor, forced_crit, weaken_time, knockdown_time, ignore_gravity = FALSE, should_rotate = TRUE, rightable = TRUE, block_interactions_until_righted = TRUE)
+
+/obj/machinery/rust_heretic_act()
+	take_damage(500, BRUTE, MELEE, 1)

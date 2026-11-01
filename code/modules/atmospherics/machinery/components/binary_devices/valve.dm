@@ -10,15 +10,12 @@
 	var/open = FALSE
 	var/animating = FALSE
 
-	req_one_access_txt = "24;10"
+	req_one_access = list(ACCESS_ENGINE, ACCESS_ATMOSPHERICS)
 
 /obj/machinery/atmospherics/binary/valve/examine(mob/user)
 	. = ..()
 	. += "It is currently [open ? "open" : "closed"]."
-
-/obj/machinery/atmospherics/binary/valve/examine(mob/user)
-	. = ..()
-	. += "<span class='notice'>Click this to turn the valve. If red, the pipes on each end are separated. Otherwise, they are connected.</span>"
+	. += SPAN_NOTICE("Click this to turn the valve. If perpendicular, the pipes on each end are separated. If parallel, they are connected.")
 
 /obj/machinery/atmospherics/binary/valve/open
 	open = TRUE
@@ -45,13 +42,13 @@
 	parent1.update = 0
 	parent2.update = 0
 	parent1.reconcile_air()
-	investigate_log("was opened by [usr ? key_name(usr) : "a remote signal"]", "atmos")
+	investigate_log("was opened by [usr ? key_name(usr) : "a remote signal"]", INVESTIGATE_ATMOS)
 	return
 
 /obj/machinery/atmospherics/binary/valve/proc/close()
 	open = FALSE
 	update_icon(UPDATE_ICON_STATE)
-	investigate_log("was closed by [usr ? key_name(usr) : "a remote signal"]", "atmos")
+	investigate_log("was closed by [usr ? key_name(usr) : "a remote signal"]", INVESTIGATE_ATMOS)
 	return
 
 /obj/machinery/atmospherics/binary/valve/attack_ai(mob/user)
@@ -71,9 +68,10 @@
 		close()
 	else
 		open()
-	to_chat(user, "<span class='notice'>You [open ? "open" : "close"] [src].</span>")
+	to_chat(user, SPAN_NOTICE("You [open ? "open" : "close"] [src]."))
 
-/obj/machinery/atmospherics/binary/valve/digital		// can be controlled by AI
+/// can be controlled by AI
+/obj/machinery/atmospherics/binary/valve/digital
 	name = "digital valve"
 	desc = "A digitally controlled valve."
 	icon = 'icons/atmos/digital_valve.dmi'
@@ -85,7 +83,7 @@
 	if(!has_power())
 		return
 	if(!allowed(user) && !user.can_advanced_admin_interact())
-		to_chat(user, "<span class='alert'>Access denied.</span>")
+		to_chat(user, SPAN_ALERT("Access denied."))
 		return
 	..()
 

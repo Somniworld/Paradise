@@ -1,6 +1,6 @@
 
 /datum/radio_frequency
-	var/frequency as num
+	var/frequency
 	var/list/obj/devices = list()
 
 /datum/radio_frequency/proc/post_signal(obj/source as obj|null, datum/signal/signal, filter = null as text|null, range = null as num|null)
@@ -33,7 +33,7 @@
 			if(start_point.z!=end_point.z || get_dist(start_point, end_point) > range)
 				continue
 
-		device.receive_signal(signal, TRANSMISSION_RADIO, frequency)
+		device.receive_signal(signal, frequency)
 
 /datum/radio_frequency/proc/add_listener(obj/device as obj, filter as text|null)
 	if(!filter)
@@ -43,11 +43,13 @@
 	if(!devices_line)
 		devices_line = new
 		devices[filter] = devices_line
-	devices_line+=device
+	if(device in devices[filter])
+		return
+	devices_line += device
 //			var/list/obj/devices_line___ = devices[filter_str]
-//			var/l = devices_line___.len
-	//log_admin("DEBUG: devices_line.len=[devices_line.len]")
-	//log_admin("DEBUG: devices(filter_str).len=[l]")
+//			var/l = length(devices_line___)
+	//log_admin("DEBUG: length(devices_line)=[length(devices_line)]")
+	//log_admin("DEBUG: length(devices(filter_str))=[l]")
 
 /datum/radio_frequency/proc/remove_listener(obj/device)
 	for(var/devices_filter in devices)
@@ -55,17 +57,12 @@
 		devices_line-=device
 		while(null in devices_line)
 			devices_line -= null
-		if(devices_line.len==0)
+		if(length(devices_line) == 0)
 			devices -= devices_filter
 			qdel(devices_line)
 
 /datum/signal
 	var/obj/source
-
-	var/transmission_method = 0 //unused at the moment
-	//0 = wire
-	//1 = radio transmission
-	//2 = subspace transmission
 
 	var/list/data = list()
 	var/encryption
@@ -74,7 +71,6 @@
 
 /datum/signal/proc/copy_from(datum/signal/model)
 	source = model.source
-	transmission_method = model.transmission_method
 	data = model.data
 	encryption = model.encryption
 	frequency = model.frequency
@@ -96,7 +92,7 @@
 		var/mob/living/carbon/human/H = M
 		. = H.dna.species.name
 	else if(isbrain(M))
-		var/mob/living/carbon/brain/B = M
+		var/mob/living/brain/B = M
 		. = B.get_race()
 	else if(issilicon(M))
 		. = "Artificial Life"
@@ -104,11 +100,11 @@
 		. = "Slime"
 	else if(isbot(M))
 		. = "Bot"
-	else if(isanimal(M))
+	else if(isanimal_or_basicmob(M))
 		. = "Domestic Animal"
 	else
 		. = "Unidentifiable"
 
 //callback used by objects to react to incoming radio signals
-/obj/proc/receive_signal(datum/signal/signal, receive_method, receive_param)
+/obj/proc/receive_signal(datum/signal/signal, receive_param)
 	return null

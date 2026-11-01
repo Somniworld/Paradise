@@ -1,6 +1,6 @@
 /mob/living/simple_animal/hostile/guardian/charger
-	melee_damage_lower = 15
-	melee_damage_upper = 15
+	melee_damage_lower = 20
+	melee_damage_upper = 20
 	ranged = TRUE //technically
 	ranged_message = "charges"
 	ranged_cooldown_time = 40
@@ -11,20 +11,20 @@
 	tech_fluff_string = "Boot sequence complete. Charge modules loaded. Holoparasite swarm online."
 	bio_fluff_string = "Your scarab swarm finishes mutating and stirs to life, ready to deal damage."
 	var/charging = FALSE
-	var/obj/screen/alert/chargealert
+	var/atom/movable/screen/alert/chargealert
 
 /mob/living/simple_animal/hostile/guardian/charger/Life()
 	. = ..()
 	if(ranged_cooldown <= world.time)
 		if(!chargealert)
-			chargealert = throw_alert("charge", /obj/screen/alert/cancharge)
+			chargealert = throw_alert("charge", /atom/movable/screen/alert/cancharge)
 	else
 		clear_alert("charge")
 		chargealert = null
 
 /mob/living/simple_animal/hostile/guardian/charger/OpenFire(atom/A)
 	if(!charging)
-		visible_message("<span class='danger'>[src] [ranged_message] at [A]!</span>")
+		visible_message(SPAN_DANGER("[src] [ranged_message] at [A]!"))
 		ranged_cooldown = world.time + ranged_cooldown_time
 		clear_alert("charge")
 		chargealert = null
@@ -63,7 +63,7 @@
 					blocked = TRUE
 			if(!blocked)
 				L.KnockDown(2 SECONDS)
-				L.visible_message("<span class='danger'>[src] slams into [L]!</span>", "<span class='userdanger'>[src] slams into you!</span>")
+				L.visible_message(SPAN_DANGER("[src] slams into [L]!"), SPAN_USERDANGER("[src] slams into you!"))
 				L.apply_damage(20, BRUTE)
 				playsound(get_turf(L), 'sound/effects/meteorimpact.ogg', 100, 1)
 				shake_camera(L, 4, 3)

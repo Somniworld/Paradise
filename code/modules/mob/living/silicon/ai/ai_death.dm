@@ -10,20 +10,20 @@
 	else
 		icon_state = "ai_dead"
 	if(eyeobj)
-		eyeobj.setLoc(get_turf(src))
+		eyeobj.set_loc(get_turf(src))
 
 	GLOB.shuttle_caller_list -= src
 	SSshuttle.autoEvac()
 
 	if(nuking)
-		set_security_level("red")
+		SSsecurity_level.set_level(SEC_LEVEL_RED)
 		nuking = FALSE
 		for(var/obj/item/pinpointer/point in GLOB.pinpointer_list)
 			point.the_disk = null //Point back to the disk.
 
 	if(doomsday_device)
 		doomsday_device.timing = FALSE
-		SSshuttle.emergencyNoEscape = 0
+		SSshuttle.clearHostileEnvironment(doomsday_device)
 		if(SSshuttle.emergency.mode == SHUTTLE_STRANDED)
 			SSshuttle.emergency.mode = SHUTTLE_DOCKED
 			SSshuttle.emergency.timer = world.time
@@ -32,7 +32,7 @@
 
 	if(explosive)
 		spawn(10) // REEEEEEEE
-			explosion(src.loc, 3, 6, 12, 15)
+			explosion(src.loc, 3, 6, 12, 15, cause = "Adminbus explosive AI")
 
 	for(var/obj/machinery/ai_status_display/O as anything in GLOB.ai_displays) //change status
 		O.mode = AI_DISPLAY_MODE_BSOD

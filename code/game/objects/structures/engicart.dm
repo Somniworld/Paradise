@@ -4,181 +4,261 @@
 	icon = 'icons/obj/engicart.dmi'
 	icon_state = "cart"
 	face_while_pulling = FALSE
-	anchored = FALSE
 	density = TRUE
-	var/obj/item/stack/sheet/glass/myglass = null
-	var/obj/item/stack/sheet/metal/mymetal = null
-	var/obj/item/stack/sheet/plasteel/myplasteel = null
-	var/obj/item/flashlight/myflashlight = null
-	var/obj/item/storage/toolbox/mechanical/mybluetoolbox = null
-	var/obj/item/storage/toolbox/electrical/myyellowtoolbox = null
-	var/obj/item/storage/toolbox/emergency/myredtoolbox = null
+	var/obj/item/stack/sheet/glass/my_glass = null
+	var/obj/item/stack/sheet/metal/my_metal = null
+	var/obj/item/stack/sheet/plasteel/my_plasteel = null
+	var/obj/item/flashlight/my_flashlight = null
+	var/obj/item/storage/toolbox/mechanical/my_blue_toolbox = null
+	var/obj/item/storage/toolbox/electrical/my_yellow_toolbox = null
+	var/obj/item/storage/toolbox/emergency/my_red_toolbox = null
+
+/obj/structure/engineeringcart/full
+
+/obj/structure/engineeringcart/full/Initialize(mapload)
+	. = ..()
+	my_glass = new /obj/item/stack/sheet/glass/fifty(src)
+	my_metal = new /obj/item/stack/sheet/metal/fifty(src)
+	my_plasteel = new /obj/item/stack/sheet/plasteel/fifty(src)
+	my_flashlight = new /obj/item/flashlight(src)
+	my_blue_toolbox = new /obj/item/storage/toolbox/mechanical/(src)
+	my_yellow_toolbox = new /obj/item/storage/toolbox/electrical/(src)
+	my_red_toolbox = new /obj/item/storage/toolbox/emergency/(src)
+	update_icon(UPDATE_OVERLAYS)
 
 /obj/structure/engineeringcart/Destroy()
-	QDEL_NULL(myglass)
-	QDEL_NULL(mymetal)
-	QDEL_NULL(myplasteel)
-	QDEL_NULL(myflashlight)
-	QDEL_NULL(mybluetoolbox)
-	QDEL_NULL(myyellowtoolbox)
-	QDEL_NULL(myredtoolbox)
+	QDEL_NULL(my_glass)
+	QDEL_NULL(my_metal)
+	QDEL_NULL(my_plasteel)
+	QDEL_NULL(my_flashlight)
+	QDEL_NULL(my_blue_toolbox)
+	QDEL_NULL(my_yellow_toolbox)
+	QDEL_NULL(my_red_toolbox)
 	return ..()
 
-/obj/structure/engineeringcart/proc/put_in_cart(obj/item/I, mob/user)
-	user.drop_item()
-	I.loc = src
-	updateUsrDialog()
-	to_chat(user, "<span class='notice'>You put [I] into [src].</span>")
-	return
-/obj/structure/engineeringcart/attackby(obj/item/I, mob/user, params)
-	var/fail_msg = "<span class='notice'>There is already one of those in [src].</span>"
-	if(!I.is_robot_module())
-		if(istype(I, /obj/item/stack/sheet/glass))
-			if(!myglass)
-				put_in_cart(I, user)
-				myglass=I
-				update_icon(UPDATE_OVERLAYS)
-			else
-				to_chat(user, fail_msg)
-		else if(istype(I, /obj/item/stack/sheet/metal))
-			if(!mymetal)
-				put_in_cart(I, user)
-				mymetal=I
-				update_icon(UPDATE_OVERLAYS)
-			else
-				to_chat(user, fail_msg)
-		else if(istype(I, /obj/item/stack/sheet/plasteel))
-			if(!myplasteel)
-				put_in_cart(I, user)
-				myplasteel=I
-				update_icon(UPDATE_OVERLAYS)
-			else
-				to_chat(user, fail_msg)
-		else if(istype(I, /obj/item/flashlight))
-			if(!myflashlight)
-				put_in_cart(I, user)
-				myflashlight=I
-				update_icon(UPDATE_OVERLAYS)
-			else
-				to_chat(user, fail_msg)
-		else if(istype(I, /obj/item/storage/toolbox/mechanical))
-			if(!mybluetoolbox)
-				put_in_cart(I, user)
-				mybluetoolbox=I
-				update_icon(UPDATE_OVERLAYS)
-			else
-				to_chat(user, fail_msg)
-		else if(istype(I, /obj/item/storage/toolbox/electrical))
-			if(!myyellowtoolbox)
-				put_in_cart(I, user)
-				myyellowtoolbox=I
-				update_icon(UPDATE_OVERLAYS)
-			else
-				to_chat(user, fail_msg)
-		else if(istype(I, /obj/item/storage/toolbox))
-			if(!myredtoolbox)
-				put_in_cart(I, user)
-				myredtoolbox=I
-				update_icon(UPDATE_OVERLAYS)
-			else
-				to_chat(user, fail_msg)
-		else if(istype(I, /obj/item/wrench))
-			if(!anchored && !isinspace())
-				playsound(src.loc, I.usesound, 50, 1)
-				user.visible_message( \
-					"[user] tightens \the [src]'s casters.", \
-					"<span class='notice'> You have tightened \the [src]'s casters.</span>", \
-					"You hear ratchet.")
-				anchored = TRUE
-			else if(anchored)
-				playsound(src.loc, I.usesound, 50, 1)
-				user.visible_message( \
-					"[user] loosens \the [src]'s casters.", \
-					"<span class='notice'> You have loosened \the [src]'s casters.</span>", \
-					"You hear ratchet.")
-				anchored = FALSE
-	else
-		to_chat(usr, "<span class='warning'>You cannot interface your modules [src]!</span>")
+/obj/structure/engineeringcart/proc/put_in_cart(obj/item/used, mob/user)
+	if(!user.drop_item())
+		to_chat(user, SPAN_WARNING("[used] is stuck to your hand!"))
+		return FALSE
+
+	used.loc = src
+	to_chat(user, SPAN_NOTICE("You put [used] into [src]."))
+	return TRUE
+
+/obj/structure/engineeringcart/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	. = ITEM_INTERACT_COMPLETE
+	var/fail_msg = SPAN_WARNING("There is already one of those in [src]!")
+	if(used.is_robot_module())
+		to_chat(user, SPAN_WARNING("You cannot interface your modules with [src]!"))
+		return
+
+	if(istype(used, /obj/item/stack/sheet/glass))
+		if(my_glass)
+			to_chat(user, fail_msg)
+			return
+
+		if(!put_in_cart(used, user))
+			return
+
+		my_glass = used
+		update_icon(UPDATE_OVERLAYS)
+		return
+
+	if(istype(used, /obj/item/stack/sheet/metal))
+		if(my_metal)
+			to_chat(user, fail_msg)
+			return
+
+		if(!put_in_cart(used, user))
+			return
+
+		my_metal = used
+		update_icon(UPDATE_OVERLAYS)
+		return
+
+	if(istype(used, /obj/item/stack/sheet/plasteel))
+		if(my_plasteel)
+			to_chat(user, fail_msg)
+			return
+
+		if(!put_in_cart(used, user))
+			return
+
+		my_plasteel = used
+		update_icon(UPDATE_OVERLAYS)
+		return
+
+	if(istype(used, /obj/item/flashlight))
+		if(my_flashlight)
+			to_chat(user, fail_msg)
+			return
+
+		if(!put_in_cart(used, user))
+			return
+
+		my_flashlight = used
+		update_icon(UPDATE_OVERLAYS)
+		return
+
+	if(istype(used, /obj/item/storage/toolbox/mechanical))
+		if(my_blue_toolbox)
+			to_chat(user, fail_msg)
+			return
+
+		if(!put_in_cart(used, user))
+			return
+
+		my_blue_toolbox = used
+		update_icon(UPDATE_OVERLAYS)
+		return
+
+	if(istype(used, /obj/item/storage/toolbox/electrical))
+		if(my_yellow_toolbox)
+			to_chat(user, fail_msg)
+			return
+
+		if(!put_in_cart(used, user))
+			return
+
+		my_yellow_toolbox = used
+		update_icon(UPDATE_OVERLAYS)
+		return
+
+	if(istype(used, /obj/item/storage/toolbox))
+		if(my_red_toolbox)
+			to_chat(user, fail_msg)
+			return
+
+		if(!put_in_cart(used, user))
+			return
+
+		my_red_toolbox = used
+		update_icon(UPDATE_OVERLAYS)
+		return
+
+	return ..()
+
+/obj/structure/engineeringcart/wrench_act(mob/living/user, obj/item/tool)
+	. = TRUE
+	if(anchored)
+		tool.play_tool_sound(src, tool.tool_volume)
+		anchored = FALSE
+		user.visible_message(
+			SPAN_NOTICE("[user] loosens [src]'s casters."),
+			SPAN_NOTICE("You have loosened [src]'s casters."),
+			SPAN_NOTICE("You hear ratcheting.")
+		)
+		return
+
+	if(!anchored && !isinspace())
+		tool.play_tool_sound(src, tool.tool_volume)
+		anchored = TRUE
+		user.visible_message(
+			SPAN_NOTICE("[user] tightens [src]'s casters."),
+			SPAN_NOTICE("You have tightened [src]'s casters."),
+			SPAN_NOTICE("You hear ratcheting.")
+		)
 
 /obj/structure/engineeringcart/attack_hand(mob/user)
-	user.set_machine(src)
-	var/dat
-	if(myglass)
-		dat += "<a href='?src=[UID()];glass=1'>[myglass.name]</a><br>"
-	if(mymetal)
-		dat += "<a href='?src=[UID()];metal=1'>[mymetal.name]</a><br>"
-	if(myplasteel)
-		dat += "<a href='?src=[UID()];plasteel=1'>[myplasteel.name]</a><br>"
-	if(myflashlight)
-		dat += "<a href='?src=[UID()];flashlight=1'>[myflashlight.name]</a><br>"
-	if(mybluetoolbox)
-		dat += "<a href='?src=[UID()];bluetoolbox=1'>[mybluetoolbox.name]</a><br>"
-	if(myredtoolbox)
-		dat += "<a href='?src=[UID()];redtoolbox=1'>[myredtoolbox.name]</a><br>"
-	if(myyellowtoolbox)
-		dat += "<a href='?src=[UID()];yellowtoolbox=1'>[myyellowtoolbox.name]</a><br>"
-	var/datum/browser/popup = new(user, "engicart", name, 240, 160)
-	popup.set_content(dat)
-	popup.open()
+	var/list/engicart_items = list()
 
-/obj/structure/engineeringcart/Topic(href, href_list)
-	if(!in_range(src, usr))
+	if(my_glass)
+		engicart_items["Glass"] = image(icon = my_glass.icon, icon_state = my_glass.icon_state)
+	if(my_metal)
+		engicart_items["Metal"] = image(icon = my_metal.icon, icon_state = my_metal.icon_state)
+	if(my_plasteel)
+		engicart_items["Plasteel"] = image(icon = my_plasteel.icon, icon_state = my_plasteel.icon_state)
+	if(my_flashlight)
+		engicart_items["Flashlight"] = image(icon = my_flashlight.icon, icon_state = my_flashlight.icon_state)
+	if(my_blue_toolbox)
+		engicart_items["Mechanical Toolbox"] = image(icon = my_blue_toolbox.icon, icon_state = my_blue_toolbox.icon_state)
+	if(my_red_toolbox)
+		engicart_items["Emergency Toolbox"] = image(icon = my_red_toolbox.icon, icon_state = my_red_toolbox.icon_state)
+	if(my_yellow_toolbox)
+		engicart_items["Electrical Toolbox"] = image(icon = my_yellow_toolbox.icon, icon_state = my_yellow_toolbox.icon_state)
+
+	if(!length(engicart_items))
 		return
-	if(!isliving(usr))
+
+	var/pick = show_radial_menu(user, src, engicart_items, custom_check = CALLBACK(src, PROC_REF(check_menu), user), require_near = TRUE)
+	if(!pick)
 		return
-	var/mob/living/user = usr
-	if(href_list["glass"])
-		if(myglass)
-			user.put_in_hands(myglass)
-			to_chat(user, "<span class='notice'>You take [myglass] from [src].</span>")
-			myglass = null
-	if(href_list["metal"])
-		if(mymetal)
-			user.put_in_hands(mymetal)
-			to_chat(user, "<span class='notice'>You take [mymetal] from [src].</span>")
-			mymetal = null
-	if(href_list["plasteel"])
-		if(myplasteel)
-			user.put_in_hands(myplasteel)
-			to_chat(user, "<span class='notice'>You take [myplasteel] from [src].</span>")
-			myplasteel = null
-	if(href_list["flashlight"])
-		if(myflashlight)
-			user.put_in_hands(myflashlight)
-			to_chat(user, "<span class='notice'>You take [myflashlight] from [src].</span>")
-			myflashlight = null
-	if(href_list["bluetoolbox"])
-		if(mybluetoolbox)
-			user.put_in_hands(mybluetoolbox)
-			to_chat(user, "<span class='notice'>You take [mybluetoolbox] from [src].</span>")
-			mybluetoolbox = null
-	if(href_list["redtoolbox"])
-		if(myredtoolbox)
-			user.put_in_hands(myredtoolbox)
-			to_chat(user, "<span class='notice'>You take [myredtoolbox] from [src].</span>")
-			myredtoolbox = null
-	if(href_list["yellowtoolbox"])
-		if(myyellowtoolbox)
-			user.put_in_hands(myyellowtoolbox)
-			to_chat(user, "<span class='notice'>You take [myyellowtoolbox] from [src].</span>")
-			myyellowtoolbox = null
+
+	switch(pick)
+		if("Glass")
+			if(!my_glass)
+				return
+
+			user.put_in_hands(my_glass)
+			to_chat(user, SPAN_NOTICE("You take [my_glass] from [src]."))
+			my_glass = null
+
+		if("Metal")
+			if(!my_metal)
+				return
+
+			user.put_in_hands(my_metal)
+			to_chat(user, SPAN_NOTICE("You take [my_metal] from [src]."))
+			my_metal = null
+
+		if("Plasteel")
+			if(!my_plasteel)
+				return
+
+			user.put_in_hands(my_plasteel)
+			to_chat(user, SPAN_NOTICE("You take [my_plasteel] from [src]."))
+			my_plasteel = null
+
+		if("Flashlight")
+			if(!my_flashlight)
+				return
+
+			user.put_in_hands(my_flashlight)
+			to_chat(user, SPAN_NOTICE("You take [my_flashlight] from [src]."))
+			my_flashlight = null
+
+		if("Mechanical Toolbox")
+			if(!my_blue_toolbox)
+				return
+
+			user.put_in_hands(my_blue_toolbox)
+			to_chat(user, SPAN_NOTICE("You take [my_blue_toolbox] from [src]."))
+			my_blue_toolbox = null
+
+		if("Emergency Toolbox")
+			if(!my_red_toolbox)
+				return
+
+			user.put_in_hands(my_red_toolbox)
+			to_chat(user, SPAN_NOTICE("You take [my_red_toolbox] from [src]."))
+			my_red_toolbox = null
+
+		if("Electrical Toolbox")
+			if(!my_yellow_toolbox)
+				return
+
+			user.put_in_hands(my_yellow_toolbox)
+			to_chat(user, SPAN_NOTICE("You take [my_yellow_toolbox] from [src]."))
+			my_yellow_toolbox = null
 
 	update_icon(UPDATE_OVERLAYS)
-	updateUsrDialog()
+
+/obj/structure/engineeringcart/proc/check_menu(mob/living/user)
+	return istype(user) && !HAS_TRAIT(user, TRAIT_HANDS_BLOCKED)
 
 /obj/structure/engineeringcart/update_overlays()
 	. = ..()
-	if(myplasteel)
+	if(my_plasteel)
 		. += "cart_plasteel"
-	if(mymetal)
+	if(my_metal)
 		. += "cart_metal"
-	if(myglass)
+	if(my_glass)
 		. += "cart_glass"
-	if(myflashlight)
+	if(my_flashlight)
 		. += "cart_flashlight"
-	if(mybluetoolbox)
+	if(my_blue_toolbox)
 		. += "cart_bluetoolbox"
-	if(myredtoolbox)
+	if(my_red_toolbox)
 		. += "cart_redtoolbox"
-	if(myyellowtoolbox)
+	if(my_yellow_toolbox)
 		. += "cart_yellowtoolbox"

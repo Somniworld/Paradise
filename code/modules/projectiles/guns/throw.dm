@@ -5,7 +5,7 @@
 	fire_sound_text = "thwock"
 
 	var/obj/item/to_launch
-	var/list/valid_projectile_type
+	var/obj/item/valid_projectile_type
 	var/max_capacity = 1
 	var/list/loaded_projectiles = list()
 
@@ -25,14 +25,14 @@
 	return
 
 /obj/item/gun/throw/proc/get_ammocount(include_loaded = 1)
-	var/count = loaded_projectiles.len
+	var/count = length(loaded_projectiles)
 	if(include_loaded && to_launch)
 		count++
 	return count
 
 /obj/item/gun/throw/examine(mob/user)
 	. = ..()
-	. += "<span class='notice'>It is [to_launch ? "loaded with \a [to_launch]" : "not loaded"].</span>"
+	. += SPAN_NOTICE("It is [to_launch ? "loaded with \a [to_launch]" : "not loaded"].")
 	. += notify_ammo_count()
 
 /obj/item/gun/throw/Destroy()
@@ -47,23 +47,23 @@
 /obj/item/gun/throw/update_overlays()
 	return list()
 
-/obj/item/gun/throw/attackby(obj/item/I, mob/user, params)
+/obj/item/gun/throw/attackby__legacy__attackchain(obj/item/I, mob/user, params)
 	if(istype(I, valid_projectile_type) && !(I.flags & NODROP))
 		if(get_ammocount() < max_capacity)
 			user.drop_item()
 			I.forceMove(src)
 			loaded_projectiles += I
-			to_chat(user, "<span class='notice'>You load [I] into [src].</span>")
+			to_chat(user, SPAN_NOTICE("You load [I] into [src]."))
 			if(!to_launch)
 				process_chamber()
 			to_chat(user, notify_ammo_count())
 		else
-			to_chat(user, "<span class='warning'>[src] cannot hold any more projectiles.</span>")
+			to_chat(user, SPAN_WARNING("[src] cannot hold any more projectiles."))
 	else
-		to_chat(user, "<span class='warning'>You cannot load [I] into [src]!</span>")
+		to_chat(user, SPAN_WARNING("You cannot load [I] into [src]!"))
 
 /obj/item/gun/throw/process_chamber()
-	if(!to_launch && loaded_projectiles.len)
+	if(!to_launch && length(loaded_projectiles))
 		to_launch = loaded_projectiles[1]
 		loaded_projectiles -= to_launch
 	return

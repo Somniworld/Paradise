@@ -15,10 +15,13 @@
 		// But we return here since we don't want to do regular dblclick handling
 		return
 
-	if(control_disabled || stat) return
+	if(control_disabled || stat)
+		return
+	if(ismecha(loc))
+		return
 
 	if(ismob(A))
-		ai_actual_track(A)
+		ai_actual_track(A, TRUE)
 	else
 		A.move_camera_by_click()
 
@@ -35,30 +38,8 @@
 	if(control_disabled || stat)
 		return
 
-	var/turf/pixel_turf = isturf(A) ? A : get_turf_pixel(A)
-	if(isnull(pixel_turf))
+	if(!can_click_on_turf(A))
 		return
-	if(!can_see(A))
-		if(isturf(A)) //On unmodified clients clicking the static overlay clicks the turf underneath
-			return // So there's no point messaging admins
-		add_attack_logs(src, src, "[key_name_admin(src)] might be running a modified client! (failed can_see on AI click of [A]([ADMIN_COORDJMP(pixel_turf)]))", ATKLOG_ALL)
-		var/message = "[key_name(src)] might be running a modified client! (failed can_see on AI click of [A]([COORD(pixel_turf)]))"
-		log_admin(message)
-		GLOB.discord_manager.send2discord_simple_noadmins("**\[Warning]** [key_name(src)] might be running a modified client! (failed checkTurfVis on AI click of [A]([COORD(pixel_turf)]))")
-
-
-	var/turf_visible
-	if(pixel_turf)
-		turf_visible = GLOB.cameranet.checkTurfVis(pixel_turf)
-		if(!turf_visible)
-			if(istype(loc, /obj/item/aicard) && (pixel_turf in view(client.view, loc)))
-				turf_visible = TRUE
-			else
-				if(pixel_turf.obscured)
-					log_admin("[key_name_admin(src)] might be running a modified client! (failed checkTurfVis on AI click of [A]([COORD(pixel_turf)])")
-					add_attack_logs(src, src, "[key_name_admin(src)] might be running a modified client! (failed checkTurfVis on AI click of [A]([ADMIN_COORDJMP(pixel_turf)]))", ATKLOG_ALL)
-					GLOB.discord_manager.send2discord_simple_noadmins("**\[Warning]** [key_name(src)] might be running a modified client! (failed checkTurfVis on AI click of [A]([COORD(pixel_turf)]))")
-				return
 
 	var/list/modifiers = params2list(params)
 	if(modifiers["shift"] && modifiers["ctrl"])
@@ -76,6 +57,12 @@
 			controlled_mech.click_action(A, src, params) //Override AI normal click behavior.
 		return
 	if(modifiers["shift"])
+		if(isturf(A))
+			var/turf/clicked_turf = A
+			var/obj/machinery/door/AL = locate() in clicked_turf.contents
+			if(AL)
+				AL.try_to_activate_door(src)
+				return
 		ShiftClickOn(A)
 		return
 	if(modifiers["alt"]) // alt and alt-gr (rightalt)
@@ -105,6 +92,41 @@
 	*/
 	A.add_hiddenprint(src)
 	A.attack_ai(src)
+
+/mob/living/silicon/ai/MiddleShiftControlClickOn(atom/A)
+	return
+
+/mob/living/silicon/ai/can_use_clickbinds()
+	var/atom/atom_targeted = locateUID(client.moused_over)
+	if(atom_targeted)
+		return can_click_on_turf(atom_targeted)
+
+/mob/living/silicon/ai/proc/can_click_on_turf(atom/A)
+	var/turf/pixel_turf = isturf(A) ? A : get_turf_pixel(A)
+	if(isnull(pixel_turf))
+		return
+	if(!can_see(A))
+		if(isturf(A)) //On unmodified clients clicking the static overlay clicks the turf underneath
+			return // So there's no point messaging admins
+		add_attack_logs(src, src, "[key_name_admin(src)] might be running a modified client! (failed can_see on AI click of [A]([ADMIN_COORDJMP(pixel_turf)]))", ATKLOG_ALL)
+		var/message = "[key_name(src)] might be running a modified client! (failed can_see on AI click of [A]([COORD(pixel_turf)]))"
+		log_admin(message)
+		GLOB.discord_manager.send2discord_simple_noadmins("**\[Warning]** [key_name(src)] might be running a modified client! (failed check_turf_vis on AI click of [A]([COORD(pixel_turf)]))")
+		return FALSE
+
+	var/turf_visible
+	if(pixel_turf)
+		turf_visible = GLOB.cameranet.check_turf_vis(pixel_turf)
+		if(!turf_visible)
+			if((istype(loc, /obj/item/aicard) || ismecha(loc)) && (pixel_turf in range(client.view, loc)))
+				turf_visible = TRUE
+			else
+				if(pixel_turf.obscured)
+					log_admin("[key_name_admin(src)] might be running a modified client! (failed check_turf_vis on AI click of [A]([COORD(pixel_turf)])")
+					add_attack_logs(src, src, "[key_name_admin(src)] might be running a modified client! (failed check_turf_vis on AI click of [A]([ADMIN_COORDJMP(pixel_turf)]))", ATKLOG_ALL)
+					GLOB.discord_manager.send2discord_simple_noadmins("**\[Warning]** [key_name(src)] might be running a modified client! (failed check_turf_vis on AI click of [A]([COORD(pixel_turf)]))")
+				return FALSE
+	return TRUE
 
 /*
 	AI has no need for the UnarmedAttack() and RangedAttack() procs,
@@ -171,12 +193,17 @@
 	return
 
 /mob/living/silicon/ai/TurfAdjacent(turf/T)
-	return (GLOB.cameranet && GLOB.cameranet.checkTurfVis(T))
+	return (GLOB.cameranet && GLOB.cameranet.check_turf_vis(T))
 
 
 // APC
 
 /obj/machinery/power/apc/AICtrlClick(mob/living/user) // turns off/on APCs.
+	if(stat & BROKEN)
+		return
+	if(!user.can_remote_apc_interface(src))
+		to_chat(user, SPAN_WARNING("Unable to interface: Connection refused."))
+		return
 	toggle_breaker(user)
 
 
@@ -206,17 +233,21 @@
 /obj/machinery/door/airlock/AICtrlClick(mob/living/silicon/user) // Bolts doors
 	if(!ai_control_check(user))
 		return
-	toggle_bolt(user)
+	if(ispulsedemon(user) || user.can_instant_lockdown() || do_after_once(user, 3 SECONDS, needhand = FALSE, target = src, allow_moving = TRUE, attempt_cancel_message = "Bolting [src] cancelled.", special_identifier = "Bolt", hidden = TRUE))
+		toggle_bolt(user)
+
 
 /obj/machinery/door/airlock/AIAltClick(mob/living/silicon/user) // Electrifies doors.
 	if(!ai_control_check(user))
 		return
 	if(wires.is_cut(WIRE_ELECTRIFY))
-		to_chat(user, "<span class='warning'>The electrification wire is cut - Cannot electrify the door.</span>")
+		to_chat(user, SPAN_WARNING("The electrification wire is cut - Cannot electrify the door."))
 	if(isElectrified())
 		electrify(0, user, TRUE) // un-shock
 	else
-		electrify(-1, user, TRUE) // permanent shock
+		if(ispulsedemon(user) || user.can_instant_lockdown() || do_after_once(user, 3 SECONDS, target = src, allow_moving = TRUE, attempt_cancel_message = "Shocking [src] cancelled.", special_identifier = "Shock", hidden = TRUE))
+			electrify(-1, user, TRUE) // permanent shock + audio cue
+			playsound(loc, "sparks", 100, TRUE, SHORT_RANGE_SOUND_EXTRARANGE)
 
 
 /obj/machinery/door/airlock/AIMiddleClick(mob/living/user) // Toggles door bolt lights.

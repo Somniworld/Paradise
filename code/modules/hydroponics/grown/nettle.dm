@@ -28,23 +28,25 @@
 	reagents_add = list("facid" = 0.25, "sacid" = 0.25)
 	rarity = 20
 
-/obj/item/grown/nettle //abstract type
+/// abstract type
+/obj/item/grown/nettle
 	name = "nettle"
 	desc = "It's probably <B>not</B> wise to touch it with bare hands..."
-	icon = 'icons/obj/items.dmi'
+	icon = 'icons/obj/weapons/melee.dmi'
+	lefthand_file = 'icons/mob/inhands/weapons_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/weapons_righthand.dmi'
 	icon_state = "nettle"
 	damtype = "fire"
 	force = 15
 	hitsound = 'sound/weapons/bladeslice.ogg'
 	throwforce = 5
-	w_class = WEIGHT_CLASS_NORMAL // Two nettle/deathnettle fit in a pneumatic cannon. They fit in plant bags.
 	throw_speed = 1
 	throw_range = 3
 	origin_tech = "combat=3"
 	attack_verb = list("stung")
 
 /obj/item/grown/nettle/suicide_act(mob/user)
-	user.visible_message("<span class='suicide'>[user] is eating some of [src]! It looks like [user.p_theyre()] trying to commit suicide.</span>")
+	user.visible_message(SPAN_SUICIDE("[user] is eating some of [src]! It looks like [user.p_theyre()] trying to commit suicide!"))
 	return BRUTELOSS|TOXLOSS
 
 /obj/item/grown/nettle/pickup(mob/living/user)
@@ -61,19 +63,17 @@
 	if(affecting)
 		if(affecting.receive_damage(0, force))
 			H.UpdateDamageIcon()
-	to_chat(H, "<span class='userdanger'>The nettle burns your bare hand!</span>")
+	to_chat(H, SPAN_USERDANGER("The nettle burns your bare hand!"))
 	return TRUE
 
-
-
-/obj/item/grown/nettle/afterattack(atom/A as mob|obj, mob/user,proximity)
-	if(!proximity)
+/obj/item/grown/nettle/after_attack(atom/target, mob/user, proximity_flag, click_parameters)
+	if(..() || !proximity_flag)
 		return
 	if(force > 0)
 		force -= rand(1, (force / 3) + 1) // When you whack someone with it, leaves fall off
 	else
 		to_chat(usr, "All the leaves have fallen off the nettle from violent whacking.")
-		usr.unEquip(src)
+		usr.unequip(src)
 		qdel(src)
 
 /obj/item/grown/nettle/basic
@@ -86,11 +86,15 @@
 /obj/item/grown/nettle/death
 	seed = /obj/item/seeds/nettle/death
 	name = "deathnettle"
-	desc = "The <span class='danger'>glowing</span> nettle incites <span class='boldannounce'>rage</span> in you just from looking at it!"
+	desc = "The glowing nettle incites rage in you just from looking at it!"
 	icon_state = "deathnettle"
 	force = 25
 	throwforce = 10
 	origin_tech = "combat=5"
+
+/obj/item/grown/nettle/death/Initialize(mapload)
+	. = ..()
+	desc = "The [SPAN_DANGER("glowing")] nettle incites [SPAN_BOLDANNOUNCEIC("rage")] in you just from looking at it!"
 
 /obj/item/grown/nettle/death/add_juice()
 	..()
@@ -100,13 +104,13 @@
 	if(..())
 		if(prob(50))
 			user.Weaken(10 SECONDS)
-			to_chat(user, "<span class='userdanger'>You are stunned by the Deathnettle when you try picking it up!</span>")
+			to_chat(user, SPAN_USERDANGER("You are stunned by the Deathnettle when you try picking it up!"))
 
-/obj/item/grown/nettle/death/attack(mob/living/carbon/M, mob/user)
-	..()
-	if(!isliving(M))
-		return
+/obj/item/grown/nettle/death/attack(mob/living/target, mob/living/user, params)
+	if(..())
+		return FINISH_ATTACK
 
-	to_chat(M, "<span class='danger'>You flinch as you are struck by \the [src]!</span>")
-	add_attack_logs(user, M, "Hit with [src]")
-	M.AdjustEyeBlurry(force * 2) // Maximum duration 5 seconds per hit.
+	if(isliving(target))
+		to_chat(target, SPAN_DANGER("You flinch as you are struck by \the [src]!"))
+		add_attack_logs(user, target, "Hit with [src]")
+		target.AdjustEyeBlurry(force * 2) // Maximum duration 5 seconds per hit.

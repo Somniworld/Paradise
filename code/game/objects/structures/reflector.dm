@@ -2,23 +2,34 @@
 	name = "reflector frame"
 	icon = 'icons/obj/stock_parts.dmi'
 	icon_state = "box_0"
-	desc = "A frame to create a reflector.\n<span class='notice'>Use <b>5</b> sheets of <b>glass</b> to create a 1 way reflector.\nUse <b>10</b> sheets of <b>reinforced glass</b> to create a 2 way reflector.\nUse <b>1 diamond</b> to create a reflector cube.</span>"
-	anchored = FALSE
+	desc = "A frame to create a reflector."
 	density = TRUE
-	layer = 3
+	max_integrity = 50
 	var/finished = FALSE
+	var/obj/item/stack/sheet/build_stack_type
+	var/build_stack_amount
 
+/obj/structure/reflector/examine()
+	. = ..()
+	. += SPAN_NOTICE("Use <b>5</b> sheets of <b>glass</b> to create a 1 way reflector.")
+	. += SPAN_NOTICE("Use <b>10</b> sheets of <b>reinforced glass</b> to create a 2 way reflector.")
+	. += SPAN_NOTICE("Use <b>1 diamond</b> to create a reflector cube.")
 
-/obj/structure/reflector/bullet_act(obj/item/projectile/P)
+/obj/structure/reflector/Initialize(mapload)
+	. = ..()
+	if(mapload)
+		anchored = TRUE
+
+/obj/structure/reflector/bullet_act(obj/projectile/P)
 	var/turf/reflector_turf = get_turf(src)
 	var/turf/reflect_turf
-	if(!istype(P, /obj/item/projectile/beam))
+	if(!istype(P, /obj/projectile/beam))
 		return ..()
 	var/new_dir = get_reflection(dir, P.dir)
-	if(new_dir)
+	if(new_dir && anchored)
 		reflect_turf = get_step(reflect_turf, new_dir)
 	else
-		visible_message("<span class='notice'>[src] is hit by [P]!</span>")
+		visible_message(SPAN_NOTICE("[src] is hit by [P]!"))
 		new_dir = 0
 		return ..() //Hits as normal, explodes or emps or whatever
 
@@ -34,8 +45,8 @@
 	new_dir = 0
 	return -1
 
-
-/obj/structure/reflector/attackby(obj/item/W, mob/user, params)
+/obj/structure/reflector/item_interaction(mob/living/user, obj/item/W, list/modifiers)
+	. = ITEM_INTERACT_COMPLETE
 	//Finishing the frame
 	if(istype(W,/obj/item/stack/sheet))
 		if(finished)
@@ -43,24 +54,24 @@
 		var/obj/item/stack/sheet/S = W
 		if(istype(W, /obj/item/stack/sheet/glass))
 			if(S.get_amount() < 5)
-				to_chat(user, "<span class='warning'>You need five sheets of glass to create a reflector!</span>")
+				to_chat(user, SPAN_WARNING("You need five sheets of glass to create a reflector!"))
 				return
 			else
 				S.use(5)
-				new /obj/structure/reflector/single (src.loc)
+				new /obj/structure/reflector/single(loc)
 				qdel(src)
 		if(istype(W,/obj/item/stack/sheet/rglass))
 			if(S.get_amount() < 10)
-				to_chat(user, "<span class='warning'>You need ten sheets of reinforced glass to create a double reflector!</span>")
+				to_chat(user, SPAN_WARNING("You need ten sheets of reinforced glass to create a double reflector!"))
 				return
 			else
 				S.use(10)
-				new /obj/structure/reflector/double (src.loc)
+				new /obj/structure/reflector/double(loc)
 				qdel(src)
 		if(istype(W, /obj/item/stack/sheet/mineral/diamond))
 			if(S.get_amount() >= 1)
 				S.use(1)
-				new /obj/structure/reflector/box (src.loc)
+				new /obj/structure/reflector/box(loc)
 				qdel(src)
 		return
 	return ..()
@@ -77,7 +88,9 @@
 		return
 	playsound(user, 'sound/items/Ratchet.ogg', 50, 1)
 	TOOL_DISMANTLE_SUCCESS_MESSAGE
-	new /obj/item/stack/sheet/metal(src.loc, 5)
+	new /obj/item/stack/sheet/metal(loc, 5)
+	if(build_stack_type)
+		new build_stack_type(loc, build_stack_amount)
 	qdel(src)
 
 /obj/structure/reflector/welder_act(mob/user, obj/item/I)
@@ -86,13 +99,13 @@
 		return
 	if(anchored)
 		WELDER_ATTEMPT_FLOOR_SLICE_MESSAGE
-		if(!I.use_tool(src, user, 20, volume = I.tool_volume))
+		if(!I.use_tool(src, user, 5 SECONDS, volume = I.tool_volume))
 			return
 		WELDER_FLOOR_SLICE_SUCCESS_MESSAGE
 		anchored = FALSE
 	else
 		WELDER_ATTEMPT_FLOOR_WELD_MESSAGE
-		if(!I.use_tool(src, user, 20, volume = I.tool_volume))
+		if(!I.use_tool(src, user, 5 SECONDS, volume = I.tool_volume))
 			return
 		WELDER_FLOOR_WELD_SUCCESS_MESSAGE
 		anchored = TRUE
@@ -100,30 +113,14 @@
 /obj/structure/reflector/proc/get_reflection(srcdir,pdir)
 	return 0
 
-
-/obj/structure/reflector/verb/rotate()
-	set name = "Rotate"
-	set category = "Object"
-	set src in oview(1)
-
-	if(usr.incapacitated())
-		return
-	if(anchored)
-		to_chat(usr, "<span class='warning'>It is fastened to the floor!</span>")
-		return 0
-	dir = turn(dir, 270)
-	return 1
-
-
 /obj/structure/reflector/AltClick(mob/user)
-	..()
-	if(user.incapacitated())
-		to_chat(user, "<span class='warning'>You can't do that right now!</span>")
+	if(user.stat || HAS_TRAIT(user, TRAIT_HANDS_BLOCKED) || !Adjacent(user))
 		return
-	if(!in_range(src, user))
+
+	if(anchored)
+		to_chat(user, SPAN_WARNING("You cannot rotate [src] right now. It is fastened to the floor!"))
 		return
-	else
-		rotate()
+	dir = turn(dir, 90)
 
 
 //TYPES OF REFLECTORS, SINGLE, DOUBLE, BOX
@@ -136,6 +133,8 @@
 	icon_state = "reflector"
 	desc = "A double sided angled mirror for reflecting lasers. This one does so at a 90 degree angle."
 	finished = TRUE
+	build_stack_type = /obj/item/stack/sheet/glass
+	build_stack_amount = 5
 	var/static/list/rotations = list("[NORTH]" = list("[SOUTH]" = WEST, "[EAST]" = NORTH),
 "[EAST]" = list("[SOUTH]" = EAST, "[WEST]" = NORTH),
 "[SOUTH]" = list("[NORTH]" = EAST, "[WEST]" = SOUTH),
@@ -153,6 +152,8 @@
 	icon_state = "reflector_double"
 	desc = "A double sided angled mirror for reflecting lasers. This one does so at a 90 degree angle."
 	finished = TRUE
+	build_stack_type = /obj/item/stack/sheet/rglass
+	build_stack_amount = 10
 	var/static/list/double_rotations = list("[NORTH]" = list("[NORTH]" = WEST, "[EAST]" = SOUTH, "[SOUTH]" = EAST, "[WEST]" = NORTH),
 "[EAST]" = list("[NORTH]" = EAST, "[WEST]" = SOUTH, "[SOUTH]" = WEST, "[EAST]" = NORTH),
 "[SOUTH]" = list("[NORTH]" = EAST, "[WEST]" = SOUTH, "[SOUTH]" = WEST, "[EAST]" = NORTH),
@@ -170,6 +171,8 @@
 	icon_state = "reflector_box"
 	desc = "A box with an internal set of mirrors that reflects all laser fire in a single direction."
 	finished = TRUE
+	build_stack_type = /obj/item/stack/sheet/mineral/diamond
+	build_stack_amount = 1
 	var/static/list/box_rotations = list("[NORTH]" = list("[SOUTH]" = NORTH, "[EAST]" = NORTH, "[WEST]" = NORTH, "[NORTH]" = NORTH),
 "[EAST]" = list("[SOUTH]" = EAST, "[EAST]" = EAST, "[WEST]" = EAST, "[NORTH]" = EAST),
 "[SOUTH]" = list("[SOUTH]" = SOUTH, "[EAST]" = SOUTH, "[WEST]" = SOUTH, "[NORTH]" = SOUTH),

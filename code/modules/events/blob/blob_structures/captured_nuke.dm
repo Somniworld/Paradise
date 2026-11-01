@@ -1,10 +1,10 @@
-/obj/structure/blob/captured_nuke //alternative to blob just straight up destroying nukes
+/// alternative to blob just straight up destroying nukes
+/obj/structure/blob/captured_nuke
 	name = "blob captured nuke"
 	icon_state = "blob"
 	desc = "A Nuclear Warhead tangled in blob tendrils pulsating with a horrific green glow."
 	max_integrity = 100
-	armor = list(MELEE = 0, BULLET = 0, LASER = 0, ENERGY = 0, BOMB = 0, BIO = 0, RAD = 0, FIRE = 65, ACID = 90)
-	point_return = 0
+	armor = list(MELEE = 0, BULLET = 0, LASER = 0, ENERGY = 0, BOMB = 0, RAD = 0, FIRE = 65, ACID = 90)
 
 /obj/structure/blob/captured_nuke/Initialize(mapload, obj/machinery/nuclearbomb/N)
 	. = ..()

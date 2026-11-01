@@ -24,12 +24,10 @@
 	. = ..()
 	if(!.)
 		return FALSE
-	if(!istype(target))
-		return FALSE
 	var/obj/item/organ/external/affected = target.get_organ(user.zone_selected)
 	if(!affected)
 		return FALSE
-	if(affected.is_robotic())
+	if(!length(affected.embedded_objects))
 		return FALSE
 	return TRUE
 
@@ -38,11 +36,6 @@
 	if(!.)
 		return FALSE
 	if(!istype(target))
-		return FALSE
-	var/obj/item/organ/external/affected = target.get_organ(user.zone_selected)
-	if(!affected)
-		return FALSE
-	if(!affected.is_robotic())
 		return FALSE
 
 	return TRUE
@@ -58,9 +51,9 @@
 /datum/surgery_step/remove_object/begin_step(mob/user, mob/living/carbon/target, target_zone, obj/item/tool, datum/surgery/surgery)
 	L = surgery.organ_to_manipulate
 	if(L)
-		user.visible_message("[user] looks for objects embedded in [target]'s [parse_zone(user.zone_selected)].", "<span class='notice'>You look for objects embedded in [target]'s [parse_zone(user.zone_selected)]...</span>")
+		user.visible_message("[user] looks for objects embedded in [target]'s [parse_zone(user.zone_selected)].", SPAN_NOTICE("You look for objects embedded in [target]'s [parse_zone(user.zone_selected)]..."))
 	else
-		user.visible_message("[user] looks for [target]'s [parse_zone(user.zone_selected)].", "<span class='notice'>You look for [target]'s [parse_zone(user.zone_selected)]...</span>")
+		user.visible_message("[user] looks for [target]'s [parse_zone(user.zone_selected)].", SPAN_NOTICE("You look for [target]'s [parse_zone(user.zone_selected)]..."))
 	return ..()
 
 
@@ -76,12 +69,16 @@
 			H.clear_alert("embeddedobject")
 
 		if(objects > 0)
-			user.visible_message("[user] sucessfully removes [objects] object\s from [H]'s [parse_zone(user.zone_selected)]!", "<span class='notice'>You successfully remove [objects] object\s from [H]'s [L.name].</span>")
+			user.visible_message(
+				"[user] successfully removes [objects] object\s from [H]'s [parse_zone(user.zone_selected)]!",
+				SPAN_NOTICE("You successfully remove [objects] object\s from [H]'s [L.name]."),
+				chat_message_type = MESSAGE_TYPE_COMBAT
+				)
 		else
-			to_chat(user, "<span class='warning'>You find no objects embedded in [H]'s [parse_zone(user.zone_selected)]!</span>")
+			to_chat(user, SPAN_WARNING("You find no objects embedded in [H]'s [parse_zone(user.zone_selected)]!"))
 
 	else
-		to_chat(user, "<span class='warning'>You can't find [target]'s [parse_zone(user.zone_selected)], let alone any objects embedded in it!</span>")
+		to_chat(user, SPAN_WARNING("You can't find [target]'s [parse_zone(user.zone_selected)], let alone any objects embedded in it!"))
 
 	return SURGERY_STEP_CONTINUE
 

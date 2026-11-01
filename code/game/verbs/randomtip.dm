@@ -4,13 +4,13 @@
 	set desc = "Shows you a random tip"
 
 	var/m
-	
+
 	var/list/randomtips = file2list("strings/tips.txt")
 	var/list/memetips = file2list("strings/sillytips.txt")
-	if(randomtips.len && prob(95))
+	if(length(randomtips) && prob(95))
 		m = pick(randomtips)
-	else if(memetips.len)
+	else if(length(memetips))
 		m = pick(memetips)
 
 	if(m)
-		to_chat(src, "<span class='purple'><b>Tip: </b>[html_encode(m)]</span>")
+		to_chat(src, SPAN_PURPLE("<b>Tip: </b>[html_encode(m)]"))

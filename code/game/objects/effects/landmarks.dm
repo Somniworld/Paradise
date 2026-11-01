@@ -11,7 +11,8 @@
 	invisibility = 101
 	GLOB.landmarks_list += src
 
-/obj/effect/landmark/newplayer_start //There should only be one of these, in the lobby art area
+/// There should only be one of these, in the lobby art area
+/obj/effect/landmark/newplayer_start
 	name = "start"
 
 INITIALIZE_IMMEDIATE(/obj/effect/landmark/newplayer_start) //Without this you spawn in the corner of the map and things break horribly
@@ -24,17 +25,6 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/newplayer_start) //Without this you sp
 /obj/effect/landmark/lightsout
 	name = "Electrical Storm Epicentre"
 
-/obj/effect/landmark/awaystart
-	name = "awaystart"
-	icon = 'icons/effects/spawner_icons.dmi'
-	icon_state = "Assistant"
-
-INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away missions break
-
-/obj/effect/landmark/awaystart/Initialize(mapload)
-	GLOB.awaydestinations.Add(src)
-	return ..()
-
 /obj/effect/landmark/spawner
 	icon = 'icons/effects/spawner_icons.dmi'
 	icon_state = "questionmark"
@@ -46,9 +36,15 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 		spawner_list += loc
 		return INITIALIZE_HINT_QDEL
 
-/obj/effect/landmark/spawner/soltrader
-	name = "traderstart_sol"
+/obj/effect/landmark/spawner/trader
+	name = "traderstart"
 	icon_state = "Trader"
+
+/obj/effect/landmark/spawner/tradergearminor
+	name = "traderstart_specificgear_minor"
+
+/obj/effect/landmark/spawner/tradergearmajor
+	name = "traderstart_specificgear_major"
 
 /obj/effect/landmark/spawner/ert
 	name = "Response Team"
@@ -108,6 +104,33 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 	name = "revenantspawn"
 	icon_state = "Rev"
 
+/obj/effect/landmark/spawner/flock
+	name = "flockspawn"
+	icon_state = "flockmind"
+
+/obj/effect/landmark/spawner/ninja
+	name = "ninjaspawn"
+
+/obj/effect/landmark/spawner/bubblegum_arena
+	name = "bubblegum_arena_human"
+	icon_state = "Explorer"
+
+/obj/effect/landmark/spawner/bubblegum
+	name = "bubblegum_arena_bubblegum"
+	icon_state = "bubblegumjumpscare"
+
+/obj/effect/landmark/spawner/bubblegum_exit
+	name = "bubblegum_arena_exit"
+	icon_state = "bubblegumjumpscare"
+
+/obj/effect/landmark/spawner/backrooms
+	name = "backrooms_spawn"
+	icon_state = "Assistant"
+
+/obj/effect/landmark/spawner/backrooms/Initialize(mapload)
+	spawner_list = GLOB.backroomswarp
+	return ..()
+
 /obj/effect/landmark/spawner/syndie
 	name = "Syndicate-Spawn"
 	icon_state = "Syndie"
@@ -124,13 +147,6 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 
 /obj/effect/landmark/spawner/ertdirector/Initialize(mapload)
 	spawner_list = GLOB.ertdirector
-	return ..()
-
-/obj/effect/landmark/spawner/ninjastart
-	name = "ninjastart"
-
-/obj/effect/landmark/spawner/ninjastart/Initialize(mapload)
-	spawner_list = GLOB.ninjastart
 	return ..()
 
 /obj/effect/landmark/spawner/aroomwarp
@@ -182,6 +198,20 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 	spawner_list = GLOB.syndieprisonwarp
 	return ..()
 
+/obj/effect/landmark/spawner/ninja_prison_warp
+	name = "ninja prison warp"
+
+/obj/effect/landmark/spawner/ninja_prison_warp/Initialize(mapload)
+	spawner_list = GLOB.ninjaprisonwarp
+	return ..()
+
+/obj/effect/landmark/spawner/antag_extract_warp
+	name = "antagextractwarp"
+
+/obj/effect/landmark/spawner/antag_extract_warp/Initialize(mapload)
+	spawner_list = GLOB.antagextractwarp
+	return ..()
+
 /obj/effect/landmark/spawner/prisonwarp
 	name = "prisonwarp"
 
@@ -207,9 +237,6 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 /obj/effect/landmark/spawner/commando_manual
 	name = "Deathsquad Commando Manual"
 
-/obj/effect/landmark/spawner/holding_facility
-	name = "Holding Facility"
-
 /obj/effect/landmark/spawner/holocarp
 	name = "Holocarp Spawn"
 
@@ -222,19 +249,24 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 /obj/effect/landmark/spawner/nuclear_bomb/death_squad
 	name = "Death Squad Nuclear Bomb"
 
-/obj/effect/landmark/spawner/teleport_scroll
-	name = "Teleport-Scroll"
-
 /obj/effect/landmark/spawner/nuke_code
 	name = "nukecode"
 
+/obj/effect/landmark/spawner/roundstart_observer
+	name = "Roundstart Observer"
+	icon_state = "spooky"
+
+/obj/effect/landmark/spawner/roundstart_observer/Initialize(mapload)
+	spawner_list = GLOB.roundstart_observer_start
+	return ..()
+
 /obj/effect/landmark/Destroy()
 	GLOB.landmarks_list -= src
-	..()
-	return QDEL_HINT_HARDDEL_NOW
+	tag = null
+	return ..()
 
 /obj/effect/landmark/proc/set_tag()
-	tag = text("landmark*[]", name)
+	tag = "landmark*[name]"
 
 /obj/effect/landmark/singularity_act()
 	return
@@ -257,7 +289,6 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 
 /obj/effect/landmark/start/assistant
 	name = "Assistant"
-	icon_state = "Assistant"
 
 /obj/effect/landmark/start/atmospheric
 	name = "Life Support Specialist"
@@ -266,10 +297,6 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 /obj/effect/landmark/start/blueshield
 	name = "Blueshield"
 	icon_state = "BS"
-
-/obj/effect/landmark/start/barber
-	name = "Barber"
-	icon_state = "Barber"
 
 /obj/effect/landmark/start/bartender
 	name = "Bartender"
@@ -299,6 +326,10 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 	name = "Cargo Technician"
 	icon_state = "CargoTech"
 
+/obj/effect/landmark/start/smith
+	name = "Smith"
+	icon_state = "CargoTech"
+
 /obj/effect/landmark/start/chaplain
 	name = "Chaplain"
 	icon_state = "Chap"
@@ -322,6 +353,10 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 /obj/effect/landmark/start/detective
 	name = "Detective"
 	icon_state = "Det"
+
+/obj/effect/landmark/start/explorer
+	name = "Explorer"
+	icon_state = "Explorer"
 
 /obj/effect/landmark/start/engineer
 	name = "Station Engineer"
@@ -395,6 +430,10 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 	name = "Scientist"
 	icon_state = "Sci"
 
+/obj/effect/landmark/start/xenobiologist
+	name = "Xenobiologist"
+	icon_state = "Sci"
+
 /obj/effect/landmark/start/security_officer
 	name = "Security Officer"
 	icon_state = "Sec"
@@ -407,17 +446,23 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 	name = "Warden"
 	icon_state = "Warden"
 
+/obj/effect/landmark/start/nanotrasen_career_trainer
+	name ="Nanotrasen Career Trainer"
+	icon_state = "NCT"
 
 /obj/effect/landmark/start/set_tag()
 	tag = "start*[name]"
 
+/obj/effect/landmark/game_test/bottom_left_corner
+
+/obj/effect/landmark/game_test/top_right_corner
 
 //Costume spawner landmarks
 
 /obj/effect/landmark/costume/random/Initialize(mapload) //costume spawner, selects a random subclass and disappears
 	. = ..()
 	var/list/options = (typesof(/obj/effect/landmark/costume) - /obj/effect/landmark/costume/random)
-	var/PICK= options[rand(1,options.len)]
+	var/PICK= options[rand(1,length(options))]
 	new PICK(src.loc)
 	return INITIALIZE_HINT_QDEL
 
@@ -426,7 +471,6 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 	. = ..()
 	new /obj/item/clothing/suit/chickensuit(src.loc)
 	new /obj/item/clothing/head/chicken(src.loc)
-	new /obj/item/reagent_containers/food/snacks/egg(src.loc)
 	return INITIALIZE_HINT_QDEL
 
 /obj/effect/landmark/costume/gladiator/Initialize(mapload)
@@ -437,7 +481,7 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 
 /obj/effect/landmark/costume/madscientist/Initialize(mapload)
 	. = ..()
-	new /obj/item/clothing/under/misc/gimmick/rank/captain/suit(src.loc)
+	new /obj/item/clothing/under/misc/gimmick_captain_suit(src.loc)
 	new /obj/item/clothing/head/flatcap(src.loc)
 	new /obj/item/clothing/suit/storage/labcoat/mad(src.loc)
 	new /obj/item/clothing/glasses/gglasses(src.loc)
@@ -445,9 +489,9 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 
 /obj/effect/landmark/costume/elpresidente/Initialize(mapload)
 	. = ..()
-	new /obj/item/clothing/under/misc/gimmick/rank/captain/suit(src.loc)
+	new /obj/item/clothing/under/misc/gimmick_captain_suit(src.loc)
 	new /obj/item/clothing/head/flatcap(src.loc)
-	new /obj/item/clothing/mask/cigarette/cigar/havana(src.loc)
+	new /obj/item/clothing/mask/cigarette/cigar/cohiba(src.loc)
 	new /obj/item/clothing/shoes/jackboots(src.loc)
 	return INITIALIZE_HINT_QDEL
 
@@ -546,7 +590,7 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 	new /obj/item/clothing/suit/holidaypriest(src.loc)
 	return INITIALIZE_HINT_QDEL
 
-/obj/effect/landmark/costume/marisawizard/fake/Initialize(mapload)
+/obj/effect/landmark/costume/marisa_fakewizard/Initialize(mapload)
 	. = ..()
 	new /obj/item/clothing/head/wizard/marisa/fake(src.loc)
 	new/obj/item/clothing/suit/wizrobe/marisa/fake(src.loc)
@@ -556,14 +600,14 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 	. = ..()
 	new /obj/item/clothing/under/dress/sundress(src.loc)
 	new /obj/item/clothing/head/witchwig(src.loc)
-	new /obj/item/twohanded/staff/broom(src.loc)
+	new /obj/item/staff/broom(src.loc)
 	return INITIALIZE_HINT_QDEL
 
 /obj/effect/landmark/costume/fakewizard/Initialize(mapload)
 	. = ..()
 	new /obj/item/clothing/suit/wizrobe/fake(src.loc)
 	new /obj/item/clothing/head/wizard/fake(src.loc)
-	new /obj/item/twohanded/staff/(src.loc)
+	new /obj/item/staff/(src.loc)
 	return INITIALIZE_HINT_QDEL
 
 /obj/effect/landmark/costume/sexyclown/Initialize(mapload)
@@ -582,7 +626,7 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 	var/datum/map_template/ruin/ruin_template
 
 /obj/effect/landmark/ruin/New(loc, my_ruin_template)
-	name = "ruin_[GLOB.ruin_landmarks.len + 1]"
+	name = "ruin_[length(GLOB.ruin_landmarks) + 1]"
 	..(loc)
 	ruin_template = my_ruin_template
 	GLOB.ruin_landmarks |= src
@@ -599,6 +643,7 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 	///The mob we use for the spawner
 	var/mobtype = null
 	icon = 'icons/effects/spawner_icons.dmi'
+	icon_state = "questionmark"
 
 /obj/effect/landmark/mob_spawner/Initialize(mapload)
 	. = ..()
@@ -606,59 +651,65 @@ INITIALIZE_IMMEDIATE(/obj/effect/landmark/awaystart) //Without this away mission
 	return INITIALIZE_HINT_QDEL
 
 /obj/effect/landmark/mob_spawner/goliath
-	mobtype = /mob/living/simple_animal/hostile/asteroid/goliath/beast
-	icon_state = "questionmark"
+	mobtype = /mob/living/basic/mining/goliath
 
 /obj/effect/landmark/mob_spawner/goliath/Initialize(mapload)
 	if(prob(1))
-		mobtype = /mob/living/simple_animal/hostile/asteroid/goliath/beast/ancient
+		mobtype = /mob/living/basic/mining/goliath/ancient
+	. = ..()
+
+/obj/effect/landmark/mob_spawner/ash_whelp
+	mobtype = /mob/living/basic/mining/ash_whelp
+
+/obj/effect/landmark/mob_spawner/ash_whelp/Initialize(mapload)
+	if(prob(2))
+		mobtype = /mob/living/basic/mining/ash_whelp/ice
+	. = ..()
+
+/obj/effect/landmark/mob_spawner/ashwalker_npc
+	mobtype = /mob/living/basic/ash_walker
+
+/obj/effect/landmark/mob_spawner/ashwalker_npc/Initialize(mapload)
+	if(prob(40))
+		mobtype = /mob/living/basic/ash_walker/tough
+	else if(prob(15))
+		mobtype = /mob/living/basic/ash_walker/veteran
+	else if(prob(1))
+		mobtype = /mob/living/basic/ash_walker/elite
 	. = ..()
 
 /obj/effect/landmark/mob_spawner/legion
-	mobtype = /mob/living/simple_animal/hostile/asteroid/hivelord/legion
-	icon_state = "questionmark"
+	mobtype = /mob/living/basic/mining/hivelord/legion
 
 /obj/effect/landmark/mob_spawner/legion/Initialize(mapload)
 	if(prob(5))
-		mobtype = /mob/living/simple_animal/hostile/asteroid/hivelord/legion/dwarf
+		mobtype = /mob/living/basic/mining/hivelord/legion/dwarf
 	. = ..()
 
 /obj/effect/landmark/mob_spawner/watcher
-	mobtype = /mob/living/simple_animal/hostile/asteroid/basilisk/watcher
-	icon_state = "questionmark"
+	mobtype = /mob/living/basic/mining/basilisk/watcher
 
 /obj/effect/landmark/mob_spawner/watcher/Initialize(mapload)
 	if(prob(1))
 		if(prob(25)) /// 75% chance to get a magmawing watcher, and 25% chance to get a icewing watcher (1/133, 1/400 respectively)
-			mobtype = /mob/living/simple_animal/hostile/asteroid/basilisk/watcher/icewing
+			mobtype = /mob/living/basic/mining/basilisk/watcher/icewing
 		else
-			mobtype = /mob/living/simple_animal/hostile/asteroid/basilisk/watcher/magmawing
+			mobtype = /mob/living/basic/mining/basilisk/watcher/magmawing
 	. = ..()
 
 /obj/effect/landmark/mob_spawner/goldgrub
-	mobtype = /mob/living/simple_animal/hostile/asteroid/goldgrub
-	icon_state = "questionmark"
+	mobtype = /mob/living/basic/mining/goldgrub
 
-// Damage tiles
-/obj/effect/landmark/damageturf
-	icon_state = "damaged"
+/obj/effect/landmark/mob_spawner/gutlunch
+	mobtype = /mob/living/basic/mining/gutlunch
 
-/obj/effect/landmark/damageturf/Initialize(mapload)
+/obj/effect/landmark/mob_spawner/gutlunch/Initialize(mapload)
+	if(prob(5))
+		if(prob(50))
+			mobtype = /mob/living/basic/mining/gutlunch/gubbuck
+		else
+			mobtype = /mob/living/basic/mining/gutlunch/guthen
 	. = ..()
-	var/turf/simulated/T = get_turf(src)
-	if(istype(T))
-		T.break_tile()
 
-/obj/effect/landmark/burnturf
-	icon_state = "burned"
-
-/obj/effect/landmark/burnturf/Initialize(mapload)
-	. = ..()
-	var/turf/simulated/T = get_turf(src)
-	T.burn_tile()
-
-/obj/effect/landmark/battle_mob_point
-	name = "Nanomob Battle Avatar Spawn Point"
-
-/obj/effect/landmark/free_golem_spawn
-	name = "Free Golem Spawn Point"
+/obj/effect/landmark/mob_spawner/abandoned_minebot
+	mobtype = /mob/living/simple_animal/hostile/asteroid/abandoned_minebot

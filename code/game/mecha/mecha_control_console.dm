@@ -1,6 +1,5 @@
 /obj/machinery/computer/mecha
 	name = "exosuit control console"
-	icon = 'icons/obj/computer.dmi'
 	icon_keyboard = "rd_key"
 	icon_screen = "mecha"
 	light_color = LIGHT_COLOR_FADEDPURPLE
@@ -15,10 +14,13 @@
 /obj/machinery/computer/mecha/attack_hand(mob/user)
 	ui_interact(user)
 
-/obj/machinery/computer/mecha/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = TRUE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/computer/mecha/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/computer/mecha/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "MechaControlConsole", name, 420, 500, master_ui, state)
+		ui = new(user, src, "MechaControlConsole", name)
 		ui.open()
 
 /obj/machinery/computer/mecha/ui_data(mob/user)
@@ -79,6 +81,7 @@
 	icon_state = "motion2"
 	w_class = WEIGHT_CLASS_SMALL
 	origin_tech = "programming=2;magnets=2"
+	materials = list(MAT_METAL = 500)
 	var/ai_beacon = FALSE //If this beacon allows for AI control. Exists to avoid using istype() on checking.
 	var/charges_left = 2
 
@@ -97,7 +100,7 @@
 	else
 		answer["cell"] = 0
 	answer["integrity"] = round((M.obj_integrity/M.max_integrity*100), 0.01)
-	answer["airtank"] = M.return_pressure()
+	answer["airtank"] = M.internal_tank.return_pressure()
 	answer["pilot"] = "[M.occupant||"None"]"
 	var/area/area = get_area(M)
 	answer["location"] = "[sanitize(area.name)||"Unknown"]"
@@ -118,7 +121,7 @@
 	var/answer = {"<b>Name:</b> [M.name]
 						<b>Integrity:</b> [M.obj_integrity / M.max_integrity * 100]%
 						<b>Cell charge:</b> [isnull(cell_charge)?"Not found":"[M.cell.percent()]%"]
-						<b>Airtank:</b> [M.return_pressure()]kPa
+						<b>Airtank:</b> [M.internal_tank.return_pressure()]kPa
 						<b>Pilot:</b> [M.occupant||"None"]
 						<b>Location:</b> [sanitize(A.name)||"Unknown"]
 						<b>Active equipment:</b> [M.selected||"None"]<br>"}
@@ -142,7 +145,7 @@
 	if(M.cell)
 		data["cellCharge"] = M.cell.charge
 		data["cellMaxCharge"] = M.cell.maxcharge
-	data["airtank"] = M.return_pressure()
+	data["airtank"] = M.internal_tank.return_pressure()
 	data["pilot"] = M.occupant
 	data["location"] = get_area(M)
 	data["active"] = M.selected
@@ -176,9 +179,12 @@
 
 	mech.setInternalDamage(MECHA_INT_CONTROL_LOST)
 	if(mech.occupant)
-		mech.occupant_message("<span class='danger'>Coordination system calibration failure. Manual restart required.</span>")
+		mech.occupant_message(SPAN_DANGER("Coordination system calibration failure. Manual restart required."))
 		SEND_SOUND(mech.occupant, sound('sound/machines/warning-buzzer.ogg'))
 
+	do_sparks(3, FALSE, mech.loc)
+	var/obj/effect/temp_visual/emp/sabotage_overlay = new(mech.loc)
+	sabotage_overlay.layer = ABOVE_ALL_MOB_LAYER
 	charges_left--
 	if(charges_left < 1)
 		qdel(src)
@@ -193,6 +199,7 @@
 	name = "exosuit AI control beacon"
 	desc = "A device used to transmit exosuit data. Also allows active AI units to take control of said exosuit."
 	origin_tech = "programming=3;magnets=2;engineering=2"
+	materials = list(MAT_METAL = 1000, MAT_GLASS = 500, MAT_SILVER = 200)
 	ai_beacon = TRUE
 
 /obj/item/storage/box/mechabeacons

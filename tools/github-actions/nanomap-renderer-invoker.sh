@@ -1,18 +1,16 @@
 #!/bin/bash
 set -e
 # Generate maps
-tools/github-actions/nanomap-renderer minimap -w 2040 -h 2040 "./_maps/map_files/cyberiad/cyberiad.dmm"
-tools/github-actions/nanomap-renderer minimap -w 2040 -h 2040 "./_maps/map_files/Delta/delta.dmm"
-tools/github-actions/nanomap-renderer minimap -w 2040 -h 2040 "./_maps/map_files/MetaStation/MetaStation.dmm"
-tools/github-actions/nanomap-renderer minimap -w 2040 -h 2040 "./_maps/map_files/cerestation/cerestation.dmm"
+tools/github-actions/dmm-tools-para minimap --enable nanomaps --width 2040 --height 2040 "./_maps/map_files/stations/boxstation.dmm"
+tools/github-actions/dmm-tools-para minimap --enable nanomaps --width 2040 --height 2040 "./_maps/map_files/stations/deltastation.dmm"
+tools/github-actions/dmm-tools-para minimap --enable nanomaps --width 2040 --height 2040 "./_maps/map_files/stations/metastation.dmm"
+tools/github-actions/dmm-tools-para minimap --enable nanomaps --width 2040 --height 2040 "./_maps/map_files/stations/cerestation.dmm"
+tools/github-actions/dmm-tools-para minimap --enable nanomaps --width 2040 --height 2040 "./_maps/map_files/stations/emeraldstation.dmm"
+tools/github-actions/dmm-tools-para minimap --enable nanomaps --width 2040 --height 2040 "./_maps/map_files/stations/omegastation.dmm"
 # Move and rename files so the game understands them
-cd "data/nanomaps"
-mv "cyberiad_nanomap_z1.png" "Cyberiad_nanomap_z1.png"
-mv "delta_nanomap_z1.png" "Delta_nanomap_z1.png"
-#mv "MetaStation_nanomap_z1.png" "MetaStation_nanomap_z1.png" # What's even the point of this?
-mv "cerestation_nanomap_z1.png" "CereStation_nanomap_z1.png"
-cd "../../"
-cp "data/nanomaps/Cyberiad_nanomap_z1.png" "icons/_nanomaps"
-cp "data/nanomaps/Delta_nanomap_z1.png" "icons/_nanomaps"
-cp "data/nanomaps/MetaStation_nanomap_z1.png" "icons/_nanomaps"
-cp "data/nanomaps/CereStation_nanomap_z1.png" "icons/_nanomaps"
+mv "data/minimaps/boxstation-1.png" "icons/_nanomaps/BoxStation_nanomap_z1.png"
+mv "data/minimaps/deltastation-1.png" "icons/_nanomaps/DeltaStation_nanomap_z1.png"
+mv "data/minimaps/metastation-1.png" "icons/_nanomaps/MetaStation_nanomap_z1.png"
+mv "data/minimaps/cerestation-1.png" "icons/_nanomaps/CereStation_nanomap_z1.png"
+mv "data/minimaps/emeraldstation-1.png" "icons/_nanomaps/EmeraldStation_nanomap_z1.png"
+mv "data/minimaps/omegastation-1.png" "icons/_nanomaps/OmegaStation_nanomap_z1.png"

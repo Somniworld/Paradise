@@ -1,17 +1,14 @@
-/obj/item/projectile/guardian
+/obj/projectile/guardian
 	name = "crystal spray"
 	icon_state = "guardian"
 	damage = 20
-	damage_type = BRUTE
-	armour_penetration_percentage = 100
+	armor_penetration_percentage = 100
 
 /mob/living/simple_animal/hostile/guardian/ranged
 	friendly = "quietly assesses"
 	melee_damage_lower = 10
 	melee_damage_upper = 10
-	damage_transfer = 1
-	can_strip = TRUE
-	projectiletype = /obj/item/projectile/guardian
+	projectiletype = /obj/projectile/guardian
 	ranged_cooldown_time = 5 //fast!
 	projectilesound = 'sound/effects/hit_on_shattered_glass.ogg'
 	ranged = TRUE
@@ -25,6 +22,10 @@
 	var/list/snares = list()
 	var/toggle = FALSE
 
+/mob/living/simple_animal/hostile/guardian/ranged/Initialize(mapload, mob/living/host)
+	. = ..()
+	AddSpell(new /datum/spell/surveillance_snare(null))
+
 /mob/living/simple_animal/hostile/guardian/ranged/ToggleMode()
 	if(loc == summoner)
 		if(toggle)
@@ -35,9 +36,9 @@
 			environment_smash = initial(environment_smash)
 			alpha = 255
 			range = 13
-			incorporeal_move = 0
-			can_strip = TRUE
-			to_chat(src, "<span class='danger'>You switch to combat mode.</span>")
+			incorporeal_move = NO_INCORPOREAL_MOVE
+			ADD_TRAIT(src, TRAIT_CAN_STRIP, TRAIT_GENERIC)
+			to_chat(src, SPAN_DANGER("You switch to combat mode."))
 			toggle = FALSE
 		else
 			ranged = FALSE
@@ -47,23 +48,23 @@
 			environment_smash = ENVIRONMENT_SMASH_NONE
 			alpha = 60
 			range = 255
-			incorporeal_move = 1
-			can_strip = FALSE  //spiritual pickpocketting is forbidden
-			to_chat(src, "<span class='danger'>You switch to scout mode.</span>")
+			incorporeal_move = INCORPOREAL_MOVE_NORMAL
+			REMOVE_TRAIT(src, TRAIT_CAN_STRIP, TRAIT_GENERIC) //spiritual pickpocketting is forbidden
+			to_chat(src, SPAN_DANGER("You switch to scout mode."))
 			toggle = TRUE
 	else
-		to_chat(src, "<span class='danger'>You have to be recalled to toggle modes!</span>")
+		to_chat(src, SPAN_DANGER("You have to be recalled to toggle modes!"))
 
 /mob/living/simple_animal/hostile/guardian/ranged/ToggleLight()
 	var/msg
 	switch(lighting_alpha)
-		if (LIGHTING_PLANE_ALPHA_VISIBLE)
+		if(LIGHTING_PLANE_ALPHA_VISIBLE)
 			lighting_alpha = LIGHTING_PLANE_ALPHA_MOSTLY_VISIBLE
 			msg = "You activate your night vision."
-		if (LIGHTING_PLANE_ALPHA_MOSTLY_VISIBLE)
+		if(LIGHTING_PLANE_ALPHA_MOSTLY_VISIBLE)
 			lighting_alpha = LIGHTING_PLANE_ALPHA_MOSTLY_INVISIBLE
 			msg = "You increase your night vision."
-		if (LIGHTING_PLANE_ALPHA_MOSTLY_INVISIBLE)
+		if(LIGHTING_PLANE_ALPHA_MOSTLY_INVISIBLE)
 			lighting_alpha = LIGHTING_PLANE_ALPHA_INVISIBLE
 			msg = "You maximize your night vision."
 		else
@@ -72,37 +73,25 @@
 
 	update_sight()
 
-	to_chat(src, "<span class='notice'>[msg]</span>")
+	to_chat(src, SPAN_NOTICE("[msg]"))
 
-/mob/living/simple_animal/hostile/guardian/ranged/verb/Snare()
-	set name = "Set Surveillance Trap"
-	set category = "Guardian"
-	set desc = "Set an invisible trap that will alert you when living creatures walk over it. Max of 5"
-	if(snares.len <6)
-		var/turf/snare_loc = get_turf(loc)
-		var/obj/item/effect/snare/S = new /obj/item/effect/snare(snare_loc)
-		S.spawner = src
-		S.name = "[get_area(snare_loc)] trap ([rand(1, 1000)])"
-		snares |= S
-		to_chat(src, "<span class='danger'>Surveillance trap deployed!</span>")
-	else
-		to_chat(src, "<span class='danger'>You have too many traps deployed. Delete some first.</span>")
+/mob/living/simple_animal/hostile/guardian/ranged/blob_act(obj/structure/blob/B)
+	if(toggle)
+		return // we don't want blob tiles to hurt us when we fly over them and trigger /Crossed(), this prevents ranged scouts from being insta killed
+	return ..() // otherwise do normal damage!
 
-/mob/living/simple_animal/hostile/guardian/ranged/verb/DisarmSnare()
-	set name = "Remove Surveillance Trap"
-	set category = "Guardian"
-	set desc = "Disarm unwanted surveillance traps."
-	var/picked_snare = input(src, "Pick which trap to disarm", "Disarm Trap") as null|anything in snares
-	if(picked_snare)
-		snares -= picked_snare
-		qdel(picked_snare)
-		to_chat(src, "<span class='danger'>Snare disarmed.</span>")
-
-/obj/item/effect/snare
+/obj/effect/snare
 	name = "snare"
 	desc = "You shouldn't be seeing this!"
 	var/mob/living/spawner
-	invisibility = 1
+	invisibility = 101
+
+/obj/effect/snare/Initialize(mapload)
+	. = ..()
+	var/static/list/loc_connections = list(
+		COMSIG_ATOM_ENTERED = PROC_REF(on_atom_entered),
+	)
+	AddElement(/datum/element/connect_loc, loc_connections)
 
 /obj/effect/snare/singularity_act()
 	return
@@ -110,12 +99,12 @@
 /obj/effect/snare/singularity_pull()
 	return
 
-/obj/item/effect/snare/Crossed(AM as mob|obj, oldloc)
-	if(isliving(AM))
+/obj/effect/snare/proc/on_atom_entered(datum/source, atom/movable/entered)
+	if(isliving(entered))
 		var/turf/snare_loc = get_turf(loc)
 		if(spawner)
-			to_chat(spawner, "<span class='danger'>[AM] has crossed your surveillance trap at [get_area(snare_loc)].</span>")
+			to_chat(spawner, SPAN_DANGER("[entered] has crossed your surveillance trap at [get_area(snare_loc)]."))
 			if(isguardian(spawner))
 				var/mob/living/simple_animal/hostile/guardian/G = spawner
 				if(G.summoner)
-					to_chat(G.summoner, "<span class='danger'>[AM] has crossed your surveillance trap at [get_area(snare_loc)].</span>")
+					to_chat(G.summoner, SPAN_DANGER("[entered] has crossed your surveillance trap at [get_area(snare_loc)]."))

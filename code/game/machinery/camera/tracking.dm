@@ -1,19 +1,15 @@
 /mob/living/silicon/ai/proc/InvalidTurf(turf/T as turf)
 	if(!T)
-		return 1
+		return TRUE
 	if(!is_level_reachable(T.z))
-		return 1
-	return 0
-
-
-/mob/living/silicon/ai/var/max_locations = 10
-/mob/living/silicon/ai/var/stored_locations[0]
+		return TRUE
+	return FALSE
 
 /mob/living/silicon/ai/proc/get_camera_list()
 
 	track.cameras.Cut()
 
-	if(src.stat == 2)
+	if(stat == DEAD)
 		return
 
 	var/list/L = list()
@@ -26,7 +22,7 @@
 
 	for(var/obj/machinery/camera/C in L)
 		var/list/tempnetwork = C.network & src.network
-		if(tempnetwork.len)
+		if(length(tempnetwork))
 			T[text("[][]", C.c_tag, (C.can_use() ? null : " (Deactivated)"))] = C
 
 	track.cameras = T
@@ -37,70 +33,17 @@
 	set category = "AI Commands"
 	set name = "Show Camera List"
 
-	if(src.stat == 2)
+	if(stat == DEAD)
 		to_chat(src, "You can't list the cameras because you are dead!")
 		return
 
 	if(!camera || camera == "Cancel")
-		return 0
+		return FALSE
 
 	var/obj/machinery/camera/C = track.cameras[camera]
-	src.eyeobj.setLoc(C)
+	src.eyeobj.set_loc(C)
 
 	return
-
-/mob/living/silicon/ai/proc/ai_store_location(loc as text)
-	set category = "AI Commands"
-	set name = "Store Camera Location"
-	set desc = "Stores your current camera location by the given name"
-
-	loc = sanitize(copytext(loc, 1, MAX_MESSAGE_LEN))
-	if(!loc)
-		to_chat(src, "<span class='warning'>Must supply a location name</span>")
-		return
-
-	if(stored_locations.len >= max_locations)
-		to_chat(src, "<span class='warning'>Cannot store additional locations. Remove one first</span>")
-		return
-
-	if(loc in stored_locations)
-		to_chat(src, "<span class='warning'>There is already a stored location by this name</span>")
-		return
-
-	var/L = get_turf(eyeobj)
-	if(InvalidTurf(get_turf(L)))
-		to_chat(src, "<span class='warning'>Unable to store this location</span>")
-		return
-
-	stored_locations[loc] = L
-	to_chat(src, "Location '[loc]' stored")
-
-/mob/living/silicon/ai/proc/sorted_stored_locations()
-	return sortList(stored_locations)
-
-/mob/living/silicon/ai/proc/ai_goto_location(loc in sorted_stored_locations())
-	set category = "AI Commands"
-	set name = "Goto Camera Location"
-	set desc = "Returns to the selected camera location"
-
-	if(!(loc in stored_locations))
-		to_chat(src, "<span class='warning'>Location [loc] not found</span>")
-		return
-
-	var/L = stored_locations[loc]
-	src.eyeobj.setLoc(L)
-
-/mob/living/silicon/ai/proc/ai_remove_location(loc in sorted_stored_locations())
-	set category = "AI Commands"
-	set name = "Delete Camera Location"
-	set desc = "Deletes the selected camera location"
-
-	if(!(loc in stored_locations))
-		to_chat(src, "<span class='warning'>Location [loc] not found</span>")
-		return
-
-	stored_locations.Remove(loc)
-	to_chat(src, "Location [loc] removed")
 
 // Used to allow the AI is write in mob names/camera name from the CMD line.
 /datum/trackable
@@ -117,26 +60,21 @@
 	track.humans.Cut()
 	track.others.Cut()
 
-	if(usr.stat == 2)
+	if(usr.stat == DEAD)
 		return list()
 
 	for(var/mob/living/M in GLOB.mob_list)
 		if(!M.can_track(usr))
 			continue
 
-		// Human check
-		var/human = 0
-		if(ishuman(M))
-			human = 1
-
 		var/name = M.name
 		if(name in track.names)
 			track.namecounts[name]++
-			name = text("[] ([])", name, track.namecounts[name])
+			name = "[name] ([track.namecounts[name]])"
 		else
 			track.names.Add(name)
 			track.namecounts[name] = 1
-		if(human)
+		if(ishuman(M))
 			track.humans[name] = M
 		else
 			track.others[name] = M
@@ -161,46 +99,52 @@
 	ai_actual_track(target)
 
 /mob/living/silicon/ai/proc/ai_cancel_tracking(forced = 0)
-	if(!cameraFollow)
+	if(!camera_follow)
 		return
 
 	to_chat(src, "Follow camera mode [forced ? "terminated" : "ended"].")
-	cameraFollow = null
+	camera_follow = null
 
-/mob/living/silicon/ai/proc/ai_actual_track(mob/living/target)
+/mob/living/silicon/ai/proc/ai_actual_track(mob/living/target, doubleclick = FALSE)
 	if(!istype(target))
 		return
 	var/mob/living/silicon/ai/U = usr
 
-	U.cameraFollow = target
+	U.camera_follow = target
 	U.tracking = TRUE
 
-	to_chat(U, "<span class='notice'>Attempting to track [target.get_visible_name()]...</span>")
-	sleep(min(30, get_dist(target, U.eyeobj) / 4))
+	to_chat(U, SPAN_NOTICE("Attempting to track [target.get_visible_name()]..."))
+	if(!doubleclick)
+		sleep(1.5 SECONDS) // Gives antags a brief window to get out of dodge before the eye of sauron decends upon them when someone yells ;HALP
 	spawn(15) //give the AI a grace period to stop moving.
 		U.tracking = FALSE
 
-	if(!target || !target.can_track(usr))
-		to_chat(U, "<span class='warning'>Target is not near any active cameras.</span>")
-		U.cameraFollow = null
+	if(target.is_jammed())
+		to_chat(U, SPAN_WARNING("Unable to track [target.get_visible_name()]..."))
+		U.camera_follow = null
 		return
 
-	to_chat(U, "<span class='notice'>Now tracking [target.get_visible_name()] on camera.</span>")
+	if(!target || !target.can_track(usr))
+		to_chat(U, SPAN_WARNING("Target is not near any active cameras."))
+		U.camera_follow = null
+		return
+
+	to_chat(U, SPAN_NOTICE("Now tracking [target.get_visible_name()] on camera."))
 
 	var/cameraticks = 0
 	spawn(0)
-		while(U.cameraFollow == target)
-			if(U.cameraFollow == null)
+		while(U.camera_follow == target)
+			if(U.camera_follow == null)
 				return
 
 			if(!target.can_track(usr))
 				U.tracking = TRUE
 				if(!cameraticks)
-					to_chat(U, "<span class='warning'>Target is not near any active cameras. Attempting to reacquire...</span>")
+					to_chat(U, SPAN_WARNING("Target is not near any active cameras. Attempting to reacquire..."))
 				cameraticks++
 				if(cameraticks > 9)
-					U.cameraFollow = null
-					to_chat(U, "<span class='warning'>Unable to reacquire, cancelling track...</span>")
+					U.camera_follow = null
+					to_chat(U, SPAN_WARNING("Unable to reacquire, cancelling track..."))
 					U.tracking = FALSE
 					return
 				else
@@ -212,32 +156,32 @@
 				U.tracking = FALSE
 
 			if(U.eyeobj)
-				U.eyeobj.setLoc(get_turf(target))
+				U.eyeobj.set_loc(get_turf(target))
 
 			else
 				view_core()
-				U.cameraFollow = null
+				U.camera_follow = null
 				return
 
 			sleep(10)
 
 /proc/near_camera(mob/living/M)
 	if(!isturf(M.loc))
-		return 0
+		return FALSE
 	if(isrobot(M))
 		var/mob/living/silicon/robot/R = M
-		if(!(R.camera && R.camera.can_use()) && !GLOB.cameranet.checkCameraVis(M))
-			return 0
-	else if(!GLOB.cameranet.checkCameraVis(M))
-		return 0
-	return 1
+		if(!(R.camera && R.camera.can_use()) && !GLOB.cameranet.check_camera_vis(M))
+			return FALSE
+	else if(!GLOB.cameranet.check_camera_vis(M))
+		return FALSE
+	return TRUE
 
 /obj/machinery/camera/attack_ai(mob/living/silicon/ai/user)
 	if(!istype(user))
 		return
 	if(!src.can_use())
 		return
-	user.eyeobj.setLoc(get_turf(src))
+	user.eyeobj.set_loc(get_turf(src))
 
 
 /mob/living/silicon/ai/attack_ai(mob/user)
@@ -247,7 +191,7 @@
 	var/obj/machinery/camera/a
 	var/obj/machinery/camera/b
 
-	for(var/i = L.len, i > 0, i--)
+	for(var/i = length(L), i > 0, i--)
 		for(var/j = 1 to i - 1)
 			a = L[j]
 			b = L[j + 1]

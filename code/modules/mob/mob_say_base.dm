@@ -1,7 +1,3 @@
-
-#define ILLEGAL_CHARACTERS_LIST list("<" = "", ">" = "", \
-	"\[" = "", "]" = "", "{" = "", "}" = "")
-
 /mob/proc/say()
 	return
 
@@ -26,16 +22,14 @@
 		else if(response == "No")
 			return
 	*/
-	message = replace_characters(message, ILLEGAL_CHARACTERS_LIST)
 	set_typing_indicator(FALSE)
 	usr.say(message)
-
 
 /mob/verb/me_verb(message as text)
 	set name = "Me"
 	set category = "IC"
 
-	message = strip_html_properly(message)
+	message = sanitize(message)
 
 	set_typing_indicator(FALSE, TRUE)
 	if(use_me)
@@ -48,15 +42,15 @@
 	if(client)
 		if(!check_rights(R_ADMIN, FALSE))
 			if(!GLOB.dsay_enabled)
-				to_chat(src, "<span class='danger'>Deadchat is globally muted.</span>")
+				to_chat(src, SPAN_DANGER("Deadchat is globally muted."))
 				return
 
 		if(check_mute(client.ckey, MUTE_DEADCHAT))
-			to_chat(src, "<span class='warning'>You cannot talk in deadchat (muted).</span>")
+			to_chat(src, SPAN_WARNING("You cannot talk in deadchat (muted)."))
 			return
 
 		if(!(client.prefs.toggles & PREFTOGGLE_CHAT_DEAD))
-			to_chat(src, "<span class='danger'>You have deadchat muted.</span>")
+			to_chat(src, SPAN_DANGER("You have deadchat muted."))
 			return
 
 		if(client.handle_spam_prevention(message, MUTE_DEADCHAT))
@@ -71,40 +65,45 @@
 		create_log(DEADCHAT_LOG, message)
 		return
 
-	say_dead_direct("[pick("complains", "moans", "whines", "laments", "blubbers", "salts", "copes", "seethes", "malds")], <span class='message'>\"[message]\"</span>", src)
+	say_dead_direct("[pick("complains", "moans", "whines", "laments", "blubbers", "salts", "copes", "seethes", "malds")], [SPAN_MESSAGE("\"[message]\"")]", src, raw_message=message)
 	create_log(DEADCHAT_LOG, message)
 	log_ghostsay(message, src)
 
-/mob/proc/say_understands(mob/other, datum/language/speaking = null)
+/**
+ * Checks if the mob can understand the other speaker
+ *
+ * If it return FALSE, then the message will have some letters replaced with stars from the heard message
+*/
+/mob/proc/say_understands(atom/movable/other, datum/language/speaking = null)
 	if(stat == DEAD)
-		return 1
+		return TRUE
 
 	//Universal speak makes everything understandable, for obvious reasons.
 	if(universal_speak || universal_understand)
-		return 1
+		return TRUE
 
 	//Languages are handled after.
 	if(!speaking)
-		if(!other)
-			return 1
-		if(other.universal_speak)
-			return 1
-		if(isAI(src) && ispAI(other))
-			return 1
-		if(istype(other, src.type) || istype(src, other.type))
-			return 1
-		return 0
+		if(!other || !ismob(other))
+			return TRUE
+		var/mob/other_mob = other
+		if(other_mob.universal_speak)
+			return TRUE
+		if(is_ai(src) && ispAI(other_mob))
+			return TRUE
+		if(istype(other_mob, src.type) || istype(src, other_mob.type))
+			return TRUE
+		return FALSE
 
 	if(speaking.flags & INNATE)
-		return 1
+		return TRUE
 
 	//Language check.
 	for(var/datum/language/L in languages)
 		if(speaking.name == L.name)
-			return 1
+			return TRUE
 
-	return 0
-
+	return FALSE
 
 /mob/proc/say_quote(message, datum/language/speaking = null)
 	var/verb = "says"
@@ -143,8 +142,24 @@
 		return standard_mode
 
 	if(length(message) >= 2)
-		var/channel_prefix = copytext(message, 1 ,3)
-		return GLOB.department_radio_keys[channel_prefix]
+		var/channel_prefix_long = trim_right(copytext_char(message, 1, 4))
+		var/channel_prefix_short = trim_right(copytext_char(message, 1, 3))
+
+		// Check languages first. Deconflict your language/radio keys if this causes problems.
+		var/datum/language/L = GLOB.language_keys[channel_prefix_long]
+		if(L != null && can_speak_language(L))
+			return null
+		L = GLOB.language_keys[channel_prefix_short]
+		if(L != null && can_speak_language(L))
+			return null
+
+		// Now check radio keys.
+		var/radio_key = GLOB.department_radio_keys[channel_prefix_long]
+		if(radio_key != null)
+			return radio_key
+		radio_key = GLOB.department_radio_keys[channel_prefix_short]
+		if(radio_key != null)
+			return radio_key
 
 	return null
 
@@ -160,14 +175,23 @@
 
 /mob/proc/find_valid_prefixes(message)
 	var/list/prefixes = list() // [["Common", start, end], ["Gutter", start, end]]
+	var/lower_message = lowertext(message)
+	var/is_alphanumeric = FALSE
+	var/was_alphanumeric = FALSE
 	for(var/i in 1 to length(message))
-		var/selection = trim_right(lowertext(copytext(message, i, i + 3)))
+		was_alphanumeric = is_alphanumeric
+		is_alphanumeric = GLOB.is_alphanumeric.Find(lower_message[i])
+		if(was_alphanumeric)
+			// Language prefixes should not activate in the middle of a word or number.
+			continue
+
+		var/selection = trim_right(copytext(lower_message, i, i + 3))
 		var/datum/language/L = GLOB.language_keys[selection]
 		if(L != null && can_speak_language(L)) // What the fuck... remove the L != null check if you ever find out what the fuck is adding `null` to the languages list on absolutely random mobs... seriously what the hell...
 			prefixes[++prefixes.len] = list(L, i, i + length(selection))
 		else if(!L && i == 1)
 			prefixes[++prefixes.len] = list(get_default_language(), i, i)
-		else
+
 	return prefixes
 
 /proc/strip_prefixes(message)
@@ -222,5 +246,3 @@
 	for(var/datum/multilingual_say_piece/S in message_pieces)
 		. += S.message + " "
 	. = trim_right(.)
-
-#undef ILLEGAL_CHARACTERS_LIST

@@ -51,7 +51,7 @@ if(!result || result.ckey != __ckey){\
 				log_records.Add(logs.Copy(start_index, end_index + 1))
 
 	if(length(invalid_mobs))
-		to_chat(user, "<span class='warning'>The search criteria contained invalid mobs. They have been removed from the criteria.</span>")
+		to_chat(user, SPAN_WARNING("The search criteria contained invalid mobs. They have been removed from the criteria."))
 		for(var/i in invalid_mobs)
 			selected_mobs -= i // Cleanup
 
@@ -133,8 +133,8 @@ if(!result || result.ckey != __ckey){\
 	var/list/dat = list()
 	dat += "<head><meta http-equiv='X-UA-Compatible' content='IE=edge'><style>.adminticket{border:2px solid} td{border:1px solid grey;} th{border:1px solid grey;} span{float:left;width:150px;}</style></head>"
 	dat += "<div style='min-height:100px'>"
-	dat += "<span>Time Search Range:</span> <a href='?src=[UID()];start_time=1'>[gameTimestamp(wtime = time_from)]</a>"
-	dat += " To: <a href='?src=[UID()];end_time=1'>[gameTimestamp(wtime = time_to)]</a>"
+	dat += "<span>Time Search Range:</span> <a href='byond://?src=[UID()];start_time=1'>[gameTimestamp(wtime = time_from)]</a>"
+	dat += " To: <a href='byond://?src=[UID()];end_time=1'>[gameTimestamp(wtime = time_to)]</a>"
 	dat += "<BR>"
 
 	dat += "<span>Mobs being used:</span>"
@@ -143,16 +143,16 @@ if(!result || result.ckey != __ckey){\
 		if(QDELETED(M))
 			selected_mobs -= i
 			continue
-		dat += "<a href='?src=[UID()];remove_mob=\ref[M]'>[get_display_name(M)]</a>"
-	dat += "<a href='?src=[UID()];add_mob=1'>Add Mob</a>"
-	dat += "<a href='?src=[UID()];clear_mobs=1'>Clear All Mobs</a>"
+		dat += "<a href='byond://?src=[UID()];remove_mob=\ref[M]'>[get_display_name(M)]</a>"
+	dat += "<a href='byond://?src=[UID()];add_mob=1'>Add Mob</a>"
+	dat += "<a href='byond://?src=[UID()];clear_mobs=1'>Clear All Mobs</a>"
 	dat += "<BR>"
 
 	dat += "<span>Ckeys being used:</span>"
 	for(var/ckey in selected_ckeys)
-		dat += "<a href='?src=[UID()];remove_ckey=[ckey]'>[get_ckey_name(ckey)]</a>"
-	dat += "<a href='?src=[UID()];add_ckey=1'>Add ckey</a>"
-	dat += "<a href='?src=[UID()];clear_ckeys=1'>Clear All ckeys</a>"
+		dat += "<a href='byond://?src=[UID()];remove_ckey=[ckey]'>[get_ckey_name(ckey)]</a>"
+	dat += "<a href='byond://?src=[UID()];add_ckey=1'>Add ckey</a>"
+	dat += "<a href='byond://?src=[UID()];clear_ckeys=1'>Clear All ckeys</a>"
 	dat += "<BR>"
 
 	dat += "<span>Log Types:</span>"
@@ -166,11 +166,11 @@ if(!result || result.ckey != __ckey){\
 		else
 			text = log_type
 
-		dat += "<a href='?src=[UID()];toggle_log_type=[log_type]' style='[style]'>[text]</a>"
+		dat += "<a href='byond://?src=[UID()];toggle_log_type=[log_type]' style='[style]'>[text]</a>"
 
 	dat += "<BR>"
-	dat += "<a href='?src=[UID()];clear_all=1'>Clear All Settings</a>"
-	dat += "<a href='?src=[UID()];search=1'>Search</a>"
+	dat += "<a href='byond://?src=[UID()];clear_all=1'>Clear All Settings</a>"
+	dat += "<a href='byond://?src=[UID()];search=1'>Search</a>"
 	dat += "</div>"
 
 	// Search results
@@ -186,7 +186,7 @@ if(!result || result.ckey != __ckey){\
 		var/time = gameTimestamp(wtime = L.raw_time - 9.99) // The time rounds up for some reason. Will result in weird filtering results
 
 		dat +="<tr style='[trStyle]'><td style='[tdStyleTime]'>[time]</td><td style='[tdStyleType]background: [get_logtype_color(L.log_type)]'>[L.log_type]</td>\
-		<td style='[tdStyleWho]'>[L.who]</td><td style='background: [get_logtype_color(L.log_type)];'>[L.what]</td>\
+		<td style='[tdStyleWho]'>[L.who][L.who_usr]</td><td style='background: [get_logtype_color(L.log_type)];'>[L.what]</td>\
 		<td style='[tdStyleWho]'>[L.target]</td><td style='[tdStyleWhere]'>[L.where]</td></tr>"
 	dat += "</table>"
 	dat += "</div>"
@@ -202,7 +202,7 @@ if(!result || result.ckey != __ckey){\
 			return
 		var/res = timeStampToNum(input)
 		if(res < 0)
-			to_chat(usr, "<span class='warning'>'[input]' is an invalid input value.</span>")
+			to_chat(usr, SPAN_WARNING("'[input]' is an invalid input value."))
 			return
 		time_from = res
 		show_ui(usr)
@@ -213,7 +213,7 @@ if(!result || result.ckey != __ckey){\
 			return
 		var/res = timeStampToNum(input)
 		if(res < 0)
-			to_chat(usr, "<span class='warning'>'[input]' is an invalid input value.</span>")
+			to_chat(usr, SPAN_WARNING("'[input]' is an invalid input value."))
 			return
 		time_to = res
 
@@ -232,7 +232,7 @@ if(!result || result.ckey != __ckey){\
 				log_records.Cut()
 			else
 				if(records_len > RECORD_HARD_LIMIT)
-					to_chat(usr, "<span class='warning'>Record limit reached. Limiting to [RECORD_HARD_LIMIT].</span>")
+					to_chat(usr, SPAN_WARNING("Record limit reached. Limiting to [RECORD_HARD_LIMIT]."))
 					log_records.Cut(RECORD_HARD_LIMIT)
 		show_ui(usr)
 		return
@@ -251,13 +251,13 @@ if(!result || result.ckey != __ckey){\
 		return
 	if(href_list["add_mob"])
 		var/list/mobs = getpois(TRUE, TRUE)
-		var/datum/async_input/A = input_autocomplete_async(usr, "Please, select a mob: ", mobs)
-		A.on_close(CALLBACK(src, PROC_REF(add_mob), usr))
+		var/mob_choice = tgui_input_list(usr, "Please, select a mob: ", "Mob selector", mobs)
+		add_mob(usr, mobs[mob_choice])
 		return
 	if(href_list["add_ckey"])
 		var/list/ckeys = GLOB.logging.get_ckeys_logged()
-		var/datum/async_input/A = input_autocomplete_async(usr, "Please, select a ckey: ", ckeys)
-		A.on_close(CALLBACK(src, PROC_REF(add_ckey), usr))
+		var/ckey_choice = tgui_input_list(usr, "Please, select a ckey: ", "Ckey selector", ckeys)
+		add_ckey(usr, ckey_choice)
 		return
 	if(href_list["remove_mob"])
 		var/mob/M = locate(href_list["remove_mob"])

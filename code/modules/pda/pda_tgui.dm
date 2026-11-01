@@ -1,9 +1,12 @@
 // All the TGUI interactions are in their own file to keep things simpler
 
-/obj/item/pda/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.inventory_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/item/pda/ui_state(mob/user)
+	return GLOB.inventory_state
+
+/obj/item/pda/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "PDA", name, 600, 650, master_ui, state)
+		ui = new(user, src, "PDA", name)
 		ui.open()
 
 
@@ -62,7 +65,7 @@
 	if(..())
 		return
 
-	add_fingerprint(usr)
+	add_fingerprint(ui.user)
 
 	. = TRUE
 	switch(action)
@@ -76,12 +79,16 @@
 				if(A)
 					start_program(A)
 		if("Eject")//Ejects the cart, only done from hub.
+			// Do not eject the sillycone cart!
+			if(silicon_pda)
+				return
 			if(!isnull(cartridge))
-				var/turf/T = loc
-				if(ismob(T))
-					T = T.loc
 				var/obj/item/cartridge/C = cartridge
-				C.forceMove(T)
+				if(ismob(loc))
+					var/mob/T = loc
+					T.put_in_hands(C)
+				else
+					C.forceMove(get_turf(src))
 				if(scanmode in C.programs)
 					scanmode = null
 				if(current_app in C.programs)
@@ -93,11 +100,13 @@
 				update_shortcuts()
 				playsound(src, 'sound/machines/terminal_eject.ogg', 50, TRUE)
 		if("Authenticate") //Checks for ID
-			id_check(usr, 1)
+			id_check(ui.user, 1)
+		if("Available_Ringtones")
+			ttone = params["selected_ringtone"]
 		if("Ringtone")
 			if(!silent)
 				playsound(src, 'sound/machines/terminal_select.ogg', 15, TRUE)
-			return set_ringtone()
+			return set_ringtone(ui.user)
 		else
 			if(current_app)
 				. = current_app.ui_act(action, params, ui, state) // It needs proxying through down here so apps actually have their interacts called

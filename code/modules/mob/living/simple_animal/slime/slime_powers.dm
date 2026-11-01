@@ -7,11 +7,11 @@
 
 /datum/action/innate/slime
 	check_flags = AB_CHECK_CONSCIOUS
-	icon_icon = 'icons/mob/actions/actions_slime.dmi'
+	button_icon = 'icons/mob/actions/actions_slime.dmi'
 	background_icon_state = "bg_alien"
 	var/needs_growth = NO_GROWTH_NEEDED
 
-/datum/action/innate/slime/IsAvailable()
+/datum/action/innate/slime/IsAvailable(show_message = TRUE)
 	if(..())
 		var/mob/living/simple_animal/slime/S = owner
 		if(needs_growth == GROWTH_NEEDED)
@@ -20,10 +20,7 @@
 			return 0
 		return 1
 
-/mob/living/simple_animal/slime/verb/Feed()
-	set category = "Slime"
-	set desc = "This will let you feed on any valid creature in the surrounding area. This should also be used to halt the feeding process."
-
+/mob/living/simple_animal/slime/proc/Feed()
 	if(stat)
 		return 0
 
@@ -32,12 +29,16 @@
 		if(C!=src && Adjacent(C))
 			choices += C
 
-	var/mob/living/M = input(src,"Who do you wish to feed on?") in null|choices
+	if(!length(choices))
+		to_chat(src, SPAN_WARNING("No subjects nearby to feed on!"))
+		return
+
+	var/mob/living/M = tgui_input_list(src, "Who do you wish to feed on?", "Feeding Selection", choices)
 	if(!M)
-		return 0
+		return FALSE
 	if(CanFeedon(M))
 		Feedon(M)
-		return 1
+		return TRUE
 
 /datum/action/innate/slime/feed
 	name = "Feed"
@@ -64,40 +65,46 @@
 		if(S.damage_coeff[TOX] <= 0 && S.damage_coeff[CLONE] <= 0) //The creature wouldn't take any damage, it must be too weird even for us.
 			if(silent)
 				return FALSE
-			to_chat(src, "<span class='warning'>[pick("This subject is incompatible", \
-			"This subject does not have life energy", "This subject is empty", \
-			"I am not satisified", "I can not feed from this subject", \
-			"I do not feel nourished", "This subject is not food")]!</span>")
+			var/feed_messages = list(
+				"This subject is incompatible!",
+				"This subject does not have life energy!",
+				"This subject is empty!",
+				"I am not satisified!",
+				"I can not feed from this subject!",
+				"I do not feel nourished!",
+				"This subject is not food!"
+			)
+			to_chat(src, SPAN_WARNING(pick(feed_messages)))
 			return FALSE
 
 	if(isslime(M))
 		if(silent)
 			return FALSE
-		to_chat(src, "<span class='warning'><i>I can't latch onto another slime...</i></span>")
+		to_chat(src, SPAN_WARNING("<i>I can't latch onto another slime...</i>"))
 		return FALSE
 
 	if(docile)
 		if(silent)
 			return FALSE
-		to_chat(src, "<span class='notice'><i>I'm not hungry anymore...</i></span>")
+		to_chat(src, SPAN_NOTICE("<i>I'm not hungry anymore...</i>"))
 		return FALSE
 
 	if(stat)
 		if(silent)
 			return FALSE
-		to_chat(src, "<span class='warning'><i>I must be conscious to do this...</i></span>")
+		to_chat(src, SPAN_WARNING("<i>I must be conscious to do this...</i>"))
 		return FALSE
 
 	if(M.stat == DEAD)
 		if(silent)
 			return FALSE
-		to_chat(src, "<span class='warning'><i>This subject does not have a strong enough life energy...</i></span>")
+		to_chat(src, SPAN_WARNING("<i>This subject does not have a strong enough life energy...</i>"))
 		return FALSE
 
 	if(locate(/mob/living/simple_animal/slime) in M.buckled_mobs)
 		if(silent)
 			return FALSE
-		to_chat(src, "<span class='warning'><i>Another slime is already feeding on this subject...</i></span>")
+		to_chat(src, SPAN_WARNING("<i>Another slime is already feeding on this subject...</i>"))
 		return FALSE
 	return TRUE
 
@@ -105,28 +112,31 @@
 	M.unbuckle_all_mobs(force = TRUE) //Slimes rip other mobs (eg: shoulder parrots) off (Slimes Vs Slimes is already handled in CanFeedon())
 	if(M.buckle_mob(src, force = TRUE))
 		layer = M.layer + 0.01 //appear above the target mob
-		M.visible_message("<span class='danger'>[name] has latched onto [M]!</span>", \
-						"<span class='userdanger'>[name] has latched onto [M]!</span>")
+		M.visible_message(SPAN_DANGER("[name] has latched onto [M]!"), \
+						SPAN_USERDANGER("[name] has latched onto [M]!"))
 	else
-		to_chat(src, "<span class='warning'><i>I have failed to latch onto the subject!</i></span>")
+		to_chat(src, SPAN_WARNING("<i>I have failed to latch onto the subject!</i>"))
 
 /mob/living/simple_animal/slime/proc/Feedstop(silent = FALSE, living = 1)
 	if(buckled)
 		if(!living)
-			to_chat(src, "<span class='warning'>[pick("This subject is incompatible", \
-			"This subject does not have life energy", "This subject is empty", \
-			"I am not satisified", "I can not feed from this subject", \
-			"I do not feel nourished", "This subject is not food")]!</span>")
+			var/feed_messages = list(
+				"This subject is incompatible!",
+				"This subject does not have life energy!",
+				"This subject is empty!",
+				"I am not satisified!",
+				"I can not feed from this subject!",
+				"I do not feel nourished!",
+				"This subject is not food!"
+			)
+			to_chat(src, SPAN_WARNING(pick(feed_messages)))
 		if(!silent)
-			visible_message("<span class='warning'>[src] has let go of [buckled]!</span>", \
-							"<span class='notice'><i>I stopped feeding.</i></span>")
+			visible_message(SPAN_WARNING("[src] has let go of [buckled]!"), \
+							SPAN_NOTICE("<i>I stopped feeding.</i>"))
 		layer = initial(layer)
-		buckled.unbuckle_mob(src,force=TRUE)
+		unbuckle(force=TRUE)
 
-/mob/living/simple_animal/slime/verb/Evolve()
-	set category = "Slime"
-	set desc = "This will let you evolve from baby to adult slime."
-
+/mob/living/simple_animal/slime/proc/Evolve()
 	if(stat)
 		to_chat(src, "<i>I must be conscious to do this...</i>")
 		return
@@ -138,7 +148,7 @@
 			for(var/datum/action/innate/slime/evolve/E in actions)
 				E.Remove(src)
 			regenerate_icons()
-			update_name()
+			update_appearance(UPDATE_NAME)
 		else
 			to_chat(src, "<i>I am not ready to evolve yet...</i>")
 	else
@@ -156,10 +166,7 @@
 		var/datum/action/innate/slime/reproduce/A = new
 		A.Grant(S)
 
-/mob/living/simple_animal/slime/verb/Reproduce()
-	set category = "Slime"
-	set desc = "This will make you split into four Slimes."
-
+/mob/living/simple_animal/slime/proc/Reproduce()
 	if(stat)
 		to_chat(src, "<i>I must be conscious to do this...</i>")
 		return
@@ -172,7 +179,8 @@
 
 			if(istype(loc, /obj/machinery/computer/camera_advanced/xenobio))
 				return //no you cannot split while you're in the matrix (this prevents GC issues and slimes disappearing)
-
+			if(holding_organ)
+				eject_organ()
 			var/list/babies = list()
 			var/new_nutrition = round(nutrition * 0.9)
 			var/new_powerlevel = round(powerlevel / 4)
@@ -191,7 +199,6 @@
 				M.powerlevel = new_powerlevel
 				if(i != 1)
 					step_away(M, get_turf(src))
-				M.Friends = Friends.Copy()
 				babies += M
 				M.mutation_chance = clamp(mutation_chance+(rand(5,-5)),0,100)
 				SSblackbox.record_feedback("tally", "slime_babies_born", 1, M.colour)
@@ -216,3 +223,9 @@
 /datum/action/innate/slime/reproduce/Activate()
 	var/mob/living/simple_animal/slime/S = owner
 	S.Reproduce()
+
+#undef SIZE_DOESNT_MATTER
+#undef BABIES_ONLY
+#undef ADULTS_ONLY
+#undef NO_GROWTH_NEEDED
+#undef GROWTH_NEEDED

@@ -2,10 +2,8 @@
 	name = "syringe gun"
 	desc = "A spring loaded rifle designed to fit syringes, used to incapacitate unruly patients from a distance. Not compatible with DNA-Injectors."
 	icon_state = "syringegun"
-	item_state = "syringegun"
-	w_class = WEIGHT_CLASS_NORMAL
+	inhand_icon_state = "syringegun"
 	origin_tech = "combat=2;biotech=3"
-	throw_speed = 3
 	throw_range = 7
 	force = 4
 	materials = list(MAT_METAL=2000)
@@ -14,8 +12,8 @@
 	var/list/syringes = list()
 	var/max_syringes = 1
 
-/obj/item/gun/syringe/Initialize()
-	..()
+/obj/item/gun/syringe/Initialize(mapload)
+	. = ..()
 	chambered = new /obj/item/ammo_casing/syringegun(src)
 
 /obj/item/gun/syringe/process_chamber()
@@ -28,24 +26,25 @@
 
 	chambered.BB = new S.projectile_type(src)
 	S.reagents.trans_to(chambered.BB, S.reagents.total_volume)
+	S.mode = SYRINGE_INJECT
 	chambered.BB.name = S.name
 
 	syringes.Remove(S)
 	qdel(S)
 
-/obj/item/gun/syringe/afterattack(atom/target, mob/living/user, flag, params)
+/obj/item/gun/syringe/afterattack__legacy__attackchain(atom/target, mob/living/user, flag, params)
 	if(target == loc)
 		return
 	..()
 
 /obj/item/gun/syringe/examine(mob/user)
 	. = ..()
-	var/num_syringes = syringes.len + (chambered.BB ? 1 : 0)
+	var/num_syringes = length(syringes) + (chambered.BB ? 1 : 0)
 	. += "Can hold [max_syringes] syringe\s. Has [num_syringes] syringe\s remaining."
 
-/obj/item/gun/syringe/attack_self(mob/living/user)
+/obj/item/gun/syringe/attack_self__legacy__attackchain(mob/living/user)
 	if(!length(syringes) && !chambered.BB)
-		to_chat(user, "<span class='notice'>[src] is empty.</span>")
+		to_chat(user, SPAN_NOTICE("[src] is empty."))
 		return FALSE
 
 	var/obj/item/reagent_containers/syringe/S
@@ -55,30 +54,34 @@
 		// Remove the chambered syringe only if there's no syringe left
 		S = new()
 		chambered.BB.reagents.trans_to(S, chambered.BB.reagents.total_volume)
+		S.mode = SYRINGE_INJECT
 		qdel(chambered.BB)
 		chambered.BB = null
 		process_chamber()
 
 	user.put_in_hands(S)
 	syringes.Remove(S)
-	to_chat(user, "<span class='notice'>You unload [S] from [src]!</span>")
+	to_chat(user, SPAN_NOTICE("You unload [S] from [src]!"))
 	return TRUE
 
-/obj/item/gun/syringe/attackby(obj/item/A, mob/user, params, show_msg = TRUE)
+/obj/item/gun/syringe/attackby__legacy__attackchain(obj/item/A, mob/user, params, show_msg = TRUE)
 	if(istype(A, /obj/item/reagent_containers/syringe))
+		if(istype(A, /obj/item/reagent_containers/syringe/lethal))
+			to_chat(user, SPAN_WARNING("[A] is too big to fit into [src]."))
+			return
 		var/in_clip = length(syringes) + (chambered.BB ? 1 : 0)
 		if(in_clip < max_syringes)
-			if(!user.unEquip(A))
+			if(user.transfer_item_to(A, src))
+				to_chat(user, SPAN_NOTICE("You load [A] into [src]!"))
+				syringes.Add(A)
+				process_chamber() // Chamber the syringe if none is already
+				return TRUE
+			else
 				return
-			to_chat(user, "<span class='notice'>You load [A] into [src]!</span>")
-			syringes.Add(A)
-			A.loc = src
-			process_chamber() // Chamber the syringe if none is already
-			return TRUE
 		else
-			to_chat(user, "<span class='notice'>[src] cannot hold more syringes.</span>")
+			to_chat(user, SPAN_NOTICE("[src] cannot hold more syringes."))
 	else if(istype(A, /obj/item/dnainjector))
-		to_chat(user, "<span class='notice'>[src] is incompatible with DNA-Injectors.</span>")
+		to_chat(user, SPAN_NOTICE("[src] is incompatible with DNA-Injectors."))
 		return
 
 	return ..()
@@ -92,7 +95,8 @@
 	name = "dart pistol"
 	desc = "A small spring-loaded sidearm that functions identically to a syringe gun. Not compatible with DNA-Injectors."
 	icon_state = "syringe_pistol"
-	item_state = "gun" //Smaller inhand
+	worn_icon_state = null
+	inhand_icon_state = "gun" // Smaller inhand
 	w_class = WEIGHT_CLASS_SMALL
 	origin_tech = "combat=2;syndicate=2;biotech=3"
 	force = 2 //Also very weak because it's smaller
@@ -104,7 +108,7 @@
 // at a breakneck pace.
 /obj/item/gun/syringe/rapidsyringe
 	name = "rapid syringe gun"
-	desc = "A syndicate rapid syringe gun based on an archived NanoTrasen prototype. Capable of storing and filling syringes from an internal reservoir. It has a large flap on the side that you can dump a box or bag of syringes into, and a port for filling it with liquid."
+	desc = "A syndicate rapid syringe gun based on an archived Nanotrasen prototype. Capable of storing and filling syringes from an internal reservoir. It has a large flap on the side that you can dump a box or bag of syringes into, and a port for filling it with liquid."
 	icon_state = "rapidsyringegun"
 	max_syringes = 14  // full two boxes worth
 	/// Maximum size of the internal reservoir
@@ -140,7 +144,7 @@
 			reagents.maximum_volume = var_value
 
 /obj/item/gun/syringe/rapidsyringe/build_reagent_description(mob/user)
-	. = list("<span class='notice'>There's a little window for the internal reservoir.</span>")
+	. = list(SPAN_NOTICE("There's a little window for the internal reservoir."))
 	. += ..()
 
 /obj/item/gun/syringe/rapidsyringe/proc/get_units_per_shot()
@@ -148,26 +152,26 @@
 
 /obj/item/gun/syringe/rapidsyringe/examine(mob/user)
 	. = ..()
-	. += "A switch on the side is set to [get_units_per_shot()] unit\s per shot, <span class='notice'>alt-click to change it.</span>"
+	. += "A switch on the side is set to [get_units_per_shot()] unit\s per shot, [SPAN_NOTICE("alt-click to change it.")]"
 	if(chambered?.BB)
-		. += "<span class='notice'>The chambered syringe contains [round(chambered.BB.reagents.total_volume)] units."
+		. += SPAN_NOTICE("The chambered syringe contains [round(chambered.BB.reagents.total_volume)] units.")
 
 /// If user is null in this proc, messages will just be ignored
 /obj/item/gun/syringe/rapidsyringe/proc/insert_single_syringe(obj/item/reagent_containers/syringe/new_syringe, mob/user)
 	if(new_syringe.reagents.total_volume)
 		if(user)
-			to_chat(user, "<span class='warning'>[src] only accepts empty syringes.</span>")
+			to_chat(user, SPAN_WARNING("[src] only accepts empty syringes."))
 		return FALSE
 	var/in_clip = length(syringes) + (chambered?.BB ? 1 : 0)
 	if(in_clip >= max_syringes)
 		if(user)
-			to_chat(user, "<span class='warning'>[src] is full!</span>")
+			to_chat(user, SPAN_WARNING("[src] is full!"))
 		return FALSE
 
 	if(user)
-		if(!user.unEquip(new_syringe))
+		if(!user.drop_item_to_ground(new_syringe))
 			return
-		to_chat(user, "<span class='notice'>You load \the [new_syringe] into [src].</span>")
+		to_chat(user, SPAN_NOTICE("You load \the [new_syringe] into [src]."))
 		playsound(src, 'sound/weapons/gun_interactions/bulletinsert.ogg', 50, 1)
 	syringes.Add(new_syringe)
 	new_syringe.forceMove(src)
@@ -175,16 +179,16 @@
 	process_chamber() // Chamber the syringe if none is already
 	return TRUE
 
-/obj/item/gun/syringe/rapidsyringe/attackby(obj/item/A, mob/user, params, show_msg)
+/obj/item/gun/syringe/rapidsyringe/attackby__legacy__attackchain(obj/item/A, mob/user, params, show_msg)
 
 	if(isstorage(A))
 		// Boxes can be dumped in.
 		var/obj/item/storage/container = A
 		if(!length(container.contents))
-			to_chat(user, "<span class='warning'>[A] is empty!</span>")
+			to_chat(user, SPAN_WARNING("[A] is empty!"))
 			return TRUE
 		if(length(syringes) + (chambered?.BB ? 1 : 0) == max_syringes)
-			to_chat(user, "<span class='warning'>[src] is full!</span>")
+			to_chat(user, SPAN_WARNING("[src] is full!"))
 			return TRUE
 
 		var/total_inserted = 0
@@ -202,12 +206,12 @@
 
 		if(total_inserted)
 			playsound(src, 'sound/weapons/gun_interactions/bulletinsert.ogg', 50, 1)
-			to_chat(user, "<span class='notice'>You load [total_inserted] empty syringes into [src].")
+			to_chat(user, SPAN_NOTICE("You load [total_inserted] empty syringes into [src]."))
 			// Chamber a syringe.
 			process_chamber()
 
 		else if(!found_any_syringe)
-			to_chat(user, "<span class='warning'>There are no empty syringes in [A]!</span>")
+			to_chat(user, SPAN_WARNING("There are no empty syringes in [A]!"))
 			return TRUE
 
 	else if(istype(A, /obj/item/reagent_containers/syringe))
@@ -221,15 +225,15 @@
 			return
 
 		if(!incoming.reagents.total_volume)
-			to_chat(user, "<span class='warning'>[incoming] is empty!</span>")
+			to_chat(user, SPAN_WARNING("[incoming] is empty!"))
 			return
 
 		if(reagents.holder_full())
-			to_chat(user, "<span class='warning'>[src]'s internal reservoir is full!</span>")
+			to_chat(user, SPAN_WARNING("[src]'s internal reservoir is full!"))
 			return
 
 		var/trans = incoming.reagents.trans_to(src, incoming.amount_per_transfer_from_this)
-		to_chat(user, "<span class='notice'>You transfer [round(trans)] unit\s of the solution to [src]'s internal reservoir.</span>")
+		to_chat(user, SPAN_NOTICE("You transfer [round(trans)] unit\s of the solution to [src]'s internal reservoir."))
 		update_loaded_syringe()
 
 		// Reset the reservoir alarm
@@ -239,7 +243,7 @@
 		return ..()
 
 // Allow for emptying your deathmix, or for sec to find out what you were dumping into people
-/obj/item/gun/syringe/rapidsyringe/afterattack(atom/target, mob/living/user, flag, params)
+/obj/item/gun/syringe/rapidsyringe/afterattack__legacy__attackchain(atom/target, mob/living/user, flag, params)
 	if(istype(target, /obj/item/reagent_containers))
 		var/obj/item/reagent_containers/destination = target
 
@@ -247,11 +251,11 @@
 			return
 
 		if(!reagents.total_volume)
-			to_chat(user, "<span class='warning'>[src]'s internal reservoir is empty!</span>")
+			to_chat(user, SPAN_WARNING("[src]'s internal reservoir is empty!"))
 			return
 
 		if(destination.reagents.holder_full())
-			to_chat(user, "<span class='warning'>[destination] is full.</span>")
+			to_chat(user, SPAN_WARNING("[destination] is full."))
 			return
 
 		var/transfer_source = "[src]'s internal reservoir"
@@ -265,7 +269,7 @@
 		else
 			transfer_amount = reagents.trans_to(destination, reservoir_transfer_amount)
 
-		to_chat(user, "<span class='notice'>You drain [transfer_amount] unit\s from [transfer_source] into [destination].</span>")
+		to_chat(user, SPAN_NOTICE("You drain [transfer_amount] unit\s from [transfer_source] into [destination]."))
 		// Refill the syringe
 		update_loaded_syringe()
 		return TRUE
@@ -274,7 +278,7 @@
 		// Running out of syringes is just handled by *click*
 		to_chat(user, "<span class='[alarmed ? "danger" : "userdanger"]'>[src] [alarmed ? "beeps" : "whines"]: Internal chemical reservoir empty!</span>")
 		if(!alarmed)
-			playsound(loc, 'sound/weapons/smg_empty_alarm.ogg', 25, 1, frequency = 60000)
+			playsound(loc, 'sound/weapons/smg_empty_alarm.ogg', 25, TRUE, frequency = 60000)
 			alarmed = TRUE
 		// always send the to_chat so there's still feedback if the gun tries to fire
 
@@ -290,7 +294,7 @@
 		transfer_amount_selection = 1
 
 	playsound(src, 'sound/weapons/gun_interactions/selector.ogg', 25, 1)
-	to_chat(user, "<span class='notice'>[src] will now fill each syringe with up to [get_units_per_shot()] units.</span>")
+	to_chat(user, SPAN_NOTICE("[src] will now fill each syringe with up to [get_units_per_shot()] units."))
 	update_loaded_syringe()
 
 /// Update the chambered syringe's contents based on the reservoir contents.
@@ -315,7 +319,7 @@
 	if(!S)
 		return
 
-	chambered.BB = new S.projectile_type(src)
+	chambered.BB = new /obj/projectile/bullet/dart/syringe/pierce_ignore(src)
 	update_loaded_syringe()
 	chambered.BB.name = S.name
 
@@ -323,9 +327,9 @@
 	qdel(S)
 
 // Unload an empty syringe, making sure its existing contents get returned to the reservoir
-/obj/item/gun/syringe/rapidsyringe/attack_self(mob/living/user)
+/obj/item/gun/syringe/rapidsyringe/attack_self__legacy__attackchain(mob/living/user)
 	if(!length(syringes) && !chambered.BB)
-		to_chat(user, "<span class='notice'>[src] is empty.</span>")
+		to_chat(user, SPAN_NOTICE("[src] is empty."))
 		return FALSE
 
 	var/obj/item/reagent_containers/syringe/S
@@ -342,20 +346,20 @@
 	syringes.Remove(S)
 	process_chamber()
 	playsound(src, "sound/weapons/gun_interactions/remove_bullet.ogg", 25, 1)
-	to_chat(user, "<span class='notice'>You unload [S] from [src].</span>")
+	to_chat(user, SPAN_NOTICE("You unload [S] from [src]."))
 	return TRUE
 
 /obj/item/gun/syringe/rapidsyringe/suicide_act(mob/user)
 
 	if(!chambered?.BB)
-		visible_message("<span class='danger'>[user] puts [user.p_their()] mouth to [src]'s reagent port and swings [user.p_their()] head back, it looks like [user.p_theyre()] trying to commit suicide!</span>")
+		visible_message(SPAN_DANGER("[user] puts [user.p_their()] mouth to [src]'s reagent port and swings [user.p_their()] head back, it looks like [user.p_theyre()] trying to commit suicide!"))
 		if(!reagents.total_volume)
-			visible_message("<span class='danger'>...but there was nothing inside!</span>")
+			visible_message(SPAN_DANGER("...but there was nothing inside!"))
 			return SHAME
 		else
 			reagents.trans_to(user, reagents.total_volume)
 	else
-		visible_message("<span class='danger'>[user] raises [src] to [user.p_their()] shoulder, it looks like [user.p_theyre()] trying to lose their medical license!</span>")
+		visible_message(SPAN_DANGER("[user] raises [src] to [user.p_their()] shoulder, it looks like [user.p_theyre()] trying to lose their medical license!"))
 		handle_suicide(user, user)
 	return TOXLOSS
 
@@ -391,6 +395,34 @@
 	// add a new syringe so it's technically infinite
 	insert_single_syringe(new /obj/item/reagent_containers/syringe)
 
-/obj/item/gun/syringe/rapidsyringe/preloaded/beaker_blaster/attack_self(mob/living/user)
+/obj/item/gun/syringe/rapidsyringe/preloaded/beaker_blaster/attack_self__legacy__attackchain(mob/living/user)
 	// no printing infinite syringes.
 	return
+
+/// craftable bamboo syringe gun
+/obj/item/gun/syringe/blowgun
+	name = "blowgun"
+	desc = "Fire syringes at a short distance."
+	icon_state = "blowgun"
+	inhand_icon_state = "gun"
+	trigger_guard = TRIGGER_GUARD_ALLOW_ALL // you fire it with your mouth
+
+/obj/item/gun/syringe/blowgun/process_fire(atom/target, mob/living/user, message = TRUE, params = null, zone_override = "", bonus_spread = 0)
+	if(chambered.BB)
+		visible_message(SPAN_DANGER("[user] shoots the blowgun!"))
+		user.adjustStaminaLoss(20, FALSE)
+		user.adjustOxyLoss(20)
+	return ..()
+
+/obj/item/gun/syringe/blowgun/suicide_act(mob/user)
+	if(chambered.BB)
+		visible_message(SPAN_SUICIDE("[user] puts [src] to [user.p_their()] lips and inhales! It looks like [user.p_theyre()] trying to commit suicide!"))
+		return BRUTELOSS
+
+	visible_message(SPAN_SUICIDE("[user] puts [src] to [user.p_their()] lips and begins blowing on it rapid-fire! It looks like [user.p_theyre()] trying to commit suicide!"))
+	for(var/i in 1 to 6)
+		if(!use_tool(user, user, 0.5 SECONDS))
+			return SHAME
+		var/action = pick("blows hard on [src].", "puffs out [user.p_their()] cheeks.", "tries to fire [src], but it's empty.", "utterly fails to use [src] as a straw.", "is unable to whistle through [src].", "has forgotten to attach a balloon to [src].", "accidentally left [src] on full auto.", "attempts a 360 no-scope.", "really blew it.", "definitely does not suck.", "finds [src] breathtaking.", "is no longer full of hot air.", "did not inhale.", "is determined to pass the breathalyzer test.", "has their lungs' regulator set to 150 kPa.", "has become a vent set to refill.")
+		visible_message("[user] [action]")
+	return OXYLOSS

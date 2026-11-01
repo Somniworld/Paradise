@@ -28,7 +28,7 @@
 	health = 1000
 	melee_damage_lower = 20
 	melee_damage_upper = 20
-	armour_penetration_percentage = 50
+	armor_penetration_percentage = 50
 	light_power = 5
 	light_range = 2
 	light_color = "#FF0000"
@@ -37,11 +37,12 @@
 	throw_message = "doesn't affect the purity of"
 	speed = 2
 	move_to_delay = 10
-	mouse_opacity = MOUSE_OPACITY_ICON
 	death_sound = 'sound/misc/demon_dies.ogg'
 	deathmessage = "begins to shudder as it becomes transparent..."
-	loot_drop = /obj/item/clothing/accessory/necklace/herald_cloak
-
+	loot_drop = /obj/item/clothing/neck/cloak/herald_cloak
+	contains_xeno_organ = TRUE
+	ignore_generic_organs = TRUE
+	surgery_container = /datum/xenobiology_surgery_container/herald
 
 	attack_action_types = list(/datum/action/innate/elite_attack/herald_trishot,
 								/datum/action/innate/elite_attack/herald_directionalshot,
@@ -74,25 +75,25 @@
 /datum/action/innate/elite_attack/herald_trishot
 	name = "Triple Shot"
 	button_icon_state = "herald_trishot"
-	chosen_message = "<span class='boldwarning'>You are now firing three shots in your chosen direction.</span>"
+	chosen_message = SPAN_BOLDWARNING("You are now firing three shots in your chosen direction.")
 	chosen_attack_num = HERALD_TRISHOT
 
 /datum/action/innate/elite_attack/herald_directionalshot
 	name = "Circular Shot"
 	button_icon_state = "herald_directionalshot"
-	chosen_message = "<span class='boldwarning'>You are firing projectiles in all directions.</span>"
+	chosen_message = SPAN_BOLDWARNING("You are firing projectiles in all directions.")
 	chosen_attack_num = HERALD_DIRECTIONALSHOT
 
 /datum/action/innate/elite_attack/herald_teleshot
 	name = "Teleport Shot"
 	button_icon_state = "herald_teleshot"
-	chosen_message = "<span class='boldwarning'>You will now fire a shot which teleports you where it lands.</span>"
+	chosen_message = SPAN_BOLDWARNING("You will now fire a shot which teleports you where it lands.")
 	chosen_attack_num = HERALD_TELESHOT
 
 /datum/action/innate/elite_attack/herald_mirror
 	name = "Summon Mirror"
 	button_icon_state = "herald_mirror"
-	chosen_message = "<span class='boldwarning'>You will spawn a mirror which duplicates your attacks.</span>"
+	chosen_message = SPAN_BOLDWARNING("You will spawn a mirror which duplicates your attacks.")
 	chosen_attack_num = HERALD_MIRROR
 
 /mob/living/simple_animal/hostile/asteroid/elite/herald/OpenFire()
@@ -127,8 +128,8 @@
 /mob/living/simple_animal/hostile/asteroid/elite/herald/proc/shoot_projectile(turf/marker, set_angle, is_teleshot, is_trishot)
 	var/turf/startloc = get_turf(src)
 	if(!is_teleshot)
-		var/obj/item/projectile/H = new /obj/item/projectile/herald(startloc)
-		H.preparePixelProjectile(marker, marker, src)
+		var/obj/projectile/H = new /obj/projectile/herald(startloc)
+		H.preparePixelProjectile(marker, startloc)
 		H.firer = src
 		H.firer_source_atom = src
 		if(target)
@@ -138,8 +139,8 @@
 			shoot_projectile(marker, set_angle + 15, FALSE, FALSE)
 			shoot_projectile(marker, set_angle - 15, FALSE, FALSE)
 	else
-		var/obj/item/projectile/H = new /obj/item/projectile/herald/teleshot(startloc)
-		H.preparePixelProjectile(marker, marker, startloc)
+		var/obj/projectile/H = new /obj/projectile/herald/teleshot(startloc)
+		H.preparePixelProjectile(marker, startloc)
 		H.firer = src
 		H.firer_source_atom = src
 		if(target)
@@ -199,7 +200,7 @@
 
 /mob/living/simple_animal/hostile/asteroid/elite/herald/mirror
 	name = "herald's mirror"
-	desc = "This fiendish work of magic copies the herald's attacks.  Seems logical to smash it."
+	desc = "This fiendish work of magic copies the herald's attacks. Seems logical to smash it."
 	health = 60
 	maxHealth = 60
 	icon_state = "herald_mirror"
@@ -209,8 +210,8 @@
 	del_on_death = TRUE
 	is_mirror = TRUE
 	move_resist = MOVE_FORCE_OVERPOWERING // no dragging your mirror around
-	flying = TRUE
 	var/mob/living/simple_animal/hostile/asteroid/elite/herald/my_master = null
+	initial_traits = list(TRAIT_FLYING)
 
 /mob/living/simple_animal/hostile/asteroid/elite/herald/mirror/Initialize(mapload)
 	. = ..()
@@ -221,19 +222,19 @@
 	my_master = null
 	. = ..()
 
-/obj/item/projectile/herald
+/obj/projectile/herald
 	name = "death bolt"
 	icon_state = "chronobolt"
 	damage = 15
-	armour_penetration_percentage = 50
+	armor_penetration_percentage = 50
 	speed = 2
 
-/obj/item/projectile/herald/teleshot
+/obj/projectile/herald/teleshot
 	name = "golden bolt"
 	damage = 0
 	color = rgb(255,255,102)
 
-/obj/item/projectile/herald/prehit(atom/target)
+/obj/projectile/herald/prehit(atom/target)
 	if(ismob(target) && ismob(firer))
 		var/mob/living/mob_target = target
 		if(mob_target.faction_check_mob(firer))
@@ -243,13 +244,13 @@
 		if(mob_target.buckled && mob_target.stat == DEAD)
 			mob_target.dust() //no body cheese
 
-/obj/item/projectile/herald/on_hit(atom/target, blocked = FALSE)
+/obj/projectile/herald/on_hit(atom/target, blocked = FALSE)
 	. = ..()
 	if(ismineralturf(target))
 		var/turf/simulated/mineral/M = target
 		M.gets_drilled()
 
-/obj/item/projectile/herald/teleshot/on_hit(atom/target, blocked = FALSE)
+/obj/projectile/herald/teleshot/on_hit(atom/target, blocked = FALSE)
 	. = ..()
 	if(!istype(target, /mob/living/simple_animal/hostile/asteroid/elite/herald))
 		firer.forceMove(get_turf(src))
@@ -257,22 +258,18 @@
 
 //Herald's loot: Cloak of the Prophet
 
-/obj/item/clothing/accessory/necklace/herald_cloak
+/obj/item/clothing/neck/cloak/herald_cloak
 	name = "cloak of the prophet"
 	desc = "A cloak which lts you travel through a perfect reflection of the world."
 	icon = 'icons/obj/lavaland/elite_trophies.dmi'
 	icon_state = "herald_cloak"
-	item_state = "herald_cloak"
-	item_color = "herald_cloak"
-	slot_flags = SLOT_TIE
-	allow_duplicates = FALSE
-	actions_types = list(/datum/action/item_action/accessory/herald)
+	actions_types = list(/datum/action/item_action/herald)
 
-/obj/item/clothing/accessory/necklace/herald_cloak/attack_self()
-	if(has_suit)
-		mirror_walk()
+/obj/item/clothing/neck/cloak/herald_cloak/item_action_slot_check(slot)
+	if(slot == ITEM_SLOT_NECK)
+		return TRUE
 
-/obj/item/clothing/accessory/necklace/herald_cloak/proc/mirror_walk()
+/obj/item/clothing/neck/cloak/herald_cloak/ui_action_click()
 	var/found_mirror = FALSE
 	var/list/mirrors_to_use = list()
 	var/list/areaindex = list()
@@ -284,12 +281,12 @@
 			continue
 		if(T.z != usr.z) //No crossing zlvls
 			continue
-		if(istype(i, /obj/item/shield/mirror) && !iscultist(usr)) //No teleporting to cult bases
+		if(istype(i, /obj/item/shield/mirror) && !IS_CULTIST(usr)) //No teleporting to cult bases
 			continue
 		if(istype(i, /obj/structure/mirror))
 			var/obj/structure/mirror/B = i
 			if(B.broken)
-				return
+				continue
 		var/tmpname = T.loc.name
 		if(areaindex[tmpname])
 			tmpname = "[tmpname] ([++areaindex[tmpname]])"
@@ -302,33 +299,34 @@
 		starting_mirror = i
 
 	if(!found_mirror)
-		to_chat(usr, "<span class='warning'>You are not close enough to a working mirror to teleport!</span>")
+		to_chat(usr, SPAN_WARNING("You are not close enough to a working mirror to teleport!"))
 		return
-	var/input_mirror = input(usr, "Choose a mirror to teleport to.", "Mirror to Teleport to") as null|anything in mirrors_to_use
+	var/input_mirror = tgui_input_list(usr, "Choose a mirror to teleport to.", "Mirror to Teleport to", mirrors_to_use)
 	var/obj/chosen = mirrors_to_use[input_mirror]
 	if(chosen == null)
 		return
-	usr.visible_message("<span class='warning'>[usr] starts to crawl into [starting_mirror]...</span>", \
-			"<span class='notice'>You start to crawl into the [starting_mirror]...</span>")
+	usr.visible_message(SPAN_WARNING("[usr] starts to crawl into [starting_mirror]..."), \
+			SPAN_NOTICE("You start to crawl into the [starting_mirror]..."))
 	if(do_after(usr, 2 SECONDS, target = usr))
 		var/turf/destination = get_turf(chosen)
 		if(QDELETED(chosen) || !usr|| HAS_TRAIT(usr, TRAIT_HANDS_BLOCKED) || !chosen || (get_dist(src, starting_mirror) > 1 || destination.z != usr.z))
 			return
-		usr.visible_message("<span class='warning'>[usr] crawls into the [starting_mirror], and [usr.p_they()] disappear into it!</span>", \
-			"<span class='notice'>You crawl into the [starting_mirror]...</span>")
+		usr.visible_message(SPAN_WARNING("[usr] crawls into the [starting_mirror], and [usr.p_they()] disappear into it!"), \
+			SPAN_NOTICE("You crawl into the [starting_mirror]..."))
 		usr.forceMove(destination)
-		usr.visible_message("<span class='warning'>[usr] crawls out of [chosen], causing it to shatter!</span>", \
-			"<span class='warning'>You crawl out of your own reflection, shattering the mirror!</span>")
+		usr.visible_message(SPAN_WARNING("[usr] crawls out of [chosen], causing it to shatter!"), \
+			SPAN_WARNING("You crawl out of your own reflection, shattering the mirror!"))
 		if(istype(chosen, /obj/structure/mirror))
 			var/obj/structure/mirror/M = chosen
 			M.obj_break("brute")
-		else if(istype(chosen, /obj/item/shield/mirror))
+		else if(istype(chosen, /obj/item/shield/mirror) || istype(chosen, /obj/item/handheld_mirror))
 			var/turf/T = get_turf(usr)
 			new /obj/effect/temp_visual/cult/sparks(T)
 			playsound(T, 'sound/effects/glassbr3.ogg', 100)
-			if(isliving(chosen.loc))
-				var/mob/living/shatterer = loc
-				shatterer.Weaken(6 SECONDS)
+			for(var/mob/living/L in T)
+				if(L == usr)
+					continue
+				L.Weaken(6 SECONDS)
 			qdel(chosen)
 
 #undef HERALD_TRISHOT

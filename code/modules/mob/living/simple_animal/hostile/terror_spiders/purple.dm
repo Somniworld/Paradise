@@ -22,13 +22,12 @@
 	icon_dead = "terror_purple_dead"
 	maxHealth = 200
 	health = 200
-	melee_damage_lower = 15
 	melee_damage_upper = 25
 	spider_tier = TS_TIER_2
 	move_to_delay = 5 // at 20ticks/sec, this is 4 tile/sec movespeed, same as a human. Faster than a normal spider, so it can intercept attacks on queen.
 	speed = 0 // '0' (also the default for human mobs) converts to 2.5 total delay, or 4 tiles/sec.
 	spider_opens_doors = 2
-	ventcrawler = 0
+	ventcrawler = VENTCRAWLER_NONE
 	ai_ventcrawls = FALSE
 	environment_smash = ENVIRONMENT_SMASH_RWALLS
 	idle_ventcrawl_chance = 0 // stick to the queen!
@@ -45,7 +44,7 @@
 				if(!degenerate && !spider_myqueen.degenerate)
 					degenerate = TRUE
 					spider_myqueen.DoLayTerrorEggs(/mob/living/simple_animal/hostile/poison/terror_spider/purple, 1)
-					visible_message("<span class='notice'>[src] chitters in the direction of [spider_myqueen]!</span>")
+					visible_message(SPAN_NOTICE("[src] chitters in the direction of [spider_myqueen]!"))
 	return ..()
 
 /mob/living/simple_animal/hostile/poison/terror_spider/purple/Life(seconds, times_fired)
@@ -62,7 +61,7 @@
 			if(Q.stat == DEAD)
 				spider_myqueen = null
 				degenerate = TRUE
-				to_chat(src, "<span class='userdanger'>[Q] has died! Her power no longer sustains you!</span>")
+				to_chat(src, SPAN_USERDANGER("[Q] has died! Her power no longer sustains you!"))
 				return
 
 			if(get_dist(src, Q) < vision_range)
@@ -73,41 +72,42 @@
 			if(queen_visible)
 				cycles_noqueen = 0
 				if(spider_debug)
-					to_chat(src, "<span class='notice'>[Q] visible.</span>")
+					to_chat(src, SPAN_NOTICE("[Q] visible."))
 			else
 				cycles_noqueen++
 				if(spider_debug)
-					to_chat(src, "<span class='danger'>[Q] NOT visible. Cycles: [cycles_noqueen].</span>")
+					to_chat(src, SPAN_DANGER("[Q] NOT visible. Cycles: [cycles_noqueen]."))
 			var/area/A = get_area(spider_myqueen)
 			switch(cycles_noqueen)
 				if(6)
 					// one minute without queen sighted
-					to_chat(src, "<span class='danger'>You have become separated from [Q]. Return to her in [A].</span>")
+					to_chat(src, SPAN_DANGER("You have become separated from [Q]. Return to her in [A]."))
 				if(12)
 					// two minutes without queen sighted
-					to_chat(src, "<span class='danger'>Your long separation from [Q] weakens you. Return to her in [A].</span>")
+					to_chat(src, SPAN_DANGER("Your long separation from [Q] weakens you. Return to her in [A]."))
 				if(18)
 					// three minutes without queen sighted, kill them.
 					degenerate = TRUE
-					to_chat(src, "<span class='userdanger'>Your link to [Q] has been broken! Your life force starts to drain away!</span>")
+					to_chat(src, SPAN_USERDANGER("Your link to [Q] has been broken! Your life force starts to drain away!"))
 					melee_damage_lower = 5
 					melee_damage_upper = 10
 
-/mob/living/simple_animal/hostile/poison/terror_spider/purple/Stat()
-	..()
+/mob/living/simple_animal/hostile/poison/terror_spider/purple/get_status_tab_items()
+	var/list/status_tab_data = ..()
+	. = status_tab_data
 	// Provides a status panel indicator, showing purples how long they can be away from their queen before their hivemind link breaks, and they die.
 	// Uses <font color='#X'> because the status panel does NOT accept <span class='X'>.
-	if(statpanel("Status") && ckey && stat == CONSCIOUS)
+	if(ckey && stat == CONSCIOUS)
 		if(spider_myqueen)
 			var/area/A = get_area(spider_myqueen)
 			if(degenerate)
-				stat(null, "Link: <font color='#eb4034'>BROKEN</font>") // color=red
+				status_tab_data[++status_tab_data.len] = list("Link:", "<font color='#eb4034'>BROKEN</font>") // color=red
 			else if(queen_visible)
-				stat(null, "Link: <font color='#32a852'>[spider_myqueen] is near</font>") // color=green
+				status_tab_data[++status_tab_data.len] = list("Link:", "<font color='#32a852'>[spider_myqueen] is near</font>") // color=green
 			else if(cycles_noqueen >= 12)
-				stat(null, "Link: <font color='#eb4034'>Critical - return to [spider_myqueen] in [A]</font>") // color=red
+				status_tab_data[++status_tab_data.len] = list("Link:", "<font color='#eb4034'>Critical - return to [spider_myqueen] in [A]</font>") // color=red
 			else
-				stat(null, "Link: <font color='#fcba03'>Warning - return to [spider_myqueen] in [A]</font>") // color=orange
+				status_tab_data[++status_tab_data.len] = list("Link:", "<font color='#fcba03'>Warning - return to [spider_myqueen] in [A]</font>") // color=orange
 
 
 

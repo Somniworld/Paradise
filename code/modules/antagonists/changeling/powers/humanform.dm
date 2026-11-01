@@ -10,7 +10,11 @@
 	var/datum/dna/chosen_dna = cling.select_dna("Select the target DNA: ", "Target DNA")
 	if(!chosen_dna || !user)
 		return FALSE
-	to_chat(user, "<span class='notice'>We transform our appearance.</span>")
+
+	var/brute_damage = user.getBruteLoss()
+	var/burn_damage = user.getFireLoss()
+
+	to_chat(user, SPAN_NOTICE("We transform our appearance."))
 	user.dna.SetSEState(GLOB.monkeyblock,0,1)
 	singlemutcheck(user,GLOB.monkeyblock, MUTCHK_FORCED)
 	if(istype(user))
@@ -18,11 +22,14 @@
 	user.dna = chosen_dna.Clone()
 	user.real_name = chosen_dna.real_name
 	domutcheck(user, MUTCHK_FORCED)
-	user.flavor_text = ""
+	user.flavor_text = chosen_dna.flavor_text
 	user.dna.UpdateSE()
 	user.dna.UpdateUI()
 	user.sync_organ_dna(1)
 	user.UpdateAppearance()
+
+	user.adjustBruteLoss(brute_damage)
+	user.adjustFireLoss(burn_damage)
 
 	cling.acquired_powers -= src
 	Remove(user)

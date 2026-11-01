@@ -1,3 +1,7 @@
+/// The root type of all camera consoles. When used, these open a UI that has a left-hand sidebar
+/// displaying a list of active cameras in the console's assigned camera `network`. The bulk of the window
+/// on the right hand side displays a camera feed of the selected camera. This feed will attempt to refresh
+/// every time process() is called by SSobj as long as there are active watchers, living or dead.
 /obj/machinery/computer/security
 	name = "security camera console"
 	desc = "Used to access the various cameras networks on the station."
@@ -8,19 +12,22 @@
 
 	var/mapping = 0 // For the overview file (overview.dm), not used on this page
 
-	var/list/network = list("SS13","Mining Outpost")
+	var/list/network = list("SS13", "Mining Outpost", "Labor Camp")
 	var/obj/machinery/camera/active_camera
+	/// The list of total watchers, living and dead, of this console.
 	var/list/watchers = list()
+	/// The list of living watchers of this console. Used for playing a "terminal on" sound on first live viewer.
+	var/list/living_watchers = list()
 
 	// Stuff needed to render the map
 	var/map_name
 	var/const/default_map_size = 15
-	var/obj/screen/map_view/cam_screen
+	var/atom/movable/screen/map_view/cam_screen
 	/// All the plane masters that need to be applied.
 	var/list/cam_plane_masters
-	var/obj/screen/background/cam_background
+	var/atom/movable/screen/background/cam_background
 
-	// Parent object this camera is assigned to. Used for camera bugs
+	/// Parent object this camera is assigned to. Used for camera bugs
 	var/atom/movable/parent
 
 	/// is the console silent when switching cameras?
@@ -29,7 +36,7 @@
 /obj/machinery/computer/security/ui_host()
 	return parent ? parent : src
 
-/obj/machinery/computer/security/Initialize()
+/obj/machinery/computer/security/Initialize(mapload)
 	. = ..()
 	// Initialize map objects
 	map_name = "camera_console_[UID()]_map"
@@ -39,25 +46,24 @@
 	cam_screen.del_on_map_removal = FALSE
 	cam_screen.screen_loc = "[map_name]:1,1"
 	cam_plane_masters = list()
-	for(var/plane in subtypesof(/obj/screen/plane_master))
-		var/obj/screen/instance = new plane()
-		instance.assigned_map = map_name
-		instance.del_on_map_removal = FALSE
-		instance.screen_loc = "[map_name]:CENTER"
-		cam_plane_masters += instance
+	for(var/plane in subtypesof(/atom/movable/screen/plane_master))
+		cam_plane_masters += plane
 	cam_background = new
 	cam_background.assigned_map = map_name
 	cam_background.del_on_map_removal = FALSE
 
 /obj/machinery/computer/security/Destroy()
+	STOP_PROCESSING(SSobj, src)
 	qdel(cam_screen)
-	QDEL_LIST_CONTENTS(cam_plane_masters)
 	qdel(cam_background)
 	return ..()
 
-/obj/machinery/computer/security/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
+/obj/machinery/computer/security/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/computer/security/ui_interact(mob/user, datum/tgui/ui = null)
 	// Update UI
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+	ui = SStgui.try_update_ui(user, src, ui)
 	// Show static if can't use the camera
 	if(!active_camera?.can_use())
 		show_camera_static()
@@ -66,25 +72,41 @@
 		var/is_living = isliving(user)
 		// Ghosts shouldn't count towards concurrent users, which produces
 		// an audible terminal_on click.
+		watchers += user_uid
 		if(is_living)
-			watchers += user_uid
+			living_watchers += user_uid
 		// Turn on the console
-		if(length(watchers) == 1 && is_living)
+		if(length(living_watchers) == 1 && is_living)
 			if(!silent_console)
 				playsound(src, 'sound/machines/terminal_on.ogg', 25, FALSE)
 			use_power(active_power_consumption)
 		// Register map objects
 		user.client.register_map_obj(cam_screen)
 		for(var/plane in cam_plane_masters)
-			user.client.register_map_obj(plane)
+			var/atom/movable/screen/plane_master/instance = new plane()
+			instance.assigned_map = map_name
+			instance.del_on_map_removal = FALSE
+			instance.screen_loc = "[map_name]:CENTER"
+			instance.backdrop(user)
+
+			user.client.register_map_obj(instance)
 		user.client.register_map_obj(cam_background)
 		// Open UI
-		ui = new(user, src, ui_key, "CameraConsole", name, 870, 708, master_ui, state)
+		ui = new(user, src, "CameraConsole", name)
 		ui.open()
+		START_PROCESSING(SSobj, src)
+
+/obj/machinery/computer/security/process()
+	update_viewer()
+	if(length(watchers))
+		return
+	STOP_PROCESSING(SSobj, src)
 
 /obj/machinery/computer/security/ui_close(mob/user)
 	..()
 	watchers -= user.UID()
+	living_watchers -= user.UID()
+	user.client.clear_map(map_name)
 
 /obj/machinery/computer/security/ui_data()
 	var/list/data = list()
@@ -121,30 +143,32 @@
 		active_camera = C
 		if(!silent_console)
 			playsound(src, get_sfx("terminal_type"), 25, FALSE)
+		return update_viewer()
 
-		// Show static if can't use the camera
-		if(!active_camera?.can_use())
-			show_camera_static()
-			return TRUE
-
-		var/list/visible_turfs = list()
-		for(var/turf/T in view(C.view_range, get_turf(C)))
-			visible_turfs += T
-
-		var/list/bbox = get_bbox_of_atoms(visible_turfs)
-		var/size_x = bbox[3] - bbox[1] + 1
-		var/size_y = bbox[4] - bbox[2] + 1
-
-		cam_screen.vis_contents = visible_turfs
-		cam_background.icon_state = "clear"
-		cam_background.fill_rect(1, 1, size_x, size_y)
-
+/obj/machinery/computer/security/proc/update_viewer()
+	// Show static if can't use the camera
+	if(!active_camera?.can_use())
+		show_camera_static()
 		return TRUE
+
+	var/list/visible_turfs = list()
+	for(var/turf/T in view(active_camera.view_range, get_turf(active_camera)))
+		visible_turfs += T
+
+	var/list/bbox = get_bbox_of_atoms(visible_turfs)
+	var/size_x = bbox[3] - bbox[1] + 1
+	var/size_y = bbox[4] - bbox[2] + 1
+
+	cam_screen.vis_contents = visible_turfs
+	cam_background.icon_state = "clear"
+	cam_background.fill_rect(1, 1, size_x, size_y)
+
+	return TRUE
 
 // Returns the list of cameras accessible from this computer
 /obj/machinery/computer/security/proc/get_available_cameras()
 	var/list/L = list()
-	for (var/obj/machinery/camera/C in GLOB.cameranet.cameras)
+	for(var/obj/machinery/camera/C in GLOB.cameranet.cameras)
 		if((is_away_level(z) || is_away_level(C.z)) && (C.z != z))//if on away mission, can only receive feed from same z_level cameras
 			continue
 		L.Add(C)
@@ -157,7 +181,7 @@
 			stack_trace("Camera in a cameranet has a non-list camera network")
 			continue
 		var/list/tempnetwork = C.network & network
-		if(tempnetwork.len)
+		if(length(tempnetwork))
 			D["[C.c_tag]"] = C
 	return D
 
@@ -168,8 +192,8 @@
 	ui_interact(user)
 
 /obj/machinery/computer/security/attack_ai(mob/user)
-	if(isAI(user))
-		to_chat(user, "<span class='notice'>You realise it's kind of stupid to access a camera console when you have the entire camera network at your metaphorical fingertips.</span>")
+	if(is_ai(user))
+		to_chat(user, SPAN_NOTICE("You realise it's kind of stupid to access a camera console when you have the entire camera network at your metaphorical fingertips."))
 		return
 
 	ui_interact(user)
@@ -184,7 +208,7 @@
 	. = TRUE
 	if(!I.use_tool(src, user, 0, volume = I.tool_volume))
 		return
-	var/direction = input(user, "Which direction?", "Select direction!") as null|anything in list("North", "East", "South", "West", "Centre")
+	var/direction = tgui_input_list(user, "Which direction?", "Select direction", list("North", "East", "South", "West", "Centre"))
 	if(!direction || !Adjacent(user))
 		return
 	pixel_x = 0
@@ -216,18 +240,21 @@
 	icon_state = "entertainment_console"
 	icon_screen = "entertainment_off"
 	light_color = "#FFEEDB"
-	light_range_on = 0
 	network = list("news")
-	luminosity = 0
 	circuit = null
 	/// Icon utilised when feeds_on is true
 	var/icon_screen_on = "entertainment"
 	/// Used to detect how many video cameras are active
 	var/feeds_on = 0
 
-/obj/machinery/computer/security/telescreen/entertainment/Initialize()
+/obj/machinery/computer/security/telescreen/entertainment/Initialize(mapload)
 	. = ..()
 	set_light(1, LIGHTING_MINIMUM_POWER) //so byond doesnt cull, and we get an emissive appearance
+	GLOB.telescreens += src
+
+/obj/machinery/computer/security/telescreen/entertainment/Destroy()
+	GLOB.telescreens -= src
+	return ..()
 
 /obj/machinery/computer/security/telescreen/entertainment/update_overlays()
 	if(feeds_on)
@@ -268,6 +295,9 @@
 	if(default_unfasten_wrench(user, I, time = 4 SECONDS))
 		return TRUE
 
+/obj/machinery/computer/security/telescreen/entertainment/television/multitool_act(mob/user, obj/item/I)
+	return
+
 /obj/machinery/computer/security/telescreen/entertainment/television/on_deconstruction()
 	return
 
@@ -297,59 +327,67 @@
 	icon_keyboard = "power_key"
 	icon_screen = "engie_cams"
 	light_color = "#FAC54B"
-	network = list("Power Alarms","Atmosphere Alarms","Fire Alarms")
+	network = list()
 	circuit = /obj/item/circuitboard/camera/engineering
+
+/obj/machinery/computer/security/engineering/Initialize(mapload)
+	. = ..()
+	network = list()
+	var/area/console_area = get_area(src)
+	network += console_area.fire_cam_network
+	network += console_area.power_cam_network
+	network += console_area.atmos_cam_network
 
 /obj/machinery/computer/security/telescreen/engine
 	name = "engine monitor"
-	desc = "A telescreen that connects to the engine's camera network.";
+	desc = "A telescreen that connects to the engine's camera network."
 	network = list("engine")
 	circuit = /obj/item/circuitboard/camera/engine
 
 /obj/machinery/computer/security/telescreen/research
 	name = "research monitor"
-	desc = "Used for watching the horrors within the test chamber.";
+	desc = "Used for watching the horrors within the test chamber."
 	network = list("TestChamber")
 	circuit = /obj/item/circuitboard/camera/research
 
 /obj/machinery/computer/security/telescreen/rd
 	name = "research director monitor"
-	desc = "Used for watching the RD's goons from the safety of his office.";
-	network = list("Research","Research Outpost","RD","MiniSat")
+	desc = "Used for watching the RD's goons from the safety of his office."
+	network = list("Research", "RD", "MiniSat")
 	circuit = /obj/item/circuitboard/camera/rd
 
 /obj/machinery/computer/security/telescreen/prison
 	name = "prison monitor"
-	desc = "Used for watching Prison Wing holding areas.";
+	desc = "Used for watching Prison Wing holding areas."
 	network = list("Prison")
 	circuit = /obj/item/circuitboard/camera/prison
 
 /obj/machinery/computer/security/telescreen/interrogation
 	name = "interrogation monitor"
-	desc = "Used for watching interrogations.";
+	desc = "Used for watching interrogations."
 	network = list("Interrogation")
 	circuit = /obj/item/circuitboard/camera/interrogation
 
 /obj/machinery/computer/security/telescreen/minisat
 	name = "minisat monitor"
-	desc = "Used for watching areas on the MiniSat.";
-	network = list("MiniSat","tcomm")
+	desc = "Used for watching areas on the MiniSat."
+	network = list("MiniSat")
 	circuit = /obj/item/circuitboard/camera/minisat
 
 /obj/machinery/computer/security/telescreen/upload
 	name = "ai upload monitor"
-	desc = "Used for watching the AI Upload.";
+	desc = "Used for watching the AI Upload."
 	network = list("AIUpload")
 	circuit = /obj/item/circuitboard/camera/upload
 
 /obj/machinery/computer/security/telescreen/vault
 	name = "vault monitor"
-	desc = "Used for watching the vault.";
+	desc = "Used for watching the vault."
 	network = list("vault")
 	circuit = /obj/item/circuitboard/camera/vault
 
 /obj/machinery/computer/security/telescreen/turbine
 	name = "turbine vent monitor"
-	desc = "Used for watching the turbine vent.";
+	desc = "Used for watching the turbine vent."
 	network = list("Turbine")
 	circuit = /obj/item/circuitboard/camera/turbine

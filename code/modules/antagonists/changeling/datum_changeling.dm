@@ -1,3 +1,5 @@
+RESTRICT_TYPE(/datum/antagonist/changeling)
+
 /datum/antagonist/changeling
 	name = "Changeling"
 	roundend_category = "changelings"
@@ -36,21 +38,19 @@
 	var/sting_range = 2
 	/// The changeling's identifier when speaking in the hivemind, i.e. "Mr. Delta 123".
 	var/changelingID = "Changeling"
-	/// The current amount of genetic damage incurred from power use.
-	var/genetic_damage = 0
 	/// If the changeling is in the process of absorbing someone.
 	var/is_absorbing = FALSE
 	/// The amount of points available to purchase changeling abilities.
-	var/genetic_points = 10
-	/// A name that will display in place of the changeling's real name when speaking.
-	var/mimicing = ""
+	var/genetic_points = 20
 	/// If the changeling can respec their purchased abilities.
 	var/can_respec = FALSE
 	/// The current sting power the changeling has active.
 	var/datum/action/changeling/sting/chosen_sting
 	/// If the changeling is in the process of regenerating from their fake death.
 	var/regenerating = FALSE
-
+	blurb_text_color = COLOR_PURPLE
+	blurb_text_outline_width = 1
+	boss_title = "Greater Hivemind"
 
 /datum/antagonist/changeling/New()
 	..()
@@ -60,7 +60,6 @@
 		purchaseable_powers = get_powers_of_type(CHANGELING_PURCHASABLE_POWER)
 
 /datum/antagonist/changeling/on_gain()
-	SSticker.mode.changelings |= owner
 	var/honorific = owner.current.gender == FEMALE ? "Ms." : "Mr."
 	if(length(GLOB.possible_changeling_IDs))
 		changelingID = pick(GLOB.possible_changeling_IDs)
@@ -79,19 +78,24 @@
 	..()
 
 /datum/antagonist/changeling/Destroy()
-	SSticker.mode.changelings -= owner
-	chosen_sting = null
 	QDEL_LIST_CONTENTS(acquired_powers)
 	STOP_PROCESSING(SSobj, src)
+	chosen_sting = null
 	return ..()
 
+/datum/antagonist/changeling/add_owner_to_gamemode()
+	SSticker.mode.changelings |= owner
+
+/datum/antagonist/changeling/remove_owner_from_gamemode()
+	SSticker.mode.changelings -= owner
+
 /datum/antagonist/changeling/greet()
-	..()
+	. = ..()
 	SEND_SOUND(owner.current, sound('sound/ambience/antag/ling_alert.ogg'))
-	to_chat(owner.current, "<span class='danger'>Remember: you get all of their absorbed DNA if you absorb a fellow changeling.</span>")
+	. += SPAN_DANGER("Use say \":g message\" to communicate with your fellow changelings. Remember: you get all of their absorbed DNA if you absorb a fellow changeling.")
 
 /datum/antagonist/changeling/farewell()
-	to_chat(owner.current, "<span class='biggerdanger'><B>You grow weak and lose your powers! You are no longer a changeling and are stuck in your current form!</span>")
+	to_chat(owner.current, SPAN_BIGGERDANGER("<b>You grow weak and lose your powers! You are no longer a changeling and are stuck in your current form!</b>"))
 
 /datum/antagonist/changeling/apply_innate_effects(mob/living/mob_override)
 	var/mob/living/L = ..()
@@ -99,11 +103,12 @@
 		START_PROCESSING(SSobj, src)
 	add_new_languages(L.languages) // Absorb the languages of the new body.
 	update_languages() // But also, give the changeling the languages they've already absorbed before this.
+	L.add_language("Changeling")
 	// If there's a mob_override, this is a body transfer, and therefore we should give them back their powers they had while in the old body.
 	if(mob_override)
 		for(var/datum/action/changeling/power in acquired_powers)
 			power.Grant(L)
-	// Else, this is their first time gaining the datum.
+	// Else, this is their first time gaining the datum, or they're transfering from a headslug into a monkey.
 	else
 		for(var/power_type in innate_powers)
 			give_power(new power_type, L)
@@ -126,15 +131,16 @@
 	if(L.hud_used?.lingstingdisplay)
 		L.hud_used.lingstingdisplay.invisibility = 101
 		L.hud_used.lingchemdisplay.invisibility = 101
+	L.remove_language("Changeling")
 	remove_unnatural_languages(L)
 	UnregisterSignal(L, COMSIG_MOB_DEATH)
 	// If there's a mob_override, this is a body transfer, and therefore we should only remove their powers from the old body.
 	if(mob_override)
 		for(var/datum/action/changeling/power in acquired_powers)
 			power.Remove(L)
-	// Else, they're losing the datum.
+	// Else, they're losing the datum, or transferring into a headslug. Fully remove and delete all powers.
 	else
-		respec(FALSE)
+		respec(FALSE, FALSE)
 
 	var/mob/living/carbon/C = L
 
@@ -151,47 +157,57 @@
  * If they have two objectives as well as absorb, they must survive rather than escape.
  */
 /datum/antagonist/changeling/give_objectives()
-	var/datum/objective/absorb/absorb = new
-	absorb.gen_amount_goal(6, 8)
-	absorb.owner = owner
-	objectives += absorb
+	add_antag_objective(/datum/objective/absorb)
 
 	if(prob(60))
-		add_objective(/datum/objective/steal)
+		add_antag_objective(/datum/objective/steal)
+	else if(prob(10))
+		add_antag_objective(/datum/objective/protect)
 	else
-		add_objective(/datum/objective/debrain)
+		add_antag_objective(/datum/objective/debrain)
 
 	var/list/active_ais = active_ais()
 	if(length(active_ais) && prob(4)) // Leaving this at a flat chance for now, problems with the num_players() proc due to latejoin antags.
-		add_objective(/datum/objective/destroy)
+		add_antag_objective(/datum/objective/destroy)
 	else
-		var/datum/objective/assassinate/kill_objective = add_objective(/datum/objective/assassinate)
+		var/datum/objective/assassinate/kill_objective = add_antag_objective(/datum/objective/assassinate)
 		var/mob/living/carbon/human/H = kill_objective.target?.current
 
-		if(!(locate(/datum/objective/escape) in owner.get_all_objectives()) && H && !HAS_TRAIT(H, TRAIT_GENELESS))
+		if(!(locate(/datum/objective/escape) in owner.get_all_objectives(include_team = FALSE)) && H && !HAS_TRAIT(H, TRAIT_GENELESS))
 			var/datum/objective/escape/escape_with_identity/identity_theft = new(assassinate = kill_objective)
-			identity_theft.owner = owner
-			objectives += identity_theft
+			add_antag_objective(identity_theft)
 
-	if(!(locate(/datum/objective/escape) in owner.get_all_objectives()))
+	if(!(locate(/datum/objective/escape) in owner.get_all_objectives(include_team = FALSE)))
 		if(prob(70))
-			add_objective(/datum/objective/escape)
+			add_antag_objective(/datum/objective/escape)
 		else
-			add_objective(/datum/objective/escape/escape_with_identity) // If our kill target has no genes, 30% time pick someone else to steal the identity of
+			add_antag_objective(/datum/objective/escape/escape_with_identity) // If our kill target has no genes, 30% time pick someone else to steal the identity of
 
 /datum/antagonist/changeling/process()
 	if(!owner || !owner.current)
 		return PROCESS_KILL
 	var/mob/living/carbon/human/H = owner.current
+	if(H.stat == DEAD)
+		chem_charges = clamp(0, chem_charges + chem_recharge_rate - chem_recharge_slowdown, chem_storage * 0.5)
+	else
+		chem_charges = clamp(0, chem_charges + chem_recharge_rate - chem_recharge_slowdown, chem_storage)
+	update_chem_charges_ui(H)
+
+/datum/antagonist/changeling/exfiltrate(mob/living/carbon/human/extractor, obj/item/radio/radio)
+	remove_changeling_powers(FALSE)
+	var/datum/action/changeling/power = new /datum/action/changeling/transform
+	power.Grant(extractor)
+	if(isplasmaman(extractor))
+		extractor.equipOutfit(/datum/outfit/admin/ghostbar_antag/changeling/plasmaman)
+	else
+		extractor.equipOutfit(/datum/outfit/admin/ghostbar_antag/changeling)
+	radio.autosay("<b>--ZZZT!- Welcome home, [extractor.real_name]. -ZZT!-</b>", "Changeling Hive", "Security")
+	SSblackbox.record_feedback("tally", "successful_extraction", 1, "Changeling")
+
+/datum/antagonist/changeling/proc/update_chem_charges_ui(mob/living/carbon/human/H = owner.current)
 	if(H.hud_used?.lingchemdisplay)
 		H.hud_used.lingchemdisplay.invisibility = 0
 		H.hud_used.lingchemdisplay.maptext = "<div align='center' valign='middle' style='position:relative; top:0px; left:6px'><font face='Small Fonts' color='#dd66dd'>[round(chem_charges)]</font></div>"
-	if(H.stat == DEAD)
-		chem_charges = clamp(0, chem_charges + chem_recharge_rate - chem_recharge_slowdown, chem_storage * 0.5)
-		genetic_damage = directional_bounded_sum(genetic_damage, -1, LING_DEAD_GENETIC_DAMAGE_HEAL_CAP, 0)
-	else // Not dead? no chem/genetic_damage caps.
-		chem_charges = clamp(0, chem_charges + chem_recharge_rate - chem_recharge_slowdown, chem_storage)
-		genetic_damage = max(0, genetic_damage - 1)
 
 /**
  * Respec the changeling's powers after first checking if they're able to respec.
@@ -199,30 +215,31 @@
 /datum/antagonist/changeling/proc/try_respec()
 	var/mob/living/carbon/human/H = owner.current
 	if(!ishuman(H) || issmall(H))
-		to_chat(H, "<span class='danger'>We can't readapt our evolutions in this form!</span>")
+		to_chat(H, SPAN_DANGER("We can't readapt our evolutions in this form!"))
 		return FALSE
 	if(can_respec)
-		to_chat(H, "<span class='notice'>We have removed our evolutions from this form, and are now ready to readapt.</span>")
+		to_chat(H, SPAN_NOTICE("We have removed our evolutions from this form, and are now ready to readapt."))
 		respec()
 		can_respec = FALSE
 		return TRUE
 	else
-		to_chat(H, "<span class='danger'>You lack the power to readapt your evolutions!</span>")
+		to_chat(H, SPAN_DANGER("You lack the power to readapt your evolutions!"))
 		return FALSE
 
 /**
  * Resets a changeling to the point they were when they first became a changeling, i.e no genetic points to spend, no non-innate powers, etc.
  */
-/datum/antagonist/changeling/proc/respec(keep_innate_powers = TRUE)
+/datum/antagonist/changeling/proc/respec(keep_innate_powers = TRUE, reset_genetic_points = TRUE)
 	remove_changeling_powers(keep_innate_powers)
 	chosen_sting = null
-	genetic_points = initial(genetic_points)
+	if(reset_genetic_points)
+		genetic_points = initial(genetic_points)
 	sting_range = initial(sting_range)
 	chem_storage = initial(chem_storage)
 	chem_recharge_rate = initial(chem_recharge_rate)
 	chem_charges = min(chem_charges, chem_storage)
 	chem_recharge_slowdown = initial(chem_recharge_slowdown)
-	mimicing = null
+	mimicking = null
 
 /**
  * Removes a changeling's abilities.
@@ -244,12 +261,24 @@
  * * power_type - should be a define related to [/datum/action/changeling/var/power_type].
  */
 /datum/antagonist/changeling/proc/get_powers_of_type(power_type)
+	var/list/station_trait_restrictions = list(
+		// "Station trait" = Replace 1st with 2nd when trait active
+		STATION_TRAIT_CYBERNETIC_REVOLUTION = list(/datum/action/changeling/dissonant_shriek, /datum/action/changeling/dissonant_shriek/cyberrev)
+	)
+
 	var/list/powers = list()
 	for(var/power_path in subtypesof(/datum/action/changeling))
 		var/datum/action/changeling/power = power_path
 		if(initial(power.power_type) != power_type)
 			continue
 		powers += power_path
+
+	for(var/trait in station_trait_restrictions)
+		if(HAS_TRAIT(SSstation, trait))
+			powers -= station_trait_restrictions[trait][1]
+		else
+			powers -= station_trait_restrictions[trait][2]
+
 	return powers
 
 /**
@@ -265,6 +294,22 @@
 		genetic_points -= power.dna_cost
 	acquired_powers += power
 	power.on_purchase(changeling || owner.current, src)
+
+/**
+ * Removes all `power_type` abilities that the changeling has. Refunds the cost of the power from our genetic points.
+ *
+ * Arugments:
+ * * datum/action/changeling/power - the typepath power to remove from the changeling.
+ * * refund_cost - if we should refund genetic points when giving the power
+ */
+/datum/antagonist/changeling/proc/remove_specific_power(datum/action/changeling/power_type, refund_cost = TRUE)
+	for(var/datum/action/changeling/power in acquired_powers)
+		if(!istype(power, power_type))
+			continue
+		if(refund_cost)
+			genetic_points -= power.dna_cost
+		acquired_powers -= power
+		qdel(power)
 
 /**
  * Store the languages from the `new_languages` list into the `absorbed_languages` list. Teaches the changeling the new languages.
@@ -329,7 +374,7 @@
  * * datum/dna/new_dna - the DNA to store
  */
 /datum/antagonist/changeling/proc/store_dna(datum/dna/new_dna)
-	for(var/datum/objective/escape/escape_with_identity/E in objectives)
+	for(var/datum/objective/escape/escape_with_identity/E in owner.get_all_objectives()) // this should consider all objectives, in case admins reroll it
 		if(E.target_real_name == new_dna.real_name)
 			protected_dna |= new_dna
 			return
@@ -351,7 +396,7 @@
 			continue
 		names[DNA.real_name] = DNA
 
-	var/chosen_name = input(message, title, null) as null|anything in names
+	var/chosen_name = tgui_input_list(owner.current, message, title, names)
 	if(!chosen_name)
 		return
 
@@ -398,24 +443,23 @@
 /datum/antagonist/changeling/proc/can_absorb_dna(mob/living/carbon/target)
 	var/mob/living/carbon/user = owner.current
 	if(using_stale_dna())//If our current DNA is the stalest, we gotta ditch it.
-		to_chat(user, "<span class='warning'>The DNA we are wearing is stale. Transform and try again.</span>")
+		to_chat(user, SPAN_WARNING("The DNA we are wearing is stale. Transform and try again."))
 		return FALSE
 	if(!target || !target.dna)
-		to_chat(user, "<span class='warning'>This creature does not have any DNA.</span>")
+		to_chat(user, SPAN_WARNING("This creature does not have any DNA."))
 		return FALSE
 	var/mob/living/carbon/human/T = target
 	if(!istype(T) || issmall(T))
-		to_chat(user, "<span class='warning'>[T] is not compatible with our biology.</span>")
+		to_chat(user, SPAN_WARNING("[T] is not compatible with our biology."))
 		return FALSE
 	if(HAS_TRAIT(T, TRAIT_BADDNA) || HAS_TRAIT(T, TRAIT_HUSK) || HAS_TRAIT(T, TRAIT_SKELETONIZED))
-		to_chat(user, "<span class='warning'>DNA of [target] is ruined beyond usability!</span>")
+		to_chat(user, SPAN_WARNING("DNA of [target] is ruined beyond usability!"))
 		return FALSE
 	if(HAS_TRAIT(T, TRAIT_GENELESS))
-		to_chat(user, "<span class='warning'>This creature does not have DNA!</span>")
+		to_chat(user, SPAN_WARNING("This creature does not have DNA!"))
 		return FALSE
 	if(get_dna(target.dna))
-		to_chat(user, "<span class='warning'>We already have this DNA in storage!</span>")
-		return FALSE
+		to_chat(user, SPAN_WARNING("We already have this DNA in storage."))
 	return TRUE
 
 /datum/antagonist/changeling/proc/on_death(mob/living/L, gibbed)
@@ -427,9 +471,13 @@
 		return
 
 	if(!H.get_organ_slot("brain"))
-		to_chat(L, "<span class='notice'>The brain is a useless organ to us, we are able to regenerate!</span>")
+		to_chat(L, SPAN_NOTICE("The brain is a useless organ to us, we are able to regenerate!"))
 	else
-		to_chat(L, "<span class='notice'>While our current form may be lifeless, this is not the end for us as we can still regenerate!</span>")
+		to_chat(L, SPAN_NOTICE("While our current form may be lifeless, this is not the end for us as we can still regenerate!"))
 
-/proc/ischangeling(mob/M)
-	return M.mind?.has_antag_datum(/datum/antagonist/changeling)
+/datum/antagonist/changeling/custom_blurb()
+	return "We awaken on the [station_name()], [get_area_name(owner.current, TRUE)]...\nWe have our tasks to attend to..."
+
+// Ling Stronk
+/datum/antagonist/changeling/antag_event_resource_cost()
+	return list(ASSIGNMENT_SECURITY = 3)

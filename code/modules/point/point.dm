@@ -7,11 +7,11 @@
  *
  * Not intended as a replacement for the mob verb
  */
-/atom/movable/proc/point_at(atom/pointed_atom)
+/atom/movable/proc/point_at(atom/pointed_atom, make_bubble)
 	if(!isturf(loc))
 		return
 
-	if((pointed_atom in src) || (pointed_atom.loc in src))
+	if(make_bubble || (src != pointed_atom && contains(pointed_atom)))
 		create_point_bubble_from_atom(pointed_atom)
 		return
 
@@ -21,6 +21,8 @@
 
 	var/turf/our_tile = get_turf(src)
 	var/obj/visual = new /obj/effect/temp_visual/point(our_tile, invisibility)
+
+	SEND_SIGNAL(src, COMSIG_MOVABLE_POINTED, pointed_atom, visual)
 
 	animate(visual, pixel_x = (tile.x - our_tile.x) * world.icon_size + pointed_atom.pixel_x, pixel_y = (tile.y - our_tile.y) * world.icon_size + pointed_atom.pixel_y, time = 1.7, easing = EASE_OUT)
 
@@ -75,7 +77,7 @@
 	var/mutable_appearance/pointed_atom_appearance = new(pointed_atom.appearance)
 
 	var/hover_outline_index = pointed_atom.get_filter("hover_outline")
-	if (!isnull(hover_outline_index))
+	if(!isnull(hover_outline_index))
 		pointed_atom_appearance.filters.Cut(hover_outline_index, hover_outline_index + 1)
 
 	create_point_bubble(pointed_atom_appearance, include_arrow)
@@ -129,8 +131,7 @@
  */
 /mob/verb/pointed(atom/A as mob|obj|turf in view())
 	set name = "Point To"
-	set category = "Object"
-
+	set category = null
 	if(next_move >= world.time)
 		return
 
@@ -144,11 +145,12 @@
 /// possibly delayed verb that finishes the pointing process starting in [/mob/verb/pointed()].
 /// either called immediately or in the tick after pointed() was called, as per the [DEFAULT_QUEUE_OR_CALL_VERB()] macro
 /mob/proc/run_pointed(atom/A)
-	if(A.loc in src) // Object is inside a container on the mob. It's not part of the verb's list since it's not in view and requires middle clicking.
-		point_at(A)
+	var/check_if_inside = src != A && contains(A) // extra check so we don't display ourselves in a bubble
+	if(check_if_inside) // Object is inside a container on the mob. It's not part of the verb's list since it's not in view and requires middle clicking.
+		point_at(A, check_if_inside) // send check_if_inside so we don't perform same check twice
 		return TRUE
 
-	if(client && !(A in view(client.view, src)))
+	if(client && !(A in view(client.maxview(), src)))
 		return FALSE
 
 	point_at(A)

@@ -10,6 +10,7 @@
 
 // This proc gets run before the game starts when the holiday is activated. Do festive shit here.
 /datum/holiday/proc/celebrate()
+	return
 
 // When the round starts, this proc is ran to get a text message to display to everyone to wish them a happy holiday
 /datum/holiday/proc/greet()
@@ -95,7 +96,6 @@
 
 /datum/holiday/april_fools
 	name = APRIL_FOOLS
-	begin_day = 1
 	begin_month = APRIL
 	end_day = 8 //7 days extra so everyone can enjoy the festivities
 
@@ -111,7 +111,6 @@
 
 /datum/holiday/labor
 	name = "Labor Day"
-	begin_day = 1
 	begin_month = MAY
 
 /datum/holiday/firefighter
@@ -123,10 +122,9 @@
 
 /datum/holiday/doctor
 	name = "Doctor's Day"
-	begin_day = 1
 	begin_month = JULY
 
-/datum/holiday/UFO
+/datum/holiday/ufo
 	name = "UFO Day"
 	begin_day = 2
 	begin_month = JULY
@@ -192,7 +190,6 @@
 
 /datum/holiday/vegan
 	name = "Vegan Day"
-	begin_day = 1
 	begin_month = NOVEMBER
 
 /datum/holiday/kindness
@@ -211,7 +208,7 @@
 	begin_month = NOVEMBER
 
 /datum/holiday/hello/greet()
-	return "[pick(list("Aloha", "Bonjour", "Hello", "Hi", "Greetings", "Salutations", "Bienvenidos", "Hola", "Howdy"))]! " + ..()
+	return "[pick("Aloha", "Bonjour", "Hello", "Hi", "Greetings", "Salutations", "Bienvenidos", "Hola", "Howdy")]! " + ..()
 
 /datum/holiday/human_rights
 	name = "Human-Rights Day"
@@ -323,20 +320,17 @@
 //	to_chat(world, "Easter calculates to be on [begin_day] of [begin_month] ([days_early] early) to [end_day] of [end_month] ([days_extra] extra) for 20[yy]")
 	return ..()
 
-
-/client/proc/Set_Holiday(T as text|null)
-	set name = ".Set Holiday"
-	set category = "Event"
-	set desc = "Force-set the Holiday variable to make the game think it's a certain day."
-	if(!check_rights(R_SERVER))	return
-
+USER_VERB(set_holiday, R_SERVER, "Set Holiday", \
+		"Force-set the Holiday variable to make the game think it's a certain day.", \
+		VERB_CATEGORY_EVENT, \
+		T as text|null)
 	var/list/choice = list()
 	for(var/H in subtypesof(/datum/holiday))
 		choice += "[H]"
 
 	choice += "--CANCEL--"
 
-	var/selected = input("What holiday would you like to force?","Holiday Forcing","--CANCEL--") in choice
+	var/selected = input(client, "What holiday would you like to force?","Holiday Forcing","--CANCEL--") in choice
 
 	if(selected == "--CANCEL--")
 		return
@@ -355,5 +349,5 @@
 	//update our hub status
 	world.update_status()
 
-	message_admins("<span class='notice'>ADMIN: Event: [key_name_admin(src)] force-set Holiday to \"[H]\"</span>")
-	log_admin("[key_name(src)] force-set Holiday to \"[H]\"")
+	message_admins(SPAN_NOTICE("ADMIN: Event: [key_name_admin(client)] force-set Holiday to \"[H]\""))
+	log_admin("[key_name(client)] force-set Holiday to \"[H]\"")

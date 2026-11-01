@@ -49,8 +49,11 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 	/// Did inits finish with no one logged in
 	var/initializations_finished_with_no_players_logged_in
 
-	/// The type of the last subsystem to be fire()'d.
-	var/last_type_processed
+	/// The last subsystem to be fire()'d.
+	var/datum/controller/subsystem/last_processed
+
+	/// Cache for the loading screen - cleared after
+	var/list/ss_in_init_order = list()
 
 	/// Start of queue linked list
 	var/datum/controller/subsystem/queue_head
@@ -80,7 +83,7 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 
 /datum/controller/master/New()
 	if(!random_seed)
-		#ifdef UNIT_TESTS
+		#ifdef TEST_RUNNER
 		random_seed = 29051994
 		#else
 		random_seed = rand(1, 1e9)
@@ -157,8 +160,8 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 /datum/controller/master/Recover()
 	var/msg = "## DEBUG: [time2text(world.timeofday)] MC restarted. Reports:\n"
 	for(var/varname in Master.vars)
-		switch (varname)
-			if("name", "tag", "bestF", "type", "parent_type", "vars", "statclick") // Built-in junk.
+		switch(varname)
+			if("name", "tag", "bestF", "type", "parent_type", "vars") // Built-in junk.
 				continue
 			else
 				var/varval = Master.vars[varname]
@@ -169,7 +172,7 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 					msg += "\t [varname] = [varval]\n"
 	log_world(msg)
 
-	var/datum/controller/subsystem/BadBoy = Master.last_type_processed
+	var/datum/controller/subsystem/BadBoy = Master.last_processed
 	var/FireHim = FALSE
 	if(istype(BadBoy))
 		msg = null
@@ -179,10 +182,10 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 				msg = "The [BadBoy.name] subsystem was the last to fire for 2 controller restarts. It will be recovered now and disabled if it happens again."
 				FireHim = TRUE
 			if(3)
-				msg = "The [BadBoy.name] subsystem seems to be destabilizing the MC and will be offlined. <span class='info'>The following implications are now in effect: [BadBoy.offline_implications]</span>"
+				msg = "The [BadBoy.name] subsystem seems to be destabilizing the MC and will be offlined. [SPAN_NOTICE("The following implications are now in effect: [BadBoy.offline_implications]")]"
 				BadBoy.flags |= SS_NO_FIRE
 		if(msg)
-			to_chat(GLOB.admins, "<span class='boldannounce'>[msg]</span>")
+			to_chat(GLOB.admins, SPAN_BOLDANNOUNCEOOC("[msg]"))
 			log_world(msg)
 
 	if(istype(Master.subsystems))
@@ -192,9 +195,8 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 		current_runlevel = Master.current_runlevel
 		StartProcessing(10)
 	else
-		to_chat(world, "<span class='boldannounce'>The Master Controller is having some issues, we will need to re-initialize EVERYTHING</span>")
+		to_chat(world, SPAN_BOLDANNOUNCEOOC("The Master Controller is having some issues, we will need to re-initialize EVERYTHING"))
 		Initialize(20, TRUE)
-
 
 // Please don't stuff random bullshit here,
 // Make a subsystem, give it the SS_NO_FIRE flag, and do your work in it's Initialize()
@@ -215,21 +217,45 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 	// Sort subsystems by init_order, so they initialize in the correct order.
 	sortTim(subsystems, GLOBAL_PROC_REF(cmp_subsystem_init))
 
-	var/start_timeofday = REALTIMEOFDAY
-	// Initialize subsystems.
-	current_ticklimit = GLOB.configuration.mc.world_init_tick_limit
+	// Get SSs that will init
 	for(var/datum/controller/subsystem/SS in subsystems)
 		if(SS.flags & SS_NO_INIT)
 			continue
+
+		ss_in_init_order += SS
+
+	// Prepare for init text
+	GLOB.title_splash.maptext_x = 96
+	GLOB.title_splash.maptext_y = 32
+	GLOB.title_splash.maptext_width = 480
+	GLOB.title_splash.maptext_height = 480
+
+	var/start_timeofday = REALTIMEOFDAY
+
+	// Initialize subsystems.
+	current_ticklimit = GLOB.configuration.mc.world_init_tick_limit
+
+	for(var/i in 1 to length(ss_in_init_order))
+		var/datum/controller/subsystem/SS = ss_in_init_order[i]
+
+		// Upate the loading screen
+		update_ss_loadingscreen(SS.ss_id, i)
+
+		// Do the do
 		SS.call_init(REALTIMEOFDAY)
 		CHECK_TICK
+
+	// Clear init text stuff
+	ss_in_init_order.Cut()
+	GLOB.title_splash.maptext = null
+
 	current_ticklimit = TICK_LIMIT_RUNNING
 	var/time = (REALTIMEOFDAY - start_timeofday) / 10
 
 	log_startup_progress("Initializations complete within [time] second[time == 1 ? "" : "s"]!")
 
 	if(GLOB.configuration.system.toast_on_init_complete)
-		rustg_create_toast("Paradise SS13", "Server initialization complete")
+		rustlibs_create_toast("Paradise SS13", "Server initialization complete")
 
 	if(GLOB.configuration.general.developer_express_start)
 		SSticker.force_start = TRUE
@@ -283,7 +309,7 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 /datum/controller/master/proc/Loop()
 	. = -1
 	//Prep the loop (most of this is because we want MC restarts to reset as much state as we can, and because
-	// local vars rock
+	// local vars rock)
 
 	//all this shit is here so that flag edits can be refreshed by restarting the MC. (and for speed)
 	var/list/tickersubsystems = list()
@@ -299,15 +325,16 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 		SS.state = SS_IDLE
 		if((SS.flags & (SS_TICKER|SS_BACKGROUND)) == SS_TICKER)
 			tickersubsystems += SS
-			timer += world.tick_lag * rand(1, 5)
+			// Timer subsystems aren't allowed to bunch up, so we offset them a bit
+			timer += world.tick_lag * rand(0, 1)
 			SS.next_fire = timer
 			continue
 
 		var/ss_runlevels = SS.runlevels
 		var/added_to_any = FALSE
-		for(var/I in 1 to GLOB.bitflags.len)
+		for(var/I in 1 to length(GLOB.bitflags))
 			if(ss_runlevels & GLOB.bitflags[I])
-				while(runlevel_sorted_subsystems.len < I)
+				while(length(runlevel_sorted_subsystems) < I)
 					runlevel_sorted_subsystems += list(list())
 				runlevel_sorted_subsystems[I] += SS
 				added_to_any = TRUE
@@ -374,14 +401,15 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 			var/checking_runlevel = current_runlevel
 			if(cached_runlevel != checking_runlevel)
 				//resechedule subsystems
+				var/list/old_subsystems = current_runlevel_subsystems
 				cached_runlevel = checking_runlevel
 				current_runlevel_subsystems = runlevel_sorted_subsystems[cached_runlevel]
-				var/stagger = world.time
-				for(var/I in current_runlevel_subsystems)
-					var/datum/controller/subsystem/SS = I
-					if(SS.next_fire <= world.time)
-						stagger += world.tick_lag * rand(1, 5)
-						SS.next_fire = stagger
+				//now we'll go through all the subsystems we want to offset and give them a next_fire
+				for(var/datum/controller/subsystem/SS as anything in current_runlevel_subsystems)
+					//we only want to offset it if it's new and also behind
+					if(SS.next_fire > world.time || (SS in old_subsystems))
+						continue
+					SS.next_fire = world.time + world.tick_lag * rand(0, DS2TICKS(min(SS.wait, 2 SECONDS)))
 
 			subsystems_to_check = current_runlevel_subsystems
 		else
@@ -403,8 +431,8 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 			continue
 
 		if(queue_head)
-			if(RunQueue() <= 0) //error running queue
-				stack_trace("MC: RunQueue failed. Current error_level is [round(error_level, 0.25)]")
+			if(!RunQueue())
+				stack_trace("MC: RunQueue returned early during [last_processed.name] ([last_processed.last_task()]). Current error_level is [round(error_level, 0.25)].")
 				if(error_level > 1) //skip the first error,
 					if(!SoftReset(tickersubsystems, runlevel_sorted_subsystems))
 						error_level++
@@ -473,7 +501,6 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 /// RunQueue - Run thru the queue of subsystems to run, running them while balancing out their allocated tick precentage
 /// Returns 0 if runtimed, a negitive number for logic errors, and a positive number if the operation completed without errors
 /datum/controller/master/proc/RunQueue()
-	. = 0
 	var/datum/controller/subsystem/queue_node
 	var/queue_node_flags
 	var/queue_node_priority
@@ -503,15 +530,15 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 				queue_node = queue_node.queue_next
 				continue
 
-			if((queue_node_flags & SS_BACKGROUND))
+			if(queue_node_flags & SS_BACKGROUND)
 				if(!bg_calc)
 					current_tick_budget = queue_priority_count_bg
 					bg_calc = TRUE
 			else if(bg_calc)
 				//error state, do sane fallback behavior
-				if(. == 0)
-					log_world("MC: Queue logic failure, non-background subsystem queued to run after a background subsystem: [queue_node] queue_prev:[queue_node.queue_prev]")
-				. = -1
+				var/message = "MC: Queue logic failure, non-background subsystem queued to run after a background subsystem: [queue_node] queue_prev:[queue_node.queue_prev]"
+				log_world(message)
+				stack_trace(message)
 				current_tick_budget = queue_priority_count //this won't even be right, but is the best we have.
 				bg_calc = FALSE
 
@@ -523,9 +550,9 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 				tick_precentage = tick_remaining * (queue_node_priority / current_tick_budget)
 			else
 				//error state
-				if(. == 0)
-					log_world("MC: tick_budget sync error. [json_encode(list(current_tick_budget, queue_priority_count, queue_priority_count_bg, bg_calc, queue_node, queue_node_priority))]")
-				. = -1
+				var/message = "MC: tick_budget sync error. [json_encode(list(current_tick_budget, queue_priority_count, queue_priority_count_bg, bg_calc, queue_node, queue_node_priority))]"
+				log_world(message)
+				stack_trace(message)
 				tick_precentage = tick_remaining //just because we lost track of priority calculations doesn't mean we can't try to finish off the run, if the error state persists, we don't want to stop ticks from happening
 
 			tick_precentage = max(tick_precentage*0.5, tick_precentage-queue_node.tick_overrun)
@@ -535,7 +562,7 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 			ran = TRUE
 
 			queue_node_paused = (queue_node.state == SS_PAUSED || queue_node.state == SS_PAUSING)
-			last_type_processed = queue_node
+			last_processed = queue_node
 
 			queue_node.state = SS_RUNNING
 
@@ -585,8 +612,7 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 
 			queue_node = queue_node.queue_next
 
-	if(. == 0)
-		. = 1
+	return TRUE
 
 //resets the queue, and all subsystems, while filtering out the subsystem lists
 // called if any mc's queue procs runtime or exit improperly.
@@ -631,13 +657,11 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 	log_world("MC: SoftReset: Finished.")
 	. = 1
 
-/datum/controller/master/stat_entry()
-	if(!statclick)
-		statclick = new/obj/effect/statclick/debug(null, "Initializing...", src)
+/datum/controller/master/stat_entry(msg)
 	if(last_init_info)
-		stat("Last Init Info", last_init_info)
-	stat("Byond:", "(FPS:[world.fps]) (TickCount:[world.time / world.tick_lag]) (TickDrift:[round(Master.tickdrift, 1)]([round((Master.tickdrift / (world.time / world.tick_lag)) * 100, 0.1)]%))")
-	stat("Master Controller:", statclick.update("(TickRate:[Master.processing]) (Iteration:[Master.iteration]) (TickLimit: [round(Master.current_ticklimit, 0.1)])"))
+		msg += "Last Init Info: [last_init_info]"
+	msg = "(TickRate:[Master.processing]) (Iteration:[Master.iteration]) (TickLimit: [round(Master.current_ticklimit, 0.1)])"
+	return ..()
 
 // Currently unimplemented
 /datum/controller/master/StartLoadingMap()
@@ -675,3 +699,86 @@ GLOBAL_REAL(Master, /datum/controller/master) = new
 			. = "<font color='#eb4034'>[cpu_var]</font>"
 		if(100 to INFINITY) // >100 = bold red
 			. = "<font color='#eb4034'><b>[cpu_var]</b></font>"
+
+// Updates SS loading stuff on the lobby
+/datum/controller/master/proc/update_ss_loadingscreen(current_ss_id, loaded_amount)
+	// We are done, clear it
+	if(!length(ss_in_init_order))
+		GLOB.title_splash.maptext = null
+		return
+
+	var/list/columns = list()
+	columns += list(list()) // Init our first column
+
+	var/spacer = "        " // 8 characters width space
+	// You can comfortably fit 33 lines of text on the lobby screen, but having an even number makes this easier
+	var/max_height = 32
+	var/either_side = max_height / 2
+
+	var/list/all_rows = list()
+
+	for(var/datum/controller/subsystem/SS in ss_in_init_order)
+		// Handle SS state
+
+		// Loaded - mark it as DONE
+		if(SS.initialized)
+			all_rows += "\[ <font color='#00ff00'>DONE</font> ] [SS.name]"
+
+		// Loading - mark it as LOAD
+		else if(SS.ss_id == current_ss_id)
+			all_rows += "\[ <font color='#ffaa00'>LOAD</font> ] [SS.name]"
+
+		// Not reached yet - mark it as WAIT
+		else
+			all_rows += "\[ <font color='#ff0000'>WAIT</font> ] [SS.name]"
+
+	// Now render it on the lobby image - turn the columns to rows
+
+	// First figure out max length
+	var/col_max = 0
+	for(var/entry in all_rows)
+		var/col_len = length(entry)
+		if(col_len > col_max)
+			col_max = col_len
+
+	var/list/formatted_rows = list()
+
+	for(var/entry in all_rows)
+		var/spaces_needed = col_max - length(entry)
+		var/this_entry = "[entry][add_tspace("", spaces_needed)][spacer]"
+
+		formatted_rows += this_entry
+
+	// Now we have the rows, decide what to show, it needs to scroll fluidly
+	var/list/output_rows = list()
+
+	var/ss_total = length(formatted_rows)
+	if(ss_total <= max_height)
+		// We have less rows than height - show it all
+		output_rows = formatted_rows
+
+	else if(loaded_amount < either_side)
+		// We have loaded less than half the display - show the first height entries
+		for(var/i in 1 to max_height)
+			output_rows += formatted_rows[i]
+
+	else if(loaded_amount > (ss_total - either_side))
+		// We have loaded more than the remaining half, show the last height entries
+		for(var/i in 1 to max_height)
+			// Invert it
+			var/offset_i = ss_total - max_height
+			output_rows += formatted_rows[i + offset_i]
+
+	else
+		// Get the first half of our offset
+		var/firsthalf_offset = loaded_amount - either_side
+		for(var/i in 1 to either_side)
+			output_rows += formatted_rows[i + firsthalf_offset]
+
+		// Get the last half of our offset
+		// If we are at SS 14, we need to take from SS 15 and take the next half onwards
+		for(var/i in 1 to either_side)
+			output_rows += formatted_rows[i + loaded_amount]
+
+
+	GLOB.title_splash.maptext = "<span style='font-family: Courier New; background-color: rgba(39, 39, 39, 0.5);'>\n[output_rows.Join("\n")]\n</span>"

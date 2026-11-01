@@ -4,7 +4,7 @@
 	var/rights
 
 /datum/keybinding/admin/can_use(client/C, mob/M)
-	if(rights && !check_rights(rights, FALSE))
+	if(rights && !check_rights(rights, FALSE, M))
 		return FALSE
 	return !isnull(C.holder) && ..()
 
@@ -20,29 +20,13 @@
 		return
 	SSdebugview.start_processing(C)
 
-/datum/keybinding/admin/msay
-	name = "Msay"
-	keys = list("F4")
-
-/datum/keybinding/admin/msay/down(client/C)
-	. = ..()
-	C.get_mentor_say()
-
-/datum/keybinding/admin/asay
-	name = "Asay"
-	keys = list("F5")
-
-/datum/keybinding/admin/asay/down(client/C)
-	. = ..()
-	C.get_admin_say()
-
 /datum/keybinding/admin/aghost
 	name = "Aghost"
 	keys = list("F6")
 
 /datum/keybinding/admin/aghost/down(client/C)
 	. = ..()
-	C.admin_ghost()
+	SSuser_verbs.invoke_verb(C, /datum/user_verb/admin_ghost)
 
 /datum/keybinding/admin/player_panel
 	name = "Player Panel"
@@ -59,7 +43,7 @@
 
 /datum/keybinding/admin/apm/down(client/C)
 	. = ..()
-	C.cmd_admin_pm_panel()
+	SSuser_verbs.invoke_verb(C, /datum/user_verb/admin_pm_panel)
 
 /datum/keybinding/admin/invisimin
 	name = "Invisimin"
@@ -67,12 +51,4 @@
 
 /datum/keybinding/admin/invisimin/down(client/C)
 	. = ..()
-	C.invisimin()
-
-/datum/keybinding/admin/dsay
-	name = "Dsay"
-	keys = list("F10")
-
-/datum/keybinding/admin/dsay/down(client/C)
-	. = ..()
-	C.get_dead_say()
+	SSuser_verbs.invoke_verb(C, /datum/user_verb/invisimin)

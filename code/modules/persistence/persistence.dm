@@ -21,11 +21,6 @@
 /datum/proc/deserialize(list/data)
 	return
 
-/atom
-	// This var isn't actually used for anything, but is present so that
-	// DM's map reader doesn't forfeit on reading a JSON-serialized map
-	var/map_json_data
-
 // This is so specific atoms can override these, and ignore certain ones
 /atom/proc/vars_to_save()
 	return list("color","dir","icon","icon_state","name","pixel_x","pixel_y")
@@ -81,8 +76,16 @@ in their list
 		throw EXCEPTION("No 'type' field in the data")
 	var/path = text2path(data["type"])
 	if(!path)
-		throw EXCEPTION("Path not found: [path]")
+		throw EXCEPTION("Path not found: [data["type"]]")
 
-	var/atom/movable/thing = new path(loc)
+	// Since Initialize() eats the first argument
+	// we need to pass loc twice for organs, otherwise
+	// they'll never attach to the mob. But if it's passed
+	// for everything, it'll break shit cause it gets passed random args.
+	var/atom/movable/thing
+	if(ispath(path, /obj/item/organ))
+		thing = new path(loc, loc)
+	else
+		thing = new path(loc)
 	thing.deserialize(data)
 	return thing

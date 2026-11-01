@@ -1,4 +1,4 @@
-/obj/effect/proc_holder/spell/touch/alien_spell
+/datum/spell/touch/alien_spell
 	name = "Basetype Alien spell"
 	desc = "You should not see this in game, if you do file a github report!"
 	hand_path = "/obj/item/melee/touch_attack/alien"
@@ -6,6 +6,7 @@
 	base_cooldown = 1
 	action_background_icon_state = "bg_alien"
 	clothes_req = FALSE
+	antimagic_flags = NONE
 	create_attack_logs = FALSE
 	/// Every alien spell creates only logs, no attack messages on someone placing weeds, but you DO get attack messages on neurotoxin and corrosive acid
 	create_custom_logs = TRUE
@@ -15,24 +16,20 @@
 	var/plasma_cost = 0
 	action_icon_state = "gib"
 
-/obj/effect/proc_holder/spell/touch/alien_spell/Initialize(mapload)
-	. = ..()
+/datum/spell/touch/alien_spell/New()
+	..()
 	if(plasma_cost)
 		name = "[name] ([plasma_cost])"
 
-/obj/effect/proc_holder/spell/touch/alien_spell/Click(mob/user = usr)
+/datum/spell/touch/alien_spell/Click(mob/user = usr)
 	if(attached_hand)
-		to_chat(user, "<span class='noticealien'>You withdraw your [src].</span>")
+		to_chat(user, SPAN_NOTICEALIEN("You withdraw your [src]."))
 	..()
 
-/obj/effect/proc_holder/spell/touch/alien_spell/cast(list/targets, mob/living/carbon/user)
-	user.add_plasma(plasma_cost)
-	..()
-
-/obj/effect/proc_holder/spell/touch/alien_spell/write_custom_logs(list/targets, mob/user)
+/datum/spell/touch/alien_spell/write_custom_logs(list/targets, mob/user)
 	user.create_log(ATTACK_LOG, "Cast the spell [name]")
 
-/obj/effect/proc_holder/spell/touch/alien_spell/create_new_handler()
+/datum/spell/touch/alien_spell/create_new_handler()
 	var/datum/spell_handler/alien/H = new
 	H.plasma_cost = plasma_cost
 	return H
@@ -44,6 +41,9 @@
 	catchphrase = null
 	/// Beepsky shouldn't be arresting you over this
 	needs_permit = FALSE
+
+/obj/item/melee/touch_attack/alien/customised_abstract_text()
+	return
 
 /obj/item/melee/touch_attack/alien/proc/plasma_check(plasma, mob/living/carbon/user)
 	var/plasma_current = user.get_plasma()

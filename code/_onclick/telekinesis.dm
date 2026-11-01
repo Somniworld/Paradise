@@ -17,6 +17,12 @@
 	return
 
 /*
+	Returns: True if the target is within the 15 tile range of telekinesis and on the same z-level, false otherwise.
+*/
+/proc/telekinesis_range_check(mob/living/carbon/human/user, atom/target)
+	return (get_dist(user, target) <= TK_MAXRANGE && user.z == target.z)
+
+/*
 	This is similar to item attack_self, but applies to anything
 	that you can grab with a telekinetic grab.
 
@@ -59,15 +65,14 @@
 */
 /obj/item/tk_grab
 	name = "Telekinetic Grab"
-	desc = "Magic"
+	desc = "Magic."
 	icon = 'icons/obj/magic.dmi'//Needs sprites
 	icon_state = "2"
 	flags = NOBLUDGEON | ABSTRACT | DROPDEL
-	//item_state = null
 	w_class = WEIGHT_CLASS_GIGANTIC
 	layer = ABOVE_HUD_LAYER
 	plane = ABOVE_HUD_PLANE
-
+	new_attack_chain = TRUE
 	blocks_emissive = FALSE
 	var/last_throw = 0
 	var/atom/movable/focus = null
@@ -89,69 +94,76 @@
 
 	//stops TK grabs being equipped anywhere but into hands
 /obj/item/tk_grab/equipped(mob/user, slot)
-	if( (slot == slot_l_hand) || (slot== slot_r_hand) )
+	if(slot & ITEM_SLOT_BOTH_HANDS)
 		return
 	qdel(src)
 
 
-/obj/item/tk_grab/attack_self(mob/user)
+/obj/item/tk_grab/activate_self(mob/user)
+	if(..())
+		return ITEM_INTERACT_COMPLETE
+
 	if(focus)
 		focus.attack_self_tk(user)
+		return ITEM_INTERACT_COMPLETE
 
 /obj/item/tk_grab/override_throw(mob/user, atom/target)
-	afterattack(target, user)
+	after_attack(target, user)
 	return TRUE
 
-/obj/item/tk_grab/afterattack(atom/target , mob/living/user, proximity, params)
+/obj/item/tk_grab/after_attack(atom/target, mob/user, proximity_flag, click_parameters)
 	if(!target || !user)
-		return
+		return ..()
 	if(last_throw + TK_COOLDOWN > world.time)
-		return
+		return FINISH_ATTACK
 	if(!host || host != user)
 		qdel(src)
-		return
+		return FINISH_ATTACK
 	if(!HAS_TRAIT(host, TRAIT_TELEKINESIS))
 		qdel(src)
-		return
+		return FINISH_ATTACK
 	if(isobj(target) && !isturf(target.loc))
-		return
+		return FINISH_ATTACK
 
 	var/d = get_dist(user, target)
 	if(focus)
 		d = max(d,get_dist(user,focus)) // whichever is further
-	if(d > TK_MAXRANGE)
-		to_chat(user, "<span class='warning'>Your mind won't reach that far.</span>")
-		return
+	if(d > TK_MAXRANGE || user.z != target.z)
+		to_chat(user, SPAN_WARNING("Your mind won't reach that far."))
+		return FINISH_ATTACK
 
 	if(!focus)
 		focus_object(target, user)
-		return
+		return FINISH_ATTACK
 
 	if(target == focus)
 		target.attack_self_tk(user)
-		return // todo: something like attack_self not laden with assumptions inherent to attack_self
-
+		return FINISH_ATTACK // Todo: something like attack_self not laden with assumptions inherent to attack_self.
 
 	if(isitem(focus) && target.Adjacent(focus) && !user.in_throw_mode)
 		var/obj/item/I = focus
-		var/resolved = target.attackby(I, user, params)
+		var/resolved = target.new_attack_chain ? target.attack_by(src, user, click_parameters) : target.attackby__legacy__attackchain(I, user, click_parameters)
 		if(!resolved && target && I)
-			I.afterattack(target,user,1) // for splashing with beakers
-
+			if(I.new_attack_chain)
+				I.after_attack(target, user, TRUE, click_parameters)
+			else
+				I.afterattack__legacy__attackchain(target, user, TRUE) // for splashing with beakers
 
 	else
 		if(focus.buckled_mobs)
-			to_chat(user, "<span class='notice'>This object is too heavy to move with something buckled to it!</span>")
+			to_chat(user, SPAN_NOTICE("This object is too heavy to move with something buckled to it!"))
 			return
 		if(length(focus.client_mobs_in_contents))
-			to_chat(user, "<span class='notice'>This object is too heavy to move with something inside of it!</span>")
+			to_chat(user, SPAN_NOTICE("This object is too heavy to move with something inside of it!"))
 			return
 		apply_focus_overlay()
 		focus.throw_at(target, 10, 1, user)
 		last_throw = world.time
 
-/obj/item/tk_grab/attack(mob/living/M, mob/living/user, def_zone)
-	return
+/obj/item/tk_grab/attack(mob/living/target, mob/living/carbon/human/user)
+	if(!target)
+		return ..()
+	return FINISH_ATTACK
 
 /obj/item/tk_grab/is_equivalent(obj/item/I)
 	. = ..()
@@ -171,7 +183,7 @@
 	if(isitem(target))
 		if(target in user.tkgrabbed_objects)
 			// Release the old grab first
-			user.unEquip(user.tkgrabbed_objects[target])
+			user.drop_item_to_ground(user.tkgrabbed_objects[target])
 		user.tkgrabbed_objects[target] = src
 
 /obj/item/tk_grab/proc/release_object()
@@ -200,3 +212,5 @@
 		. += icon(focus.icon,focus.icon_state)
 
 #undef TK_COOLDOWN
+
+#undef TK_MAXRANGE

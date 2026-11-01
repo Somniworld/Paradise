@@ -2,8 +2,6 @@
 
 /obj/machinery/computer/operating
 	name = "operating computer"
-	density = TRUE
-	anchored = TRUE
 	icon_keyboard = "med_key"
 	icon_screen = "crew"
 	circuit = /obj/item/circuitboard/operating
@@ -41,7 +39,7 @@
 
 /obj/machinery/computer/operating/examine(mob/user)
 	. = ..()
-	. += "<span class='notice'>This console gives information on the status of the patient on the adjacent operating table and the next surgery step required in the current surgery.</span>"
+	. += SPAN_NOTICE("This console gives information on the status of the patient on the adjacent operating table and the next surgery step required in the current surgery.")
 
 /obj/machinery/computer/operating/attack_ai(mob/user)
 	add_fingerprint(user)
@@ -59,10 +57,13 @@
 	add_fingerprint(user)
 	ui_interact(user)
 
-/obj/machinery/computer/operating/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/computer/operating/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/computer/operating/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "OperatingComputer", "Patient Monitor", 650, 455, master_ui, state)
+		ui = new(user, src, "OperatingComputer", "Patient Monitor")
 		ui.open()
 
 /obj/machinery/computer/operating/ui_data(mob/user)
@@ -86,7 +87,7 @@
 		occupantData["paralysis"] = occupant.AmountParalyzed()
 		occupantData["hasBlood"] = 0
 		occupantData["bodyTemperature"] = occupant.bodytemperature
-		occupantData["maxTemp"] = 1000 // If you get a burning vox armalis into the sleeper, congratulations
+		occupantData["maxTemp"] = 1000
 		// Because we can put simple_animals in here, we need to do something tricky to get things working nice
 		occupantData["temperatureSuitability"] = 0 // 0 is the baseline
 		if(ishuman(occupant) && occupant.dna.species)
@@ -109,13 +110,20 @@
 				occupantData["temperatureSuitability"] = -3
 			else if(silly.bodytemperature > silly.maxbodytemp)
 				occupantData["temperatureSuitability"] = 3
+		else if(isbasicmob(occupant))
+			var/mob/living/basic/basicmob = occupant
+			if(basicmob.bodytemperature < basicmob.minimum_survivable_temperature)
+				occupantData["temperatureSuitability"] = -3
+			else if(basicmob.bodytemperature > basicmob.maximum_survivable_temperature)
+				occupantData["temperatureSuitability"] = 3
 		// Blast you, imperial measurement system
 		occupantData["btCelsius"] = occupant.bodytemperature - T0C
 		occupantData["btFaren"] = ((occupant.bodytemperature - T0C) * (9.0/5.0))+ 32
+		occupantData["activeSurgeries"] = list()
 
 		if(ishuman(occupant) && !(NO_BLOOD in occupant.dna.species.species_traits))
 			var/mob/living/carbon/human/H = occupant
-			occupantData["pulse"] = occupant.get_pulse(GETPULSE_TOOL)
+			occupantData["pulse"] = occupant.get_pulse()
 			occupantData["hasBlood"] = 1
 			occupantData["bloodLevel"] = round(occupant.blood_volume)
 			occupantData["bloodMax"] = H.max_blood
@@ -124,15 +132,20 @@
 			occupantData["bloodType"] = occupant.dna.blood_type
 		if(length(occupant.surgeries))
 			occupantData["inSurgery"] = 1
+
 			for(var/datum/surgery/procedure in occupant.surgeries)
-				occupantData["surgeryName"] = "[capitalize(procedure.name)]"
 				var/datum/surgery_step/surgery_step = procedure.get_surgery_step()
-				var/surgery_desc = "[capitalize(surgery_step.get_step_information(procedure))]"
+				var/surgery_desc = "[capitalize(surgery_step.get_step_information(procedure, TRUE))]"
 				if(surgery_step.repeatable)
 					var/datum/surgery_step/next = procedure.get_surgery_next_step()
 					if(next)
-						surgery_desc += " or [capitalize(next.get_step_information(procedure))]"
-				occupantData["stepName"] = surgery_desc
+						surgery_desc += " or [capitalize(next.get_step_information(procedure, TRUE))]"
+
+				occupantData["activeSurgeries"] += list(list(
+					"name" = "[capitalize(procedure.name)]",
+					"step" = surgery_desc,
+					"location" = capitalize(parse_zone(procedure.location)),
+				))
 
 	data["occupant"] = occupantData
 	data["verbose"] = verbose
@@ -183,6 +196,8 @@
 			return FALSE
 
 /obj/machinery/computer/operating/process()
+	if(stat & (NOPOWER|BROKEN))
+		return
 	if(!table) //Does this Operating Computer have an Operating Table connected to it?
 		return
 	if(!verbose) //Are the speakers on?
@@ -214,7 +229,7 @@
 
 	if(nextTick < world.time)
 		nextTick=world.time + OP_COMPUTER_COOLDOWN
-		if(crit && table.patient.health <= -50 )
+		if(crit && table.patient.health <= -50)
 			playsound(src.loc, 'sound/machines/defib_success.ogg', 50, 0)
 		if(oxy && table.patient.getOxyLoss()>oxyAlarm)
 			playsound(src.loc, 'sound/machines/defib_saftyoff.ogg', 50, 0)
@@ -223,3 +238,10 @@
 		if(table.patient.stat != patientStatusHolder)
 			atom_say("Patient is now [patientStatus]")
 			patientStatusHolder = table.patient.stat
+
+/obj/machinery/computer/operating/clockwork
+	name = "brass operating computer"
+	desc = "Staring at this causes your head to fill with static."
+	icon_state = "computer_clockwork"
+
+#undef OP_COMPUTER_COOLDOWN

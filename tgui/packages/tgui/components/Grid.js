@@ -1,6 +1,12 @@
-import { Table } from './Table';
-import { pureComponentHooks } from 'common/react';
+/**
+ * @file
+ * @copyright 2020 Aleksej Komarov
+ * @license MIT
+ */
 
+import { Table } from 'tgui-core/components';
+
+/** @deprecated */
 export const Grid = (props) => {
   const { children, ...rest } = props;
   return (
@@ -10,8 +16,7 @@ export const Grid = (props) => {
   );
 };
 
-Grid.defaultHooks = pureComponentHooks;
-
+/** @deprecated */
 export const GridColumn = (props) => {
   const { size = 1, style, ...rest } = props;
   return (
@@ -24,7 +29,5 @@ export const GridColumn = (props) => {
     />
   );
 };
-
-Grid.defaultHooks = pureComponentHooks;
 
 Grid.Column = GridColumn;

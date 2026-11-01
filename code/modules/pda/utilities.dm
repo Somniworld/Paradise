@@ -10,10 +10,7 @@
 	name = fon ? "Disable Flashlight" : "Enable Flashlight"
 	pda.update_shortcuts()
 	pda.set_light(fon ? f_lum : 0)
-	if(fon)
-		pda.overlays += image('icons/obj/pda.dmi', "pda-light")
-	else
-		pda.overlays -= image('icons/obj/pda.dmi', "pda-light")
+	pda.update_icon(UPDATE_ICON_STATE|UPDATE_OVERLAYS)
 	if(!pda.silent)
 		playsound(pda, 'sound/machines/terminal_select.ogg', 15, TRUE)
 
@@ -49,7 +46,7 @@
 	icon = "heart-o"
 
 /datum/data/pda/utility/scanmode/medical/scan_mob(mob/living/M, mob/living/user)
-	user.visible_message("<span class='notice'>[user] analyzes [M]'s vitals.</span>", "<span class='notice'>You analyze [M]'s vitals.</span>")
+	user.visible_message(SPAN_NOTICE("[user] analyzes [M]'s vitals."), SPAN_NOTICE("You analyze [M]'s vitals."))
 
 	healthscan(user, M, 1)
 
@@ -58,87 +55,73 @@
 	icon = "link"
 
 /datum/data/pda/utility/scanmode/dna/scan_mob(mob/living/C as mob, mob/living/user as mob)
+	var/list/messages = list()
 	if(ishuman(C))
 		var/mob/living/carbon/human/H = C
 		if(!istype(H.dna, /datum/dna))
-			to_chat(user, "<span class='notice'>No fingerprints found on [H]</span>")
+			messages.Add(SPAN_NOTICE("No fingerprints found on [H]"))
 		else
-			to_chat(user, "<span class='notice'>[H]'s Fingerprints: [md5(H.dna.uni_identity)]</span>")
+			messages.Add(SPAN_NOTICE("[H]'s Fingerprints: [md5(H.dna.uni_identity)]"))
+	if(length(messages))
+		to_chat(user, chat_box_regular(messages.Join("<br>")))
 	scan_blood(C, user)
 
 /datum/data/pda/utility/scanmode/dna/scan_atom(atom/A as mob|obj|turf|area, mob/user as mob)
 	scan_blood(A, user)
 
 /datum/data/pda/utility/scanmode/dna/proc/scan_blood(atom/A, mob/user)
+	var/list/messages = list()
 	if(!A.blood_DNA)
-		to_chat(user, "<span class='notice'>No blood found on [A]</span>")
+		messages.Add(SPAN_NOTICE("No blood found on [A]"))
 		if(A.blood_DNA)
 			qdel(A.blood_DNA)
 	else
-		to_chat(user, "<span class='notice'>Blood found on [A]. Analysing...</span>")
+		messages.Add(SPAN_NOTICE("Blood found on [A]. Analysing..."))
 		spawn(15)
-			for(var/blood in A.blood_DNA)
-				to_chat(user, "<span class='notice'>Blood type: [A.blood_DNA[blood]]\nDNA: [blood]</span>")
+		for(var/blood in A.blood_DNA)
+			messages.Add(SPAN_NOTICE("Blood type: [A.blood_DNA[blood]]\nDNA: [blood]"))
+	to_chat(user, chat_box_regular(messages.Join("<br>")))
 
-/datum/data/pda/utility/scanmode/halogen
-	base_name = "Halogen Counter"
+/datum/data/pda/utility/scanmode/rad_scanner
+	base_name = "Radiation Scanner"
 	icon = "exclamation-circle"
 
-/datum/data/pda/utility/scanmode/halogen/scan_mob(mob/living/C as mob, mob/living/user as mob)
-	C.visible_message("<span class='warning'>[user] has analyzed [C]'s radiation levels!</span>")
+/datum/data/pda/utility/scanmode/rad_scanner/scan_mob(mob/living/C as mob, mob/living/user as mob)
+	var/list/messages = list()
+	C.visible_message(SPAN_WARNING("[user] has analyzed [C]'s radiation levels!"))
 
-	user.show_message("<span class='notice'>Analyzing Results for [C]:</span>")
+	messages.Add(SPAN_NOTICE("Analyzing Results for [C]:"))
 	if(C.radiation)
-		user.show_message("<span class='notice'>Radiation Level: [C.radiation > 0 ? "</span><span class='danger'>[C.radiation]" : "0"]</span>")
+		messages.Add(SPAN_NOTICE("Radiation Level: [C.radiation > 0 ? "</span><span class='danger'>[C.radiation]" : "0"]"))
 	else
-		user.show_message("<span class='notice'>No radiation detected.</span>")
+		messages.Add(SPAN_NOTICE("No radiation detected."))
+	to_chat(user, chat_box_regular(messages.Join("<br>")))
 
 /datum/data/pda/utility/scanmode/reagent
 	base_name = "Reagent Scanner"
 	icon = "flask"
 
 /datum/data/pda/utility/scanmode/reagent/scan_atom(atom/A as mob|obj|turf|area, mob/user as mob)
+	var/list/messages = list()
 	if(!isnull(A.reagents))
-		if(A.reagents.reagent_list.len > 0)
-			var/reagents_length = A.reagents.reagent_list.len
-			to_chat(user, "<span class='notice'>[reagents_length] chemical agent[reagents_length > 1 ? "s" : ""] found.</span>")
+		if(length(A.reagents.reagent_list) > 0)
+			var/reagents_length = length(A.reagents.reagent_list)
+			messages.Add(SPAN_NOTICE("[reagents_length] chemical agent[reagents_length > 1 ? "s" : ""] found."))
 			for(var/datum/reagent/R in A.reagents.reagent_list)
 				if(R.id != "blood")
-					to_chat(user, "<span class='notice'>\t [R]</span>")
+					messages.Add(SPAN_NOTICE("\t [R]"))
 				else
 					var/blood_type = R.data["blood_type"]
-					to_chat(user, "<span class='notice'>\t [R] [blood_type]</span>")
+					messages.Add(SPAN_NOTICE("\t [R] [blood_type]"))
 		else
-			to_chat(user, "<span class='notice'>No active chemical agents found in [A].</span>")
+			messages.Add(SPAN_NOTICE("No active chemical agents found in [A]."))
 	else
-		to_chat(user, "<span class='notice'>No significant chemical agents found in [A].</span>")
+		messages.Add(SPAN_NOTICE("No significant chemical agents found in [A]."))
+	to_chat(user, chat_box_regular(messages.Join("<br>")))
 
 /datum/data/pda/utility/scanmode/gas
 	base_name = "Gas Scanner"
 	icon = "tachometer-alt"
 
-/datum/data/pda/utility/scanmode/gas/scan_atom(atom/A as mob|obj|turf|area, mob/user as mob)
-	if(istype(A, /obj/item/tank))
-		var/obj/item/tank/T = A
-		pda.atmosanalyzer_scan(T.air_contents, user, T)
-	else if(istype(A, /obj/machinery/atmospherics/portable))
-		var/obj/machinery/atmospherics/portable/T = A
-		pda.atmosanalyzer_scan(T.air_contents, user, T)
-	else if(istype(A, /obj/machinery/atmospherics/pipe))
-		var/obj/machinery/atmospherics/pipe/T = A
-		pda.atmosanalyzer_scan(T.parent.air, user, T)
-	else if(istype(A, /obj/machinery/power/rad_collector))
-		var/obj/machinery/power/rad_collector/T = A
-		if(T.loaded_tank)
-			pda.atmosanalyzer_scan(T.loaded_tank.air_contents, user, T)
-	else if(istype(A, /obj/item/flamethrower))
-		var/obj/item/flamethrower/T = A
-		if(T.ptank)
-			pda.atmosanalyzer_scan(T.ptank.air_contents, user, T)
-	else if(istype(A, /obj/machinery/atmospherics/portable/scrubber/huge))
-		var/obj/machinery/atmospherics/portable/scrubber/huge/T = A
-		pda.atmosanalyzer_scan(T.air_contents, user, T)
-	else if(istype(A, /obj/machinery/atmospherics/unary/tank))
-		var/obj/machinery/atmospherics/unary/tank/T = A
-		pda.atmosanalyzer_scan(T.air_contents, user, T)
-
+/datum/data/pda/utility/scanmode/gas/scan_atom(atom/A, mob/user)
+	atmos_scan(user=user, target=A, silent=FALSE, print=TRUE)

@@ -18,13 +18,15 @@ GLOBAL_LIST_EMPTY(gravity_generators)
 	name = "gravitational generator"
 	desc = "A device which produces a graviton field when set up."
 	icon = 'icons/obj/machines/gravity_generator.dmi'
+	pixel_x = -32
 	anchored = TRUE
 	density = TRUE
 	power_state = NO_POWER_USE
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF
+	flags_2 = NO_MALF_EFFECT_2
 
 /obj/machinery/gravity_generator/ex_act(severity)
-	if(severity == 1) // Very sturdy.
+	if(severity == EXPLODE_DEVASTATE) // Very sturdy.
 		set_broken()
 
 /obj/machinery/gravity_generator/blob_act(obj/structure/blob/B)
@@ -51,25 +53,29 @@ GLOBAL_LIST_EMPTY(gravity_generators)
 	stat &= ~BROKEN
 
 //
-// Part generator which is mostly there for collision
-//
-
-/obj/machinery/gravity_generator/part
-	invisibility = INVISIBILITY_ABSTRACT
-
-//
 // Generator which spawns with the station.
 //
 
 /obj/machinery/gravity_generator/main/station/Initialize(mapload)
 	. = ..()
-	setup_parts()
+	AddComponent(/datum/component/multitile, list(
+		list(1, 1,		   1),
+		list(1, MACH_CENTER, 1),
+	))
+
+	var/area/machine_area = get_area(src)
+	parent_area_type = machine_area.get_top_parent_type()
+	if(parent_area_type)
+		areas = typesof(parent_area_type)
+		// Holodecks have thier own areas and we don't have a way of knowing if we have one.
+		// This means the grav gen will affect all holodeck areas in the Z-level, regardless of where in it they are.
+		areas |= typesof(/area/holodeck)
 	update_gen_list()
 	set_power()
 
 //
 // Main Generator with the main code
-//
+// With the multitile component it's dubious to still have this and not merge it with the `/obj/machinery/gravity_generator` itself
 
 /obj/machinery/gravity_generator/main
 	icon_state = "generator_body"
@@ -77,13 +83,10 @@ GLOBAL_LIST_EMPTY(gravity_generators)
 	active_power_consumption = 3000
 	power_channel = PW_CHANNEL_ENVIRONMENT
 	power_state = IDLE_POWER_USE
-	interact_offline = TRUE
 	/// Is the generator producing gravity
 	var/on = TRUE
 	/// Is the breaker switch turned on
 	var/breaker_on = TRUE
-	/// Generator parts on adjacent tiles
-	var/list/parts = list()
 	/// Charging state (Idle, Charging, Discharging)
 	var/charging_state = GRAV_POWER_IDLE
 	/// Charge percentage
@@ -91,6 +94,8 @@ GLOBAL_LIST_EMPTY(gravity_generators)
 	var/current_overlay = null
 	var/construction_state = GRAV_NEEDS_WELDING
 	var/overlay_state = "activated"
+	var/parent_area_type
+	var/areas = list()
 
 /obj/machinery/gravity_generator/main/examine(mob/user)
 	. = ..()
@@ -99,40 +104,24 @@ GLOBAL_LIST_EMPTY(gravity_generators)
 
 	switch(construction_state)
 		if(GRAV_NEEDS_WELDING)
-			. += "<span class='notice'>The framework is damaged, and needs welding.</span>"
+			. += SPAN_NOTICE("The framework is damaged, and needs welding.")
 		if(GRAV_NEEDS_PLASTEEL)
-			. += "<span class='notice'>The framework needs new plasteel plating.</span>"
+			. += SPAN_NOTICE("The framework needs new plasteel plating.")
 		if(GRAV_NEEDS_WRENCH)
-			. += "<span class='notice'>The plating needs wrenching into place.</span>"
+			. += SPAN_NOTICE("The plating needs wrenching into place.")
 		if(GRAV_NEEDS_SCREWDRIVER)
-			. += "<span class='notice'>The cover screws are loose.</span>"
+			. += SPAN_NOTICE("The cover screws are loose.")
 
 /obj/machinery/gravity_generator/main/Destroy() // If we somehow get deleted, remove all of our other parts.
-	investigate_log("was destroyed!", "gravity")
+	investigate_log("was destroyed!", INVESTIGATE_GRAVITY)
 	on = FALSE
 	update_gen_list()
-	for(var/obj/machinery/gravity_generator/part/O in parts)
-		qdel(O)
 	for(var/area/A in world)
 		if(!is_station_level(A.z))
 			continue
 		A.gravitychange(FALSE, A)
 	shake_everyone()
 	return ..()
-
-/obj/machinery/gravity_generator/main/proc/setup_parts()
-	var/turf/our_turf = get_turf(src)
-	// 9x9 block obtained from the bottom left of the block
-	var/list/spawn_turfs = block(locate(our_turf.x + 2, our_turf.y + 2, our_turf.z), locate(our_turf.x, our_turf.y, our_turf.z))
-	var/count = 10
-	for(var/turf/T in spawn_turfs)
-		count--
-		if(T == our_turf) // Main body, skip it
-			continue
-		var/obj/machinery/gravity_generator/part/part = new(T)
-		if(count <= 3) // That section is the top part of the generator
-			part.density = FALSE
-		parts += part
 
 /obj/machinery/gravity_generator/main/set_broken()
 	..()
@@ -142,7 +131,7 @@ GLOBAL_LIST_EMPTY(gravity_generators)
 	breaker_on = FALSE
 	update_icon()
 	set_gravity(FALSE)
-	investigate_log("has broken down.", "gravity")
+	investigate_log("has broken down.", INVESTIGATE_GRAVITY)
 
 /obj/machinery/gravity_generator/main/set_fix()
 	..()
@@ -160,23 +149,27 @@ GLOBAL_LIST_EMPTY(gravity_generators)
 	. = TRUE
 	if(!I.use_tool(src, user, null, 1, I.tool_volume))
 		return
-	to_chat(user, "<span class='notice'>You mend the damaged framework.</span>")
+	to_chat(user, SPAN_NOTICE("You mend the damaged framework."))
 	construction_state = GRAV_NEEDS_PLASTEEL
 	update_icon()
 
 // Step 2
-/obj/machinery/gravity_generator/main/attackby(obj/item/I, mob/user, params)
+/obj/machinery/gravity_generator/main/item_interaction(mob/living/user, obj/item/used, list/modifiers)
 	if(construction_state != GRAV_NEEDS_PLASTEEL)
 		return ..()
-	if(istype(I, /obj/item/stack/sheet/plasteel))
-		var/obj/item/stack/sheet/plasteel/PS = I
-		if(PS.amount < 10)
-			to_chat(user, "<span class='warning'>You need 10 sheets of plasteel.</span>")
-			return
 
-		to_chat(user, "<span class='notice'>You add new plating to the framework.</span>")
+	if(istype(used, /obj/item/stack/sheet/plasteel))
+		var/obj/item/stack/sheet/plasteel/PS = used
+		if(PS.amount < 10)
+			to_chat(user, SPAN_WARNING("You need 10 sheets of plasteel."))
+			return ITEM_INTERACT_COMPLETE
+
+		to_chat(user, SPAN_NOTICE("You add new plating to the framework."))
 		construction_state = GRAV_NEEDS_WRENCH
 		update_icon()
+		return ITEM_INTERACT_COMPLETE
+
+	return ..()
 
 // Step 3
 /obj/machinery/gravity_generator/main/wrench_act(mob/living/user, obj/item/I)
@@ -185,7 +178,7 @@ GLOBAL_LIST_EMPTY(gravity_generators)
 	. = TRUE
 	if(!I.use_tool(src, user, volume = I.tool_volume))
 		return
-	to_chat(user, "<span class='notice'>You secure the plating to the framework.</span>")
+	to_chat(user, SPAN_NOTICE("You secure the plating to the framework."))
 	construction_state = GRAV_NEEDS_SCREWDRIVER
 	update_icon()
 
@@ -198,7 +191,7 @@ GLOBAL_LIST_EMPTY(gravity_generators)
 	. = TRUE
 	if(!I.use_tool(src, user, volume = I.tool_volume))
 		return
-	to_chat(user, "<span class='notice'>You screw the covers back into place.</span>")
+	to_chat(user, SPAN_NOTICE("You screw the covers back into place."))
 	set_fix()
 
 /obj/machinery/gravity_generator/main/attack_hand(mob/user)
@@ -212,10 +205,13 @@ GLOBAL_LIST_EMPTY(gravity_generators)
 	return ui_interact(user)
 
 // tgui\packages\tgui\interfaces\GravityGen.js
-/obj/machinery/gravity_generator/main/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/gravity_generator/main/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/gravity_generator/main/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui && !(stat & BROKEN))
-		ui = new(user, src, ui_key, "GravityGen", name, 350, 250, master_ui, state)
+		ui = new(user, src, "GravityGen", name)
 		ui.open()
 
 /obj/machinery/gravity_generator/main/ui_data(mob/user)
@@ -233,7 +229,7 @@ GLOBAL_LIST_EMPTY(gravity_generators)
 	. = TRUE
 	if(action == "breaker")
 		breaker_on = !breaker_on
-		investigate_log("was toggled [breaker_on ? "<font color='green'>ON</font>" : "<font color='red'>OFF</font>"] by [usr.key].", "gravity")
+		investigate_log("was toggled [breaker_on ? "<font color='green'>ON</font>" : "<font color='red'>OFF</font>"] by [usr.key].", INVESTIGATE_GRAVITY)
 		set_power()
 
 // Power and Icon States
@@ -241,7 +237,7 @@ GLOBAL_LIST_EMPTY(gravity_generators)
 /obj/machinery/gravity_generator/main/power_change()
 	if(!..())
 		return
-	investigate_log("has [stat & NOPOWER ? "lost" : "regained"] power.", "gravity")
+	investigate_log("has [stat & NOPOWER ? "lost" : "regained"] power.", INVESTIGATE_GRAVITY)
 	set_power()
 
 /obj/machinery/gravity_generator/main/get_status()
@@ -270,7 +266,7 @@ GLOBAL_LIST_EMPTY(gravity_generators)
 	else if(breaker_on)
 		charging_state = GRAV_POWER_UP
 
-	investigate_log("is now [charging_state == GRAV_POWER_UP ? "charging" : "discharging"].", "gravity")
+	investigate_log("is now [charging_state == GRAV_POWER_UP ? "charging" : "discharging"].", INVESTIGATE_GRAVITY)
 	update_icon()
 
 /**
@@ -285,24 +281,21 @@ GLOBAL_LIST_EMPTY(gravity_generators)
 	change_power_mode(on ? ACTIVE_POWER_USE : IDLE_POWER_USE)
 
 	if(gravity) // If we turned on
-		if(generators_in_level() == FALSE) // And there's no gravity
+		if(generators_in_area() == 0) // And there's no other gravity generators on this z level
 			alert = TRUE
-			investigate_log("was brought online and is now producing gravity for this level.", "gravity")
-			message_admins("The gravity generator was brought online. (<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[x];Y=[y];Z=[z]'>[src_area.name]</a>)")
+			investigate_log("was brought online and is now producing gravity for this level.", INVESTIGATE_GRAVITY)
+			message_admins("The gravity generator was brought online. (<A href='byond://?_src_=holder;adminplayerobservecoodjump=1;X=[x];Y=[y];Z=[z]'>[src_area.name]</a>)")
 			for(var/area/A in world)
-				if(!is_station_level(A.z))
-					continue
-				A.gravitychange(TRUE, A)
+				if((A.type in areas) && A.z == z)
+					A.gravitychange(TRUE, A)
 
-	else if(generators_in_level() == TRUE) // Turned off, and there is gravity
+	else if(generators_in_area() == 1) // Turned off, and there is only one gravity generator on the Z level
 		alert = TRUE
-		investigate_log("was brought offline and there is now no gravity for this level.", "gravity")
-		message_admins("The gravity generator was brought offline with no backup generator. (<A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[x];Y=[y];Z=[z]'>[src_area.name]</a>)")
+		investigate_log("was brought offline and there is now no gravity for this level.", INVESTIGATE_GRAVITY)
+		message_admins("The gravity generator was brought offline with no backup generator. (<A href='byond://?_src_=holder;adminplayerobservecoodjump=1;X=[x];Y=[y];Z=[z]'>[src_area.name]</a>)")
 		for(var/area/A in world)
-			if(!is_station_level(A.z))
-				continue
-			A.gravitychange(FALSE, A)
-
+			if((A.type in areas) && A.z == z)
+				A.gravitychange(FALSE, A)
 	update_icon()
 	update_gen_list()
 	if(alert)
@@ -352,45 +345,52 @@ GLOBAL_LIST_EMPTY(gravity_generators)
 
 
 /obj/machinery/gravity_generator/main/proc/pulse_radiation()
-	radiation_pulse(src, 600, 2)
+	radiation_pulse(src, 2400, BETA_RAD)
 	for(var/mob/living/L in view(7, src)) //Windows kinda make it a non threat, no matter how much I amp it up, so let us cheat a little
-		radiation_pulse(get_turf(L), 600, 2)
+		radiation_pulse(get_turf(L), 2400, BETA_RAD)
 
 /**
-  * Shake everyone on the z level and play an alarm to let them know that gravity was enagaged/disenagaged.
+  * Shake everyone on the area list and play an alarm to let them know that gravity was enagaged/disenagaged.
   */
 /obj/machinery/gravity_generator/main/proc/shake_everyone()
 	var/turf/our_turf = get_turf(src)
+	new /obj/effect/warp_effect/gravity_generator(our_turf)
 	var/sound/alert_sound = sound('sound/effects/alert.ogg')
 	for(var/shaken in GLOB.mob_list)
 		var/mob/M = shaken
 		var/turf/their_turf = get_turf(M)
-		if(their_turf?.z == our_turf.z)
+		if(their_turf && ((get_area(their_turf)).type in typesof(parent_area_type)) && (M.z == z))
 			M.update_gravity(M.mob_has_gravity())
 			if(M.client)
 				shake_camera(M, 15, 1)
 				M.playsound_local(our_turf, null, 100, TRUE, 0.5, S = alert_sound)
 
-// TODO: Make the gravity generator cooperate with the space manager
-/obj/machinery/gravity_generator/main/proc/generators_in_level()
-	var/turf/T = get_turf(src)
-	if(!T)
+/obj/machinery/gravity_generator/main/proc/update_gen_list()
+	if(parent_area_type)
+		if(!GLOB.gravity_generators["[parent_area_type]"])
+			GLOB.gravity_generators["[parent_area_type]"] = list()
+		if(on)
+			GLOB.gravity_generators["[parent_area_type]"] |= src
+		else
+			GLOB.gravity_generators["[parent_area_type]"] -= src
+
+/obj/machinery/gravity_generator/main/proc/generators_in_area()
+	if(!parent_area_type)
 		return FALSE
-	if(GLOB.gravity_generators["[T.z]"])
-		return length(GLOB.gravity_generators["[T.z]"])
+	if(GLOB.gravity_generators["[parent_area_type]"])
+		return length(GLOB.gravity_generators["[parent_area_type]"])
 	return FALSE
 
-/obj/machinery/gravity_generator/main/proc/update_gen_list()
-	var/turf/T = get_turf(src)
-	if(T)
-		if(!GLOB.gravity_generators["[T.z]"])
-			GLOB.gravity_generators["[T.z]"] = list()
-		if(on)
-			GLOB.gravity_generators["[T.z]"] |= src
-		else
-			GLOB.gravity_generators["[T.z]"] -= src
-
 // Misc
+
+/obj/effect/warp_effect/gravity_generator
+
+/obj/effect/warp_effect/gravity_generator/Initialize(mapload)
+	. = ..()
+	var/matrix/M = matrix() * 0.5
+	transform = M
+	animate(src, transform = M * 40, time = 0.8 SECONDS, alpha = 128)
+	QDEL_IN(src, 0.8 SECONDS)
 
 /obj/item/paper/gravity_gen
 	name = "paper - 'Generate your own gravity!'"

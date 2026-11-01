@@ -6,7 +6,7 @@
 	icon = 'icons/effects/effects.dmi'
 	anchored = TRUE
 	max_integrity = 1
-	armor = list(MELEE = 0, BULLET = 50, LASER = 50, ENERGY = 50, BOMB = 0, BIO = 0, RAD = 0, FIRE = 20, ACID = 20)
+	armor = list(MELEE = 0, BULLET = 50, LASER = 50, ENERGY = 50, BOMB = 0, RAD = 0, FIRE = 20, ACID = 20)
 	var/obj/item/holosign_creator/projector
 
 /obj/structure/holosign/Initialize(mapload, source_projector)
@@ -52,25 +52,25 @@
 	name = "holo barrier"
 	desc = "A short holographic barrier which can only be passed by walking."
 	icon_state = "holosign_sec"
-	pass_flags = LETPASSTHROW
+	pass_flags_self = LETPASSTHROW | PASSTAKE
 	density = TRUE
 	max_integrity = 20
 	var/allow_walk = TRUE //can we pass through it on walk intent
 
-/obj/structure/holosign/barrier/CanPass(atom/movable/mover, turf/target)
+/obj/structure/holosign/barrier/CanPass(atom/movable/mover, border_dir)
 	if(!density)
 		return TRUE
 	if(mover.pass_flags & (PASSGLASS|PASSTABLE|PASSGRILLE))
 		return TRUE
-	if(iscarbon(mover))
-		var/mob/living/carbon/C = mover
-		if(allow_walk && (C.m_intent == MOVE_INTENT_WALK || (C.pulledby && C.pulledby.m_intent == MOVE_INTENT_WALK)))
+	if(isliving(mover))
+		var/mob/living/walker = mover
+		if(allow_walk && (walker.m_intent == MOVE_INTENT_WALK || (walker.pulledby && walker.pulledby.m_intent == MOVE_INTENT_WALK)))
 			return TRUE
 
 /obj/structure/holosign/barrier/engineering
 	icon_state = "holosign_engi"
 	flags_2 = RAD_PROTECT_CONTENTS_2 | RAD_NO_CONTAMINATE_2
-	rad_insulation = RAD_LIGHT_INSULATION
+	rad_insulation_beta = RAD_LIGHT_INSULATION
 
 /obj/structure/holosign/barrier/atmos
 	name = "holo firelock"
@@ -78,36 +78,39 @@
 	icon_state = "holo_firelock"
 	density = FALSE
 	layer = ABOVE_MOB_LAYER
-	anchored = TRUE
-	layer = ABOVE_MOB_LAYER
 	alpha = 150
 	flags_2 = RAD_PROTECT_CONTENTS_2 | RAD_NO_CONTAMINATE_2
-	rad_insulation = RAD_LIGHT_INSULATION
+	rad_insulation_beta = RAD_LIGHT_INSULATION
+	resistance_flags = UNACIDABLE | ACID_PROOF
 
 /obj/structure/holosign/barrier/atmos/Initialize(mapload)
 	. = ..()
-	air_update_turf(TRUE)
+	recalculate_atmos_connectivity()
 
-/obj/structure/holosign/barrier/atmos/CanAtmosPass(turf/T)
+// Airtight.
+/obj/structure/holosign/barrier/atmos/CanAtmosPass(direction)
 	return FALSE
+
+// Heatproof.
+/obj/structure/holosign/barrier/atmos/get_superconductivity(direction)
+	return 0
 
 /obj/structure/holosign/barrier/atmos/Destroy()
 	var/turf/T = get_turf(src)
 	. = ..()
-	T.air_update_turf(TRUE)
+	T.recalculate_atmos_connectivity()
 
 /obj/structure/holosign/barrier/cyborg
 	name = "Energy Field"
 	desc = "A fragile energy field that blocks movement. Excels at blocking lethal projectiles."
-	density = TRUE
 	max_integrity = 10
 	allow_walk = FALSE
 
-/obj/structure/holosign/barrier/cyborg/bullet_act(obj/item/projectile/P)
+/obj/structure/holosign/barrier/cyborg/bullet_act(obj/projectile/P)
 	take_damage((P.damage / 5) , BRUTE, MELEE, 1)	//Doesn't really matter what damage flag it is.
-	if(istype(P, /obj/item/projectile/energy/electrode))
+	if(istype(P, /obj/projectile/energy/electrode))
 		take_damage(10, BRUTE, MELEE, 1)	//Tasers aren't harmful.
-	if(istype(P, /obj/item/projectile/beam/disabler))
+	if(istype(P, /obj/projectile/beam/disabler))
 		take_damage(5, BRUTE, MELEE, 1)	//Disablers aren't harmful.
 
 /obj/structure/holosign/barrier/cyborg/hacked
@@ -116,7 +119,7 @@
 	max_integrity = 20
 	var/shockcd = 0
 
-/obj/structure/holosign/barrier/cyborg/hacked/bullet_act(obj/item/projectile/P)
+/obj/structure/holosign/barrier/cyborg/hacked/bullet_act(obj/projectile/P)
 	take_damage(P.damage, BRUTE, MELEE, 1)	//Yeah no this doesn't get projectile resistance.
 
 /obj/structure/holosign/barrier/cyborg/hacked/proc/cooldown()
@@ -144,3 +147,8 @@
 	M.electrocute_act(15, "Energy Barrier")
 	shockcd = TRUE
 	addtimer(CALLBACK(src, PROC_REF(cooldown)), 5)
+
+/obj/structure/holosign/barrier/cyborg/hacked/detective
+	name = "investigation barrier"
+	desc = "An authoritive holographic barrier proclaiming a crime scene. Energy arcs off of it."
+	icon_state = "holosign_det"

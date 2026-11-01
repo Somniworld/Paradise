@@ -2,17 +2,12 @@
 //Turret Control Panel//
 ////////////////////////
 
-/area
-	// Turrets use this list to see if individual power/lethal settings are allowed
-	var/list/turret_controls = list()
-
 /obj/machinery/turretid
 	name = "turret control panel"
 	desc = "Used to control a room's automated defenses."
 	icon = 'icons/obj/machines/turret_control.dmi'
 	icon_state = "control_standby"
 	anchored = TRUE
-	density = FALSE
 	resistance_flags = INDESTRUCTIBLE | LAVA_PROOF | FIRE_PROOF | UNACIDABLE | ACID_PROOF
 	var/enabled = FALSE
 	var/lethal = FALSE
@@ -53,11 +48,8 @@
 
 	check_arrest = FALSE
 	check_records = FALSE
-	check_weapons = FALSE
 	check_access = FALSE
-	check_anomalies = TRUE
 	check_synth	= TRUE
-	check_borgs = FALSE
 	ailock = TRUE
 
 	syndicate = TRUE
@@ -71,8 +63,8 @@
 			A.turret_controls -= src
 	return ..()
 
-/obj/machinery/turretid/Initialize()
-	..()
+/obj/machinery/turretid/Initialize(mapload)
+	. = ..()
 	if(!control_area)
 		control_area = get_area(src)
 	else if(istext(control_area))
@@ -88,13 +80,13 @@
 		else
 			control_area = null
 
-	power_change() //Checks power and initial settings
-	return
+	updateTurrets()
+	update_icon(UPDATE_ICON_STATE)
 
 /obj/machinery/turretid/proc/isLocked(mob/user)
-	if(isrobot(user) || isAI(user))
+	if(isrobot(user) || is_ai(user))
 		if(ailock)
-			to_chat(user, "<span class='notice'>There seems to be a firewall preventing you from accessing this device.</span>")
+			to_chat(user, SPAN_NOTICE("There seems to be a firewall preventing you from accessing this device."))
 			return TRUE
 		else
 			return FALSE
@@ -110,27 +102,28 @@
 
 	return FALSE
 
-/obj/machinery/turretid/attackby(obj/item/W, mob/user)
+/obj/machinery/turretid/item_interaction(mob/living/user, obj/item/used, list/modifiers)
 	if(stat & BROKEN)
-		return
+		return ITEM_INTERACT_COMPLETE
 
-	if(istype(W, /obj/item/card/id)||istype(W, /obj/item/pda))
+	if(istype(used, /obj/item/card/id)||istype(used, /obj/item/pda))
 		if(src.allowed(usr))
 			if(emagged)
-				to_chat(user, "<span class='notice'>The turret control is unresponsive.</span>")
+				to_chat(user, SPAN_NOTICE("The turret control is unresponsive."))
 			else
 				locked = !locked
-				to_chat(user, "<span class='notice'>You [ locked ? "lock" : "unlock"] the panel.</span>")
-		return
+				to_chat(user, SPAN_NOTICE("You [ locked ? "lock" : "unlock"] the panel."))
+		return ITEM_INTERACT_COMPLETE
+
 	return ..()
 
 /obj/machinery/turretid/emag_act(user as mob)
 	if(!emagged)
-		to_chat(user, "<span class='danger'>You short out the turret controls' access analysis module.</span>")
+		to_chat(user, SPAN_DANGER("You short out the turret controls' access analysis module."))
 		emagged = TRUE
 		locked = FALSE
 		ailock = FALSE
-		return
+		return TRUE
 
 /obj/machinery/turretid/attack_ai(mob/user as mob)
 	ui_interact(user)
@@ -141,10 +134,13 @@
 /obj/machinery/turretid/attack_hand(mob/user as mob)
 	ui_interact(user)
 
-/obj/machinery/turretid/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = TRUE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/turretid/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/turretid/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "PortableTurret", name, 500, 400)
+		ui = new(user, src, "PortableTurret", name)
 		ui.open()
 
 /obj/machinery/turretid/ui_data(mob/user)
@@ -168,7 +164,7 @@
 	return data
 
 /obj/machinery/turretid/ui_act(action, params)
-	if (..())
+	if(..())
 		return
 	if(isLocked(usr))
 		return

@@ -22,12 +22,15 @@
 
 	if(!length(key_emotes))
 		if(intentional && !force_silence)
-			to_chat(src, "<span class='notice'>'[emote_key]' emote does not exist. Say *help for a list.</span>")
+			to_chat(src, SPAN_NOTICE("'[emote_key]' emote does not exist. Say *help for a list."))
 		else if(!intentional)
 			CRASH("Emote with key [emote_key] was attempted to be called, though doesn't exist!")
 		return FALSE
 	var/silenced = FALSE
 	for(var/datum/emote/P in key_emotes)
+		// can this mob run the emote at all?
+		if(!P.can_run_emote(src, intentional = intentional))
+			continue
 		if(!P.check_cooldown(src, intentional))
 			// if an emote's on cooldown, don't spam them with messages of not being able to use it
 			silenced = TRUE
@@ -35,7 +38,7 @@
 		if(P.try_run_emote(src, param, type_override, intentional))
 			return TRUE
 	if(intentional && !silenced && !force_silence)
-		to_chat(src, "<span class='notice'>Unusable emote '[emote_key]'. Say *help for a list.</span>")
+		to_chat(src, SPAN_NOTICE("Unusable emote '[emote_key]'. Say *help for a list."))
 	return FALSE
 
 /**
@@ -49,8 +52,8 @@
 	var/input = ""
 	if(!message && !client)
 		CRASH("An empty custom emote was called from a client-less mob.")
-	else if (!message)
-		input = sanitize(copytext(input(src,"Choose an emote to display.") as text|null, 1, MAX_MESSAGE_LEN))
+	else if(!message)
+		input = tgui_input_text(src, "Choose an emote to display.", "Custom Emote")
 	else
 		input = message
 
@@ -119,7 +122,7 @@
 	hands_use_check = TRUE
 	emote_type = EMOTE_VISIBLE | EMOTE_FORCE_NO_RUNECHAT  // don't need an emote to see that
 	mob_type_allowed_typecache = list(/mob/living, /mob/dead/observer)  // okay but what if we allowed ghosts to flip as well
-	mob_type_blacklist_typecache = list(/mob/living/carbon/brain, /mob/camera, /mob/living/silicon/ai)
+	mob_type_blacklist_typecache = list(/mob/living/brain, /mob/camera, /mob/living/silicon/ai)
 	mob_type_ignore_stat_typecache = list(/mob/dead/observer)
 
 /datum/emote/flip/run_emote(mob/user, params, type_override, intentional)
@@ -131,7 +134,8 @@
 	var/mob/living/L = user
 
 	if(IS_HORIZONTAL(L))
-		message = "flops and flails around on the floor."
+		var/turf = get_turf(L)
+		message = "flops and flails around [isspaceturf(turf) ? "in space" : "on the floor"]."
 		return ..()
 	else if(params)
 		message_param = "flips in %t's general direction."
@@ -141,28 +145,27 @@
 			var/obj/item/grab/G = H.get_active_hand()
 			if(G && G.affecting)
 				if(H.buckled || G.affecting.buckled)
-					to_chat(user, "<span class='warning'>[G.affecting] is buckled, you can't flip around [G.affecting.p_them()]!</span>")
+					var/who_is = H.buckled ? "You are" : "[G.affecting] is"
+					to_chat(user, SPAN_WARNING("[who_is] buckled, you can't flip around [G.affecting.p_them()]!"))
 					return TRUE
 				var/turf/oldloc = user.loc
 				var/turf/newloc = G.affecting.loc
 				if(isturf(oldloc) && isturf(newloc))
 					user.SpinAnimation(5, 1)
-					user.glide_for(0.6 SECONDS) // This and the glide_for below are purely arbitrary. Pick something that looks aesthetically pleasing.
 					var/old_pass = user.pass_flags
-					user.pass_flags |= (PASSMOB | PASSTABLE)
+					user.pass_flags |= (PASSTABLE)
 					step(user, get_dir(oldloc, newloc))
 					user.pass_flags = old_pass
-					G.glide_for(0.6 SECONDS)
 					message = "flips over [G.affecting]!"
 					return ..()
 
 	user.SpinAnimation(5, 1)
 
-	if(prob(5) && ishuman(user))
-		message = "attempts a flip and crashes to the floor!"
-		sleep(0.3 SECONDS)
+	if(prob(5) && ishuman(user) && !HAS_TRAIT(user, TRAIT_COOL))
+		var/turf = get_turf(L)
+		message = "attempts a flip and [isspaceturf(turf) ? "loses balance" : "crashes to the floor"]!"
 		if(istype(L))
-			L.Weaken(4 SECONDS)
+			addtimer(CALLBACK(L, TYPE_PROC_REF(/mob/living, Weaken), 4 SECONDS), 0.3 SECONDS)
 		return ..()
 
 	. = ..()
@@ -173,7 +176,7 @@
 	hands_use_check = TRUE
 	emote_type = EMOTE_VISIBLE | EMOTE_FORCE_NO_RUNECHAT
 	mob_type_allowed_typecache = list(/mob/living, /mob/dead/observer)
-	mob_type_blacklist_typecache = list(/mob/living/carbon/brain, /mob/camera, /mob/living/silicon/ai)
+	mob_type_blacklist_typecache = list(/mob/living/brain, /mob/camera, /mob/living/silicon/ai)
 	mob_type_ignore_stat_typecache = list(/mob/dead/observer)
 	cooldown = 2 SECONDS // how long the spin takes, any faster and mobs can spin
 
@@ -182,13 +185,60 @@
 	if(!.)
 		return FALSE
 
-	if(prob(95) || isobserver(user) || !ishuman(user))
+	if(prob(95) || isobserver(user) || !ishuman(user) || HAS_TRAIT(user, TRAIT_COOL))
 		user.spin(20, 1)
 		return TRUE
 
 	user.spin(32, 1)
-	to_chat(user, "<span class='warning'>You spin too much!</span>")
+	to_chat(user, SPAN_WARNING("You spin too much!"))
 	var/mob/living/L = user
 	if(istype(L))
 		L.Dizzy(24 SECONDS)
 		L.Confused(24 SECONDS)
+
+/datum/emote/jump
+	key = "jump"
+	key_third_person = "jumps"
+	message = "jumps!"
+	emote_type = EMOTE_VISIBLE | EMOTE_FORCE_NO_RUNECHAT
+	mob_type_allowed_typecache = list(/mob/living, /mob/dead/observer)
+	mob_type_blacklist_typecache = list(/mob/living/brain, /mob/camera, /mob/living/silicon/ai)
+	mob_type_ignore_stat_typecache = list(/mob/dead/observer)
+	cooldown = 0.25 SECONDS // bhop until you're stamina-less if you want lmao
+	audio_cooldown = 0.25 SECONDS
+
+/datum/emote/jump/run_emote(mob/user, params, type_override, intentional)
+	if(isobserver(user))
+		jump_animation(user)
+		return TRUE
+	. = ..()
+	if(!.)
+		return FALSE
+
+	jump_animation(user)
+	if(isliving(user) && !HAS_TRAIT(user, TRAIT_BOOTS_OF_JUMPING))
+		var/mob/living/L = user
+		L.adjustStaminaLoss(30)
+
+/datum/emote/jump/proc/jump_animation(mob/user)
+	var/original_transform = user.transform
+	animate(user, transform = user.transform.Translate(0, 8), time = 0.15 SECONDS, flags = ANIMATION_PARALLEL, easing = QUAD_EASING|EASE_OUT)
+	animate(transform = original_transform, time = 0.15 SECONDS, easing = QUAD_EASING|EASE_IN)
+
+/datum/emote/jump/get_sound(mob/user)
+	return 'sound/weapons/thudswoosh.ogg'
+
+// Avoids playing sounds if we're a ghost
+/datum/emote/jump/should_play_sound(mob/user, intentional)
+	if(isliving(user))
+		return ..()
+	return FALSE
+
+/datum/emote/jump/can_run_emote(mob/user, status_check, intentional)
+	if(user.buckled || HAS_TRAIT(user, TRAIT_HANDS_BLOCKED) || !isturf(user.loc))
+		return FALSE
+	if(isliving(user))
+		var/mob/living/L = user
+		if(IS_HORIZONTAL(L))
+			return FALSE
+	return ..()

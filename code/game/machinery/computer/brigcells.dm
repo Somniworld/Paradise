@@ -18,14 +18,17 @@
 	if(stat & (BROKEN|NOPOWER))
 		return
 	if(!allowed(user))
-		to_chat(user, "<span class='warning'>Access denied.</span>")
+		to_chat(user, SPAN_WARNING("Access denied."))
 		return
 	ui_interact(user)
 
-/obj/machinery/computer/brigcells/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = TRUE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/computer/brigcells/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/computer/brigcells/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "BrigCells", "Brig Cell Management", 1000, 400, master_ui, state)
+		ui = new(user, src, "BrigCells", "Brig Cell Management")
 		ui.open()
 
 /obj/machinery/computer/brigcells/ui_data(mob/user)
@@ -46,19 +49,19 @@
 	return data
 
 /obj/machinery/computer/brigcells/ui_act(action, params)
-	if (..())
+	if(..())
 		return FALSE
 
 	if(!allowed(usr))
-		to_chat(usr, "<span class='warning'>Access denied.</span>")
+		to_chat(usr, SPAN_WARNING("Access denied."))
 		return FALSE
 
-	if (action == "release")
+	if(action == "release")
 		var/ref = params["ref"]
 		var/obj/machinery/door_timer/T = locate(ref)
-		if (T)
+		if(T)
 			T.timer_end()
-			T.Radio.autosay("Timer stopped manually from a cell management console.", T.name, "Security", list(z))
+			T.Radio.autosay("Timer stopped manually from a cell management console.", T.name, "Security")
 		return TRUE
 
 	return FALSE

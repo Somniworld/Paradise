@@ -3,7 +3,7 @@
 	desc = "A data cartridge for portable microcomputers."
 	icon = 'icons/obj/pda.dmi'
 	icon_state = "cart"
-	item_state = "electronic"
+	inhand_icon_state = "electronic"
 	w_class = WEIGHT_CLASS_TINY
 
 	/// Integrated signaler for captain, science & generic signaler cartridge
@@ -31,11 +31,11 @@
 
 /obj/item/cartridge/engineering
 	name = "Power-ON Cartridge"
-	desc = "A data cartridge for portable microcomputers. Has a power monitor and a halogen counter."
+	desc = "A data cartridge for portable microcomputers. Has a power monitor and a radiation scanner."
 	icon_state = "cart-e"
 	programs = list(
 		new /datum/data/pda/app/power,
-		new /datum/data/pda/utility/scanmode/halogen
+		new /datum/data/pda/utility/scanmode/rad_scanner
 	)
 
 /obj/item/cartridge/atmos
@@ -91,7 +91,7 @@
 		new /datum/data/pda/app/janitor
 	)
 
-/obj/item/cartridge/lawyer
+/obj/item/cartridge/iaa
 	name = "P.R.O.V.E. Cartridge"
 	desc = "A data cartridge for portable microcomputers. Has security records."
 	icon_state = "cart-s"
@@ -141,7 +141,15 @@
 		new /datum/data/pda/app/signaller
 	)
 
-/obj/item/cartridge/quartermaster
+/obj/item/cartridge/chef
+	name = "Chef's Guide to the Galaxy"
+	desc = "A data cartridge for portable microcomputers. Contains every cooking recipe ever."
+	icon_state = "cart-chef"
+	programs = list(
+		new /datum/data/pda/app/cookbook
+	)
+
+/obj/item/cartridge/cargo
 	name = "Space Parts & Space Vendors Cartridge"
 	desc = "A data cartridge for portable microcomputers. Has supply records and MULEbot control."
 	icon_state = "cart-q"
@@ -158,15 +166,23 @@
 		new /datum/data/pda/app/status_display
 	)
 
+/obj/item/cartridge/qm
+	name = "Space Parts & Space Vendors Cartridge DELUXE"
+	desc = "A data cartridge for portable microcomputers. Has supply records, MULEbot control, and a status display controller."
+	icon_state = "cart-q"
+	programs = list(
+		new /datum/data/pda/app/supply,
+		new /datum/data/pda/app/mule_control,
+		new /datum/data/pda/app/status_display
+	)
+
 /obj/item/cartridge/hop
 	name = "HumanResources9001"
-	desc = "A data cartridge for portable microcomputers. Has supply records, MULEbot control, a custodial locator and a status display controller."
+	desc = "A data cartridge for portable microcomputers. Has security records, a custodial locator, and a status display controller."
 	icon_state = "cart-h"
 	programs = list(
 		new /datum/data/pda/app/crew_records/security,
 		new /datum/data/pda/app/janitor,
-		new /datum/data/pda/app/supply,
-		new /datum/data/pda/app/mule_control,
 		new /datum/data/pda/app/status_display
 	)
 
@@ -182,11 +198,11 @@
 
 /obj/item/cartridge/ce
 	name = "Power-On DELUXE"
-	desc = "A data cartridge for portable microcomputers. Has a power monitor, gas scanner, halogen counter and status display controller."
+	desc = "A data cartridge for portable microcomputers. Has a power monitor, gas scanner, radiation scanner and status display controller."
 	icon_state = "cart-ce"
 	programs = list(
 		new /datum/data/pda/app/power,
-		new /datum/data/pda/utility/scanmode/halogen,
+		new /datum/data/pda/utility/scanmode/rad_scanner,
 		new /datum/data/pda/utility/scanmode/gas,
 		new /datum/data/pda/app/status_display
 	)
@@ -219,11 +235,11 @@
 
 /obj/item/cartridge/captain
 	name = "Value-PAK Cartridge"
-	desc = "A data cartridge for portable microcomputers. Has everything except a signaler system."
+	desc = "A data cartridge for portable microcomputers. Has every single app included, now that's real value!"
 	icon_state = "cart-c"
 	programs = list(
 		new /datum/data/pda/app/power,
-		new /datum/data/pda/utility/scanmode/halogen,
+		new /datum/data/pda/utility/scanmode/rad_scanner,
 		new /datum/data/pda/utility/scanmode/gas,
 		new /datum/data/pda/app/crew_records/medical,
 		new /datum/data/pda/utility/scanmode/medical,
@@ -249,34 +265,40 @@
 		new /datum/data/pda/app/status_display
 	)
 
-/obj/item/cartridge/centcom
-	name = "Value-PAK Cartridge"
-	desc = "Now with 200% more value!"
-	icon_state = "cart-c"
+/obj/item/cartridge/ai
+	name = "All-Seeing Cartridge"
+	desc = "A data cartridge made for the internal PDA of an AI."
 	programs = list(
 		new /datum/data/pda/app/power,
-		new /datum/data/pda/utility/scanmode/halogen,
-		new /datum/data/pda/utility/scanmode/gas,
 		new /datum/data/pda/app/crew_records/medical,
-		new /datum/data/pda/utility/scanmode/medical,
-		new /datum/data/pda/utility/scanmode/reagent,
 		new /datum/data/pda/app/crew_records/security,
 		new /datum/data/pda/app/secbot_control,
 		new /datum/data/pda/app/janitor,
 		new /datum/data/pda/app/supply,
-		new /datum/data/pda/app/status_display
+	)
+
+/obj/item/cartridge/robot
+	name = "BORG-0 Cartridge"
+	desc = "A data cartidge made for the internal PDAs of synthetics."
+	programs = list(
+		new /datum/data/pda/utility/robot_headlamp,
+		new /datum/data/pda/utility/robot_self_diagnosis,
+		new /datum/data/pda/app/power,
+		new /datum/data/pda/app/crew_records/medical,
+		new /datum/data/pda/app/crew_records/security,
+		new /datum/data/pda/app/janitor,
 	)
 
 /obj/item/cartridge/syndicate
 	name = "Detomatix Cartridge"
 	desc = "Allows you to remotely detonate other people's PDAs through the messenger program."
-	icon_state = "cart"
 	charges = 4
 	messenger_plugins = list(new/datum/data/pda/messenger_plugin/virus/detonate)
 
-/obj/item/cartridge/syndicate/nuclear //needed subtype so regular traitors can't open and close nuclear shuttle doors
+/// needed subtype so regular traitors can't open and close nuclear shuttle doors
+/obj/item/cartridge/syndicate/nuclear
 	name = "Nuclear Agent Detomatix Cartridge"
-	desc = "The same reliable Detomatix program except with the added ability of remotely toggling your nuclear shuttle airlock from your PDA"
+	desc = "The same reliable Detomatix program except with the added ability of remotely toggling your nuclear shuttle airlock from your PDA."
 	var/initial_remote_door_id = "smindicate" //Make sure this matches the syndicate shuttle's shield/door id!!	//don't ask about the name, testing.
 	programs = list(
 		new /datum/data/pda/utility/toggle_door
@@ -291,45 +313,8 @@
 /obj/item/cartridge/frame
 	name = "F.R.A.M.E. cartridge"
 	desc = "Allows you to upload a virus onto a PDA with it's messenger on."
-	icon_state = "cart"
 	charges = 5
 	var/telecrystals = 0
 	messenger_plugins = list(
 		new /datum/data/pda/messenger_plugin/virus/frame
 	)
-
-/obj/item/cartridge/mob_hunt_game
-	name = "Nano-Mob Hunter GO! Cartridge"
-	desc = "The hit new PDA game that lets you track down and capture your favorite Nano-Mobs living in your world!"
-	icon_state = "cart-eye"
-	programs = list(
-		new /datum/data/pda/app/mob_hunter_game
-	)
-
-/obj/item/cartridge/mob_hunt_game/examine(mob/user)
-	. = ..()
-	if(emagged)
-		if(isAntag(user))
-			. += "<span class='warning'>This copy of Nano-Mob Hunter GO! has been hacked to allow the creation of trap mobs which will cause any PDA that attempts to capture it to shock anyone holding it. Hacked copies of the game will not trigger the trap. Provided you actually find someone playing nanomobs, that is.</span>"
-
-/obj/item/cartridge/mob_hunt_game/attackby(obj/item/O, mob/user, params)
-	if(istype(O, /obj/item/nanomob_card))
-		var/obj/item/nanomob_card/card = O
-		var/datum/data/pda/app/mob_hunter_game/my_game = programs[1]
-
-		if(my_game.register_capture(card.mob_data))
-			to_chat(user, "<span class='notice'>Transfer successful!</span>")
-			qdel(card)
-		else
-			to_chat(user, "<span class='warning'>Transfer failed. Could not read mob data from card.</span>")
-
-	else
-		..()
-
-/obj/item/cartridge/mob_hunt_game/emag_act(mob/user)
-	if(!emagged)
-		emagged = TRUE
-		var/datum/data/pda/app/mob_hunter_game/my_game = programs[1]
-		my_game.hacked = TRUE
-		to_chat(user, "<span class='warning'>TR4P_M45T3R.mod successfully initialized. ToS violated. User Agreement nullified. Gotta pwn them all.</span>")
-		to_chat(user, "<span class='warning'>You can now create trapped versions of any mob in your collection that will damage hunters who attempt to capture it.</span>")

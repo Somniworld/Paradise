@@ -21,6 +21,32 @@
 	data["emotions"] = emotions
 	data["current_emotion"] = user.card.current_emotion
 
+	var/list/speech_types = list()
+	for(var/name in user.possible_say_verbs)
+		var/list/speech = list()
+		speech["name"] = name
+		speech["id"] = length(speech_types)
+		speech_types[++speech_types.len] = speech
+
+	data["current_speech_verb"] = user.speech_state
+	data["speech_verbs"] = speech_types
+
+	var/list/chassis_choices = list()
+	var/list/chassises_to_add = list()
+
+	chassis_choices = user.possible_chassis.Copy()
+	if(user.custom_sprite)
+		chassis_choices["Custom"] = "[user.ckey]-pai"
+	for(var/name in chassis_choices)
+		var/list/chassis_to_update_with = list()
+		chassis_to_update_with["name"] = name
+		chassis_to_update_with["icon"] = chassis_choices[name]
+		chassis_to_update_with["id"] = length(chassis_to_update_with)
+		chassises_to_add[++chassises_to_add.len] = chassis_to_update_with
+
+	data["available_chassises"] = chassises_to_add
+	data["current_chassis"] = user.chassis
+
 	var/list/available_s = list()
 	for(var/s in GLOB.pai_software_by_key)
 		var/datum/pai_software/PS = GLOB.pai_software_by_key[s]
@@ -64,6 +90,20 @@
 			var/toggle_key = params["toggle_key"]
 			if(pai_holder.installed_software[toggle_key])
 				pai_holder.installed_software[toggle_key].toggle(pai_holder)
+		if("setSpeechStyle")
+			pai_holder.speech_state = params["speech_state"]
+			var/list/sayverbs = pai_holder.possible_say_verbs[pai_holder.speech_state]
+			pai_holder.speak_statement = sayverbs[1]
+			pai_holder.speak_exclamation = sayverbs[length(sayverbs) > 1 ? 2 : length(sayverbs)]
+			pai_holder.speak_query = sayverbs[length(sayverbs) > 2 ? 3 : length(sayverbs)]
+		if("setChassis")
+			pai_holder.chassis = params["chassis_to_change"]
+			pai_holder.icon_state = pai_holder.chassis
+			if(pai_holder.icon_state == "[pai_holder.ckey]-pai")
+				pai_holder.icon = 'icons/mob/custom_synthetic/custom-synthetic.dmi'
+			else
+				pai_holder.icon = 'icons/mob/pai.dmi'
+
 
 // Directives //
 /datum/pai_software/directives
@@ -96,23 +136,23 @@
 				return
 
 			// Check the carrier
-			var/answer = alert(M, "[pai_holder] is requesting a DNA sample from you. Will you allow it to confirm your identity?", "[pai_holder] Check DNA", "Yes", "No")
+			var/answer = tgui_alert(M, "[pai_holder] is requesting a DNA sample from you. Will you allow it to confirm your identity?", "[pai_holder] Check DNA", list("Yes", "No"))
 			if(answer == "Yes")
-				M.visible_message("<span class='notice'>[M] presses [M.p_their()] thumb against [pai_holder].</span>", "<span class='notice'>You press your thumb against [pai_holder].</span>")
+				M.visible_message(SPAN_NOTICE("[M] presses [M.p_their()] thumb against [pai_holder]."), SPAN_NOTICE("You press your thumb against [pai_holder]."))
 				var/datum/dna/dna = M.dna
-				to_chat(usr, "<span class='notice'>[M]'s UE string: [dna.unique_enzymes]</span>")
+				to_chat(usr, SPAN_NOTICE("[M]'s UE string: [dna.unique_enzymes]"))
 				if(dna.unique_enzymes == pai_holder.master_dna)
-					to_chat(usr, "<span class='notice'>DNA is a match to stored Master DNA.</span>")
+					to_chat(usr, SPAN_NOTICE("DNA is a match to stored Master DNA."))
 				else
-					to_chat(usr, "<span class='warning'>DNA does not match stored Master DNA.</span>")
+					to_chat(usr, SPAN_WARNING("DNA does not match stored Master DNA."))
 			else
-				to_chat(usr, "<span class='warning'>[M] does not seem like [M.p_they()] [M.p_are()] going to provide a DNA sample willingly.</span>")
+				to_chat(usr, SPAN_WARNING("[M] does not seem like [M.p_they()] [M.p_are()] going to provide a DNA sample willingly."))
 
 // Crew Manifest //
 /datum/pai_software/crew_manifest
 	name = "Crew Manifest"
-	ram_cost = 5
 	id = "manifest"
+	default = TRUE
 	template_file = "pai_manifest"
 	ui_icon = "users"
 
@@ -187,8 +227,8 @@
 // Messenger //
 /datum/pai_software/messenger
 	name = "Digital Messenger"
-	ram_cost = 5
 	id = "messenger"
+	default = TRUE
 	template_file = "pai_messenger"
 	ui_icon = "envelope"
 
@@ -314,7 +354,7 @@
 			if(cable && cable.machine)
 				hackdoor = cable.machine
 				if(hacking)
-					to_chat(usr, "<span class='warning'>You are already hacking that door!</span>")
+					to_chat(usr, SPAN_WARNING("You are already hacking that door!"))
 				else
 					hacking = TRUE
 					INVOKE_ASYNC(src, PROC_REF(hackloop))
@@ -323,11 +363,11 @@
 		if("cable")
 			playsound(pai_holder, 'sound/mecha/mechmove03.ogg', 25, TRUE)
 			if(cable) // Retracting
-				pai_holder.visible_message("<span class='warning'>[cable] is pulled back into [pai_holder] with a quick snap.</span>")
+				pai_holder.visible_message(SPAN_WARNING("[cable] is pulled back into [pai_holder] with a quick snap."))
 				QDEL_NULL(cable)
 			else // Extending
 				cable = new /obj/item/pai_cable(get_turf(pai_holder))
-				pai_holder.visible_message("<span class='warning'>A port on [pai_holder] opens to reveal [cable], which promptly falls to the floor.</span>")
+				pai_holder.visible_message(SPAN_WARNING("A port on [pai_holder] opens to reveal [cable], which promptly falls to the floor."))
 
 /**
   * Door jack hack loop
@@ -387,3 +427,31 @@
 		data["burn"] = held.getFireLoss()
 
 	return data
+
+/obj/item/pai_cable
+	name = "data cable"
+	desc = "A flexible coated cable with a universal jack on one end."
+	icon = 'icons/obj/power.dmi'
+	icon_state = "wire1"
+	var/obj/machinery/machine
+	new_attack_chain = TRUE
+
+/obj/item/pai_cable/proc/plugin(obj/machinery/target, mob/user)
+	if(!(isairlock(target) || istype(target, /obj/machinery/camera)))
+		user.visible_message(
+			SPAN_WARNING("[user] dumbly fumbles to find a place on [target] to plug in [src]."),
+			SPAN_WARNING("There aren't any ports on [target] that match the jack belonging to [src].")
+		)
+		return
+	user.visible_message(
+		SPAN_WARNING("[user] inserts [src] into a data port on [target]!"),
+		SPAN_NOTICE("You insert [src] into a data port on [target]."),
+		SPAN_HEAR("You hear the satisfying click of a wire jack fastening into place.")
+	)
+	user.drop_item()
+	src.loc = target
+	src.machine = target
+
+/obj/item/pai_cable/interact_with_atom(obj/machinery/target, mob/living/user, list/modifiers)
+	src.plugin(target, user)
+	return ITEM_INTERACT_COMPLETE

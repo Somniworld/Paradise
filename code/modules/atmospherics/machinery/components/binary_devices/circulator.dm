@@ -2,18 +2,16 @@
 	name = "circulator/heat exchanger"
 	desc = "A gas circulator pump and heat exchanger. Its input port is on the south side, and its output port is on the north side."
 	icon = 'icons/obj/atmospherics/circulator.dmi'
-	icon_state = "circ1-off"
+	icon_state = "circ8-off"
+	density = TRUE
+	can_unwrench = TRUE
 
-	var/side = CIRC_LEFT
+	/// The Thermo-Electric Generator this circulator is connected to
+	var/obj/machinery/power/teg/generator
 
 	var/last_pressure_delta = 0
 
-	var/obj/machinery/power/generator/generator
-
-	anchored = TRUE
-	density = TRUE
-
-	can_unwrench = TRUE
+	var/side = CIRCULATOR_SIDE_LEFT
 	var/side_inverted = FALSE
 
 	var/light_range_on = 1
@@ -21,8 +19,8 @@
 
 /obj/machinery/atmospherics/binary/circulator/examine(mob/user)
 	. = ..()
-	. += "<span class='notice'>This generates electricity, depending on the difference in temperature between each side of the machine. The meter in \
-		the center of the machine gives an indicator of how much electricity is being generated.</span>"
+	. += SPAN_NOTICE("This generates electricity, depending on the difference in temperature between each side of the machine. The meter in \
+		the center of the machine gives an indicator of how much electricity is being generated.")
 
 
 // Creating a custom circulator pipe subtype to be delivered through cargo
@@ -33,10 +31,10 @@
 	. = ..(make_from = new /obj/machinery/atmospherics/binary/circulator(null))
 
 /obj/machinery/atmospherics/binary/circulator/Destroy()
-	if(generator && generator.cold_circ == src)
+	if(generator?.cold_circ == src)
 		generator.cold_circ = null
 
-	else if(generator && generator.hot_circ == src)
+	else if(generator?.hot_circ == src)
 		generator.hot_circ = null
 
 	return ..()
@@ -51,13 +49,12 @@
 		//Need at least 10 KPa difference to overcome friction in the mechanism
 		last_pressure_delta = 0
 		update_icon()
-		return null
+		return
 
 	//Calculate necessary moles to transfer using PV = nRT
-	if(inlet.temperature > 0)
+	if(inlet.temperature() > 0)
 		var/pressure_delta = (input_starting_pressure - output_starting_pressure) / 2
-
-		var/transfer_moles = pressure_delta * outlet.volume/(inlet.temperature * R_IDEAL_GAS_EQUATION)
+		var/transfer_moles = pressure_delta * outlet.volume/(inlet.temperature() * R_IDEAL_GAS_EQUATION)
 
 		if(last_pressure_delta != pressure_delta)
 			last_pressure_delta = pressure_delta
@@ -68,47 +65,34 @@
 		//Actually transfer the gas
 		var/datum/gas_mixture/removed = inlet.remove(transfer_moles)
 
-		parent1.update = 1
-		parent2.update = 1
+		parent1.update = TRUE
+		parent2.update = TRUE
 
 		return removed
 
-	else
-		last_pressure_delta = 0
-		update_icon()
+	last_pressure_delta = 0
+	update_icon()
 
 /obj/machinery/atmospherics/binary/circulator/proc/get_inlet_air()
-	if(side_inverted)
-		return air1
-	else
-		return air2
+	return side_inverted ? air1 : air2
 
 /obj/machinery/atmospherics/binary/circulator/proc/get_outlet_air()
-	if(side_inverted)
-		return air2
-	else
-		return air1
+	return side_inverted ? air2 : air1
 
 /obj/machinery/atmospherics/binary/circulator/proc/get_inlet_side()
-	if(dir==SOUTH||dir==NORTH)
-		if(side_inverted)
-			return "North"
-		else
-			return "South"
+	if(dir & (SOUTH|NORTH))
+		return side_inverted ? "North" : "South"
 
 /obj/machinery/atmospherics/binary/circulator/proc/get_outlet_side()
-	if(dir==SOUTH||dir==NORTH)
-		if(side_inverted)
-			return "South"
-		else
-			return "North"
+	if(dir & (SOUTH|NORTH))
+		return side_inverted ? "South" : "North"
 
 /obj/machinery/atmospherics/binary/circulator/multitool_act(mob/user, obj/item/I)
 	. = TRUE
 	if(!I.use_tool(src, user, 0, volume = I.tool_volume))
 		return
 	side_inverted = !side_inverted
-	to_chat(user, "<span class='notice'>You reverse the circulator's valve settings. The inlet of the circulator is now on the [get_inlet_side(dir)] side.</span>")
+	to_chat(user, SPAN_NOTICE("You reverse the circulator's valve settings. The inlet of the circulator is now on the [get_inlet_side(dir)] side."))
 	update_appearance(UPDATE_DESC|UPDATE_ICON)
 
 /obj/machinery/atmospherics/binary/circulator/update_desc()

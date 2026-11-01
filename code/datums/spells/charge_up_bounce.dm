@@ -2,17 +2,20 @@
  * A spell template that adds bounces to the charge_up spell template. The spell will bounce between targets once released.
  * Don't override cast and instead override apply_bounce_effect and the other procs
  */
-/obj/effect/proc_holder/spell/charge_up/bounce
+/datum/spell/charge_up/bounce
+	/// Sound we make when we hit a mob
 	var/bounce_hit_sound
+	/// How much time should be between each bounce?
+	var/bounce_time = 0 SECONDS
 
-/obj/effect/proc_holder/spell/charge_up/bounce/create_new_targeting()
+/datum/spell/charge_up/bounce/create_new_targeting()
 	var/datum/spell_targeting/click/T = new
 	T.allowed_type = /mob/living
 	T.try_auto_target = FALSE
 	T.use_obstacle_check = TRUE
 	return T
 
-/obj/effect/proc_holder/spell/charge_up/bounce/cast(list/targets, mob/user = usr)
+/datum/spell/charge_up/bounce/cast(list/targets, mob/user = usr)
 	var/mob/living/target = targets[1]
 
 	bounce(user, target, get_bounce_energy(), get_bounce_amount(), user)
@@ -20,13 +23,13 @@
 /**
  * How much energy should each bounce have?
  */
-/obj/effect/proc_holder/spell/charge_up/bounce/proc/get_bounce_energy()
+/datum/spell/charge_up/bounce/proc/get_bounce_energy()
 	return
 
 /**
  * How much bounces should there be in total?
  */
-/obj/effect/proc_holder/spell/charge_up/bounce/proc/get_bounce_amount()
+/datum/spell/charge_up/bounce/proc/get_bounce_amount()
 	return
 
 /**
@@ -36,7 +39,7 @@
  * * origin - Where the bounce came from
  * * target - The mob that got hit
  */
-/obj/effect/proc_holder/spell/charge_up/bounce/proc/create_beam(mob/origin, mob/target)
+/datum/spell/charge_up/bounce/proc/create_beam(mob/origin, mob/target)
 	return
 
 /**
@@ -49,23 +52,40 @@
  * * energy - How much energy the bounce has
  * * user - The caster of the spell
  */
-/obj/effect/proc_holder/spell/charge_up/bounce/proc/apply_bounce_effect(mob/origin, mob/target, energy, mob/user)
+/datum/spell/charge_up/bounce/proc/apply_bounce_effect(mob/origin, mob/target, energy, mob/user)
 	return
 
-/obj/effect/proc_holder/spell/charge_up/bounce/proc/bounce(mob/origin, mob/target, energy, bounces, mob/user)
-	SHOULD_CALL_PARENT(TRUE)
+/datum/spell/charge_up/bounce/proc/bounce(mob/origin, mob/target, energy, bounces, mob/user)
 	create_beam(origin, target)
 	apply_bounce_effect(origin, target, energy, user)
 	add_attack_logs(user, target, "Bounce spell '[src]' bounced on")
-	playsound(get_turf(target), bounce_hit_sound, 50, 1, -1)
+	playsound(get_turf(target), bounce_hit_sound, 50, TRUE, -1)
 
 	if(bounces >= 1)
-		var/list/possible_targets = list()
-		for(var/mob/living/M in view(targeting.range, target))
-			if(user == M || target == M && targeting.obstacle_check(target, M))
-				continue
-			possible_targets += M
-		if(!length(possible_targets))
-			return
-		var/mob/living/next = pick(possible_targets)
-		bounce(target, next, energy, bounces - 1, user)
+		if(bounce_time)
+			addtimer(CALLBACK(src, PROC_REF(continue_bounce), target, get_target(target, user), energy, bounces - 1, user), bounce_time, TIMER_DELETE_ME)
+		else
+			bounce(target, get_target(target, user), energy, bounces - 1, user)
+
+/datum/spell/charge_up/bounce/proc/continue_bounce(mob/origin, mob/target, energy, bounces, mob/user)
+	// We will only continue the chain if we exist
+	if(QDELETED(target))
+		return
+	// We fulfilled the conditions, get the next target
+	var/mob/living/carbon/to_beam_next = get_target(target, user)
+	if(isnull(to_beam_next)) // No target = no chain
+		return
+
+	// Chain again! Recursively
+	bounce(target, to_beam_next, energy, bounces - 1, user)
+
+/datum/spell/charge_up/bounce/proc/get_target(mob/origin, mob/user)
+	var/list/possible_targets = list()
+	for(var/mob/living/M in view(targeting.range, origin))
+		if(user == M || origin == M && targeting.obstacle_check(origin, M))
+			continue
+		possible_targets += M
+	if(!length(possible_targets))
+		return
+
+	return pick(possible_targets)

@@ -1,3 +1,4 @@
+
 ///////////////////////////////////
 // POWERS
 ///////////////////////////////////
@@ -6,9 +7,8 @@
 	name = "No Breathing"
 	activation_messages = list("You feel no need to breathe.")
 	deactivation_messages = list("You feel the need to breathe, once more.")
-	instability = GENE_INSTABILITY_MODERATE
+	instability = GENE_INSTABILITY_MAJOR
 	traits_to_add = list(TRAIT_NOBREATH)
-	activation_prob = 25
 
 /datum/mutation/nobreath/New()
 	..()
@@ -32,26 +32,6 @@
 		return
 	H.adjustBruteLoss(-1, FALSE)
 	H.adjustFireLoss(-1)
-
-/datum/mutation/increaserun
-	name = "Super Speed"
-	activation_messages = list("You feel swift and unencumbered.")
-	deactivation_messages = list("You feel slow.")
-	instability = GENE_INSTABILITY_MINOR
-	traits_to_add = list(TRAIT_IGNORESLOWDOWN)
-
-/datum/mutation/increaserun/New()
-	..()
-	block = GLOB.increaserunblock
-
-/datum/mutation/increaserun/can_activate(mob/M, flags)
-	if(!..())
-		return FALSE
-	if(ishuman(M))
-		var/mob/living/carbon/human/H = M
-		if(H.dna.species && H.dna.species.speed_mod && !(flags & MUTCHK_FORCED))
-			return FALSE
-	return TRUE
 
 /datum/mutation/heat_resist
 	name = "Heat Resistance"
@@ -85,7 +65,7 @@
 	name = "No Prints"
 	activation_messages = list("Your fingers feel numb.")
 	deactivation_messages = list("Your fingers no longer feel numb.")
-	instability = GENE_INSTABILITY_MINOR
+	instability = GENE_INSTABILITY_MODERATE
 	traits_to_add = list(TRAIT_NOFINGERPRINTS)
 
 /datum/mutation/noprints/New()
@@ -103,26 +83,30 @@
 	..()
 	block = GLOB.shockimmunityblock
 
-/datum/mutation/midget
-	name = "Midget"
+/datum/mutation/dwarf
+	name = "Dwarf"
 	activation_messages = list("Everything around you seems bigger now...")
 	deactivation_messages = list("Everything around you seems to shrink...")
-	instability = GENE_INSTABILITY_MINOR
+	instability = GENE_INSTABILITY_MODERATE
 	traits_to_add = list(TRAIT_DWARF)
 
-/datum/mutation/midget/New()
+/datum/mutation/dwarf/New()
 	..()
 	block = GLOB.smallsizeblock
 
-/datum/mutation/midget/activate(mob/M)
+/datum/mutation/dwarf/activate(mob/M)
 	..()
 	M.pass_flags |= PASSTABLE
+	if(HAS_TRAIT(M, TRAIT_TINY)) // So we don't become super tiny.
+		return
 	M.resize = 0.8
 	M.update_transform()
 
-/datum/mutation/midget/deactivate(mob/M)
+/datum/mutation/dwarf/deactivate(mob/M)
 	..()
 	M.pass_flags &= ~PASSTABLE
+	if(HAS_TRAIT(M, TRAIT_TINY)) // So we don't loose our tiny quirk.
+		return
 	M.resize = 1.25
 	M.update_transform()
 
@@ -133,7 +117,6 @@
 	deactivation_messages = list("Your muscles shrink.")
 	instability = GENE_INSTABILITY_MAJOR
 	traits_to_add = list(TRAIT_HULK, TRAIT_CHUNKYFINGERS)
-	activation_prob = 15
 
 /datum/mutation/hulk/New()
 	..()
@@ -159,7 +142,7 @@
 		M.update_mutations()		//update our mutation overlays
 		M.update_body()
 		M.status_flags |= CANSTUN | CANWEAKEN | CANPARALYSE | CANPUSH //temporary fix until the problem can be solved.
-		to_chat(M, "<span class='danger'>You suddenly feel very weak.</span>")
+		to_chat(M, SPAN_DANGER("You suddenly feel very weak."))
 
 /datum/mutation/tk
 	name = "Telekenesis"
@@ -167,7 +150,6 @@
 	deactivation_messages = list("You feel dumber.")
 	instability = GENE_INSTABILITY_MAJOR
 	traits_to_add = list(TRAIT_TELEKINESIS)
-	activation_prob = 15
 
 /datum/mutation/tk/New()
 	..()
@@ -183,6 +165,7 @@
 	name = "Sober"
 	activation_messages = list("You feel unusually sober.")
 	deactivation_messages = list("You feel like you could use a stiff drink.")
+	instability = GENE_INSTABILITY_MINOR
 
 	traits_to_add = list(TRAIT_ALCOHOL_TOLERANCE)
 
@@ -196,6 +179,7 @@
 	desc = "Boosts efficiency in sectors of the brain commonly associated with meta-mental energies."
 	activation_messages = list("Your mind feels closed.")
 	deactivation_messages = list("You feel oddly exposed.")
+	instability = GENE_INSTABILITY_MINOR
 
 /datum/mutation/psychic_resist/New()
 	..()
@@ -206,7 +190,7 @@
 /////////////////////////
 
 /datum/mutation/stealth
-	instability = GENE_INSTABILITY_MODERATE
+	instability = GENE_INSTABILITY_MAJOR
 
 /datum/mutation/stealth/can_activate(mob/M, flags)
 	// Can only activate one of these at a time.
@@ -225,25 +209,34 @@
 	desc = "Enables the subject to bend low levels of light around themselves, creating a cloaking effect."
 	activation_messages = list("You begin to fade into the shadows.")
 	deactivation_messages = list("You become fully visible.")
-	activation_prob = 25
 
 /datum/mutation/stealth/darkcloak/New()
 	..()
 	block = GLOB.shadowblock
 
+/datum/mutation/stealth/darkcloak/deactivate(mob/living/M)
+	..()
+	if(ishuman(M))
+		var/mob/living/carbon/human/H = M
+		H.set_alpha_tracking(ALPHA_VISIBLE, src)
+	if(!ishuman(M))
+		return
+	var/mob/living/carbon/human/H = M
+	H.set_alpha_tracking(ALPHA_VISIBLE, src)
 /datum/mutation/stealth/darkcloak/on_life(mob/M)
 	var/turf/simulated/T = get_turf(M)
-	if(!istype(T))
+	if(!istype(T) || !ishuman(M))
 		return
+	var/mob/living/carbon/human/H = M
 	var/light_available = T.get_lumcount() * 10
 	if(light_available <= 2)
-		if(M.invisibility != INVISIBILITY_LEVEL_TWO)
-			M.alpha = round(M.alpha * 0.8)
+		if(H.invisibility != INVISIBILITY_LEVEL_TWO)
+			H.set_alpha_tracking(H.get_alpha() * 0.8, src)
 	else
-		M.reset_visibility()
-		M.alpha = round(255 * 0.8)
-	if(M.alpha == 0)
-		M.make_invisible()
+		H.reset_visibility()
+		H.set_alpha_tracking(ALPHA_VISIBLE * 0.8, src)
+	if(H.get_alpha(src) == 0)
+		H.make_invisible()
 
 //WAS: /datum/bioEffect/chameleon
 /datum/mutation/stealth/chameleon
@@ -251,26 +244,34 @@
 	desc = "The subject becomes able to subtly alter light patterns to become invisible, as long as they remain still."
 	activation_messages = list("You feel one with your surroundings.")
 	deactivation_messages = list("You feel oddly visible.")
-	activation_prob = 25
 
 /datum/mutation/stealth/chameleon/New()
 	..()
 	block = GLOB.chameleonblock
 
-/datum/mutation/stealth/chameleon/on_life(mob/living/M) //look if a ghost gets this, its an admins problem
-	if((world.time - M.last_movement) >= 30 && !M.stat && (M.mobility_flags & MOBILITY_STAND) && !M.restrained())
-		if(M.invisibility != INVISIBILITY_LEVEL_TWO)
-			M.alpha -= 25
+/datum/mutation/stealth/chameleon/deactivate(mob/living/M)
+	..()
+	if(ishuman(M))
+		var/mob/living/carbon/human/H = M
+		H.set_alpha_tracking(ALPHA_VISIBLE, src)
+
+/datum/mutation/stealth/chameleon/on_life(mob/living/M)
+	if(!ishuman(M))
+		return
+	var/mob/living/carbon/human/H = M
+	if((world.time - H.last_movement) >= 30 && !H.stat && (H.mobility_flags & MOBILITY_STAND) && !H.restrained())
+		if(H.invisibility != INVISIBILITY_LEVEL_TWO)
+			H.set_alpha_tracking(H.get_alpha() - 25, src)
 	else
-		M.reset_visibility()
-		M.alpha = round(255 * 0.80)
-	if(M.alpha == 0)
-		M.make_invisible()
+		H.reset_visibility()
+		H.set_alpha_tracking(ALPHA_VISIBLE * 0.8, src)
+	if(H.get_alpha(src) == 0)
+		H.make_invisible()
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
 /datum/mutation/grant_spell
-	var/obj/effect/proc_holder/spell/spelltype
+	var/datum/spell/spelltype
 
 /datum/mutation/grant_spell/activate(mob/M)
 	M.AddSpell(new spelltype(null))
@@ -278,7 +279,7 @@
 	return TRUE
 
 /datum/mutation/grant_spell/deactivate(mob/M)
-	for(var/obj/effect/proc_holder/spell/S in M.mob_spell_list)
+	for(var/datum/spell/S in M.mob_spell_list)
 		if(istype(S, spelltype))
 			M.RemoveSpell(S)
 	..()
@@ -291,30 +292,28 @@
 	activation_messages = list("You notice a strange cold tingle in your fingertips.")
 	deactivation_messages = list("Your fingers feel warmer.")
 	instability = GENE_INSTABILITY_MODERATE
-	spelltype = /obj/effect/proc_holder/spell/cryokinesis
+	spelltype = /datum/spell/cryokinesis
 
 /datum/mutation/grant_spell/cryo/New()
 	..()
 	block = GLOB.cryoblock
 
-/obj/effect/proc_holder/spell/cryokinesis
+/datum/spell/cryokinesis
 	name = "Cryokinesis"
 	desc = "Drops the bodytemperature of another person."
-	panel = "Abilities"
 
 	base_cooldown = 1200
 
 	clothes_req = FALSE
-	stat_allowed = CONSCIOUS
+	antimagic_flags = NONE
 
-	selection_activated_message		= "<span class='notice'>Your mind grow cold. Click on a target to cast the spell.</span>"
-	selection_deactivated_message	= "<span class='notice'>Your mind returns to normal.</span>"
-	invocation_type = "none"
+	selection_activated_message		= SPAN_NOTICE("Your mind grow cold. Click on a target to cast the spell.")
+	selection_deactivated_message	= SPAN_NOTICE("Your mind returns to normal.")
 	var/list/compatible_mobs = list(/mob/living/carbon/human)
 
 	action_icon_state = "genetic_cryo"
 
-/obj/effect/proc_holder/spell/cryokinesis/create_new_targeting()
+/datum/spell/cryokinesis/create_new_targeting()
 	var/datum/spell_targeting/click/T = new()
 	T.allowed_type = /mob/living/carbon
 	T.click_radius = 0
@@ -323,12 +322,12 @@
 	T.include_user = TRUE
 	return T
 
-/obj/effect/proc_holder/spell/cryokinesis/cast(list/targets, mob/user = usr)
+/datum/spell/cryokinesis/cast(list/targets, mob/user = usr)
 
 	var/mob/living/carbon/C = targets[1]
 
 	if(HAS_TRAIT(C, TRAIT_RESISTCOLD))
-		C.visible_message("<span class='warning'>A cloud of fine ice crystals engulfs [C.name], but disappears almost instantly!</span>")
+		C.visible_message(SPAN_WARNING("A cloud of fine ice crystals engulfs [C.name], but disappears almost instantly!"))
 		return
 	var/handle_suit = FALSE
 	if(ishuman(C))
@@ -337,11 +336,11 @@
 			if(istype(H.wear_suit, /obj/item/clothing/suit/space))
 				handle_suit = TRUE
 				if(H.internal)
-					H.visible_message("<span class='warning'>[user] sprays a cloud of fine ice crystals, engulfing [H]!</span>",
-										"<span class='notice'>[user] sprays a cloud of fine ice crystals over your [H.head]'s visor.</span>")
+					H.visible_message(SPAN_WARNING("[user] sprays a cloud of fine ice crystals, engulfing [H]!"),
+										SPAN_NOTICE("[user] sprays a cloud of fine ice crystals over your [H.head]'s visor."))
 				else
-					H.visible_message("<span class='warning'>[user] sprays a cloud of fine ice crystals engulfing, [H]!</span>",
-										"<span class='warning'>[user] sprays a cloud of fine ice crystals cover your [H.head]'s visor and make it into your air vents!.</span>")
+					H.visible_message(SPAN_WARNING("[user] sprays a cloud of fine ice crystals engulfing, [H]!"),
+										SPAN_WARNING("[user] sprays a cloud of fine ice crystals cover your [H.head]'s visor and make it into your air vents!."))
 
 					H.bodytemperature = max(0, H.bodytemperature - 100)
 				add_attack_logs(user, C, "Cryokinesis")
@@ -349,7 +348,7 @@
 		C.bodytemperature = max(0, C.bodytemperature - 200)
 		C.ExtinguishMob()
 
-		C.visible_message("<span class='warning'>[user] sprays a cloud of fine ice crystals, engulfing [C]!</span>")
+		C.visible_message(SPAN_WARNING("[user] sprays a cloud of fine ice crystals, engulfing [C]!"))
 		add_attack_logs(user, C, "Cryokinesis- NO SUIT/INTERNALS")
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -360,44 +359,68 @@
 	desc = "Allows the subject to eat just about anything without harm."
 	activation_messages = list("You feel hungry.")
 	deactivation_messages = list("You don't feel quite so hungry anymore.")
-	instability = GENE_INSTABILITY_MINOR
+	instability = GENE_INSTABILITY_MODERATE
 
-	spelltype=/obj/effect/proc_holder/spell/eat
+	spelltype=/datum/spell/eat
 
 /datum/mutation/grant_spell/mattereater/New()
 	..()
 	block = GLOB.eatblock
 
-/obj/effect/proc_holder/spell/eat
+// checks with those with the hungry organ from adding/removing matter eater
+/datum/mutation/grant_spell/mattereater/activate(mob/living/M)
+	if(ishuman(M))
+		var/mob/living/carbon/human/H = M
+		var/obj/item/organ/internal/liver/xenobiology/hungry/O = H.get_int_organ(/obj/item/organ/internal/liver/xenobiology/hungry)
+		if(O)
+			return
+	return 	..()
+
+/datum/mutation/grant_spell/mattereater/deactivate(mob/living/M)
+	if(ishuman(M))
+		var/mob/living/carbon/human/H = M
+		var/obj/item/organ/internal/liver/xenobiology/hungry/O = H.get_int_organ(/obj/item/organ/internal/liver/xenobiology/hungry)
+		if(O)
+			return
+	return 	..()
+
+
+/datum/spell/eat
 	name = "Eat"
 	desc = "Eat just about anything!"
-	panel = "Abilities"
 
 	base_cooldown = 300
 
 	clothes_req = FALSE
-	stat_allowed = CONSCIOUS
-	invocation_type = "none"
+	antimagic_flags = NONE
 
 	action_icon_state = "genetic_eat"
 
-/obj/effect/proc_holder/spell/eat/create_new_targeting()
+/datum/spell/eat/create_new_targeting()
 	return new /datum/spell_targeting/matter_eater
 
-/obj/effect/proc_holder/spell/eat/can_cast(mob/user = usr, charge_check = TRUE, show_message = FALSE)
+/datum/spell/eat/can_cast(mob/user = usr, charge_check = TRUE, show_message = FALSE)
 	. = ..()
 	if(!.)
 		return
-	var/can_eat = TRUE
-	if(iscarbon(user))
-		var/mob/living/carbon/C = user
-		if((C.head && (C.head.flags_cover & HEADCOVERSMOUTH)) || (C.wear_mask && (C.wear_mask.flags_cover & MASKCOVERSMOUTH) && !C.wear_mask.up))
-			if(show_message)
-				to_chat(C, "<span class='warning'>Your mouth is covered, preventing you from eating!</span>")
-			can_eat = FALSE
-	return can_eat
 
-/obj/effect/proc_holder/spell/eat/proc/doHeal(mob/user)
+	if(!iscarbon(user))
+		return TRUE
+
+	var/mob/living/carbon/C = user
+	if(!(C.head?.flags_cover & HEADCOVERSMOUTH))
+		if(!ismask(C.wear_mask))
+			return TRUE
+
+		var/obj/item/clothing/mask/worn_mask = C.wear_mask
+		if(!(worn_mask.flags_cover & MASKCOVERSMOUTH) || worn_mask.up)
+			return TRUE
+
+	if(show_message)
+		to_chat(C, SPAN_WARNING("Your mouth is covered, preventing you from eating!"))
+	return FALSE
+
+/datum/spell/eat/proc/doHeal(mob/user)
 	if(ishuman(user))
 		var/mob/living/carbon/human/H = user
 		for(var/name in H.bodyparts_by_name)
@@ -405,7 +428,7 @@
 			if(!H.bodyparts_by_name[name])
 				continue
 			affecting = H.bodyparts_by_name[name]
-			if(!isorgan(affecting))
+			if(!is_external_organ(affecting))
 				continue
 			affecting.heal_damage(4, 0, updating_health = FALSE)
 		H.UpdateDamageIcon()
@@ -413,48 +436,84 @@
 
 
 
-/obj/effect/proc_holder/spell/eat/cast(list/targets, mob/user = usr)
-	if(!targets.len)
-		to_chat(user, "<span class='notice'>No target found in range.</span>")
+/datum/spell/eat/cast(list/targets, mob/user = usr)
+	if(!length(targets))
+		to_chat(user, SPAN_NOTICE("No target found in range."))
 		return
 
 	var/atom/movable/the_item = targets[1]
+	if(!user.Adjacent(the_item))
+		to_chat(user, SPAN_DANGER("You need to be next to [the_item] for this!"))
+		return FALSE
 	if(ishuman(the_item))
 		var/mob/living/carbon/human/H = the_item
 		var/obj/item/organ/external/limb = H.get_organ(user.zone_selected)
 		if(!istype(limb))
-			to_chat(user, "<span class='warning'>You can't eat this part of them!</span>")
+			to_chat(user, SPAN_WARNING("You can't eat this part of them!"))
 			revert_cast()
 			return FALSE
 		if(istype(limb,/obj/item/organ/external/head))
 			// Bullshit, but prevents being unable to clone someone.
-			to_chat(user, "<span class='warning'>You try to put \the [limb] in your mouth, but [the_item.p_their()] ears tickle your throat!</span>")
+			to_chat(user, SPAN_WARNING("You try to put \the [limb] in your mouth, but [the_item.p_their()] ears tickle your throat!"))
 			revert_cast()
 			return FALSE
 		if(istype(limb,/obj/item/organ/external/chest))
 			// Bullshit, but prevents being able to instagib someone.
-			to_chat(user, "<span class='warning'>You try to put [the_item.p_their()] [limb] in your mouth, but it's too big to fit!</span>")
+			to_chat(user, SPAN_WARNING("You try to put [the_item.p_their()] [limb] in your mouth, but it's too big to fit!"))
 			revert_cast()
 			return FALSE
-		user.visible_message("<span class='danger'>[user] begins stuffing [the_item]'s [limb.name] into [user.p_their()] gaping maw!</span>")
-		var/oldloc = H.loc
-		if(!do_mob(user,H,EAT_MOB_DELAY))
-			to_chat(user, "<span class='danger'>You were interrupted before you could eat [the_item]!</span>")
+		user.visible_message(SPAN_DANGER("[user] begins stuffing [the_item]'s [limb.name] into [user.p_their()] gaping maw!"))
+		if(!do_mob(user, H, EAT_MOB_DELAY))
+			to_chat(user, SPAN_DANGER("You were interrupted before you could eat [the_item]!"))
 		else
 			if(!limb || !H)
 				return
-			if(H.loc != oldloc)
-				to_chat(user, "<span class='danger'>\The [limb] moved away from your mouth!</span>")
-				return
-			user.visible_message("<span class='danger'>[user] [pick("chomps","bites")] off [the_item]'s [limb]!</span>")
+			if(!user.Adjacent(the_item))
+				to_chat(user, SPAN_DANGER("You need to be next to [the_item] for this!"))
+				return FALSE
+			user.visible_message(SPAN_DANGER("[user] [pick("chomps","bites")] off [the_item]'s [limb]!"))
 			playsound(user.loc, 'sound/items/eatfood.ogg', 50, 0)
-			limb.droplimb(0, DROPLIMB_SHARP)
+
+			// Most limbs will drop here. Groin won't, but this
+			// still spills out the organs that were in it.
+			limb.droplimb(FALSE, DROPLIMB_SHARP)
+			if(istype(limb, /obj/item/organ/external/groin))
+				limb.receive_damage(100, sharp = TRUE)
+
+				var/obj/item/organ/external/left_leg = H.get_organ(BODY_ZONE_L_LEG)
+				if(istype(left_leg))
+					left_leg.droplimb(FALSE, DROPLIMB_SHARP)
+
+				var/obj/item/organ/external/right_leg = H.get_organ(BODY_ZONE_R_LEG)
+				if(istype(right_leg))
+					right_leg.droplimb(FALSE, DROPLIMB_SHARP)
+
+				var/obj/item/organ/external/chest = H.get_organ(BODY_ZONE_CHEST)
+				if(istype(chest))
+					chest.receive_damage(50, sharp = TRUE)
+
 			doHeal(user)
-	else
-		user.visible_message("<span class='danger'>[user] eats \the [the_item].</span>")
-		playsound(user.loc, 'sound/items/eatfood.ogg', 50, 0)
-		qdel(the_item)
-		doHeal(user)
+
+		return
+
+	if(ismob(the_item.loc) && isitem(the_item))
+		var/obj/item/eaten = the_item
+		var/mob/the_owner = the_item.loc
+		if(!the_owner.drop_item_to_ground(eaten, silent = TRUE))
+			to_chat(user, SPAN_WARNING("You can't eat [the_item], it won't go down your throat!"))
+			return
+	user.visible_message(SPAN_DANGER("[user] eats [the_item]."))
+	playsound(user.loc, 'sound/items/eatfood.ogg', 50, FALSE)
+	if(ishuman(user))
+		var/mob/living/carbon/human/H = user
+		var/obj/item/organ/external/chest/target_place = H.get_organ(BODY_ZONE_CHEST)
+		if(istype(target_place))
+			the_item.forceMove(target_place)
+			doHeal(user)
+			return
+
+	qdel(the_item)
+	doHeal(user)
 
 ////////////////////////////////////////////////////////////////////////
 
@@ -465,67 +524,74 @@
 	//cooldown = 30
 	activation_messages = list("Your leg muscles feel taut and strong.")
 	deactivation_messages = list("Your leg muscles shrink back to normal.")
-	instability = GENE_INSTABILITY_MINOR
+	instability = GENE_INSTABILITY_MODERATE
 
-	spelltype =/obj/effect/proc_holder/spell/leap
+	spelltype =/datum/spell/leap
 
 /datum/mutation/grant_spell/jumpy/New()
 	..()
 	block = GLOB.jumpblock
 
-/obj/effect/proc_holder/spell/leap
+/datum/spell/leap
 	name = "Jump"
 	desc = "Leap great distances!"
-	panel = "Abilities"
-
 	base_cooldown = 60
 
 	clothes_req = FALSE
-	stat_allowed = CONSCIOUS
-	invocation_type = "none"
+	antimagic_flags = NONE
 
 	action_icon_state = "genetic_jump"
+	var/leap_distance = 10
 
-/obj/effect/proc_holder/spell/leap/create_new_targeting()
+/datum/spell/leap/create_new_targeting()
 	return new /datum/spell_targeting/self
 
-/obj/effect/proc_holder/spell/leap/cast(list/targets, mob/living/user = usr)
+/datum/spell/leap/cast(list/targets, mob/living/user = usr)
 	var/failure = FALSE
 	if(ismob(user.loc) || IS_HORIZONTAL(user) || user.IsStunned() || user.buckled || user.stat)
-		to_chat(user, "<span class='warning'>You can't jump right now!</span>")
+		to_chat(user, SPAN_WARNING("You can't jump right now!"))
 		return
 
 	if(isturf(user.loc))
 		if(user.restrained())//Why being pulled while cuffed prevents you from moving
 			for(var/mob/living/M in range(user, 1))
 				if(M.pulling == user)
-					if(!M.restrained() && M.stat == 0 && !(M.mobility_flags & MOBILITY_STAND) && user.Adjacent(M))
+					if(!M.restrained() && M.stat == CONSCIOUS && !(M.mobility_flags & MOBILITY_STAND) && user.Adjacent(M))
 						failure = TRUE
 					else
 						M.stop_pulling()
 
-		user.visible_message("<span class='danger'>[user.name]</b> takes a huge leap!</span>")
+		user.visible_message(SPAN_DANGER("[user.name]</b> takes a huge leap!"))
 		playsound(user.loc, 'sound/weapons/thudswoosh.ogg', 50, 1)
 		if(failure)
 			user.Weaken(10 SECONDS)
-			user.visible_message("<span class='warning'>[user] attempts to leap away but is slammed back down to the ground!</span>",
-								"<span class='warning'>You attempt to leap away but are suddenly slammed back down to the ground!</span>",
-								"<span class='notice'>You hear the flexing of powerful muscles and suddenly a crash as a body hits the floor.</span>")
+			user.visible_message(SPAN_WARNING("[user] attempts to leap away but is slammed back down to the ground!"),
+								SPAN_WARNING("You attempt to leap away but are suddenly slammed back down to the ground!"),
+								SPAN_NOTICE("You hear the flexing of powerful muscles and suddenly a crash as a body hits the floor."))
 			return FALSE
 		var/prevLayer = user.layer
-		var/prevFlying = user.flying
 		user.layer = 9
 
-		user.flying = TRUE
-		for(var/i=0, i<10, i++)
+		ADD_TRAIT(user, TRAIT_FLYING, "leap")
+		for(var/i in 1 to leap_distance)
+			var/turf/hit_turf = get_step(user, user.dir)
+			var/atom/hit_atom = get_blocking_atom(hit_turf)
+			if(hit_atom)
+				hit_atom.hit_by_thrown_mob(user, damage = 10)
+				break
+
 			step(user, user.dir)
-			if(i < 5) user.pixel_y += 8
-			else user.pixel_y -= 8
+			if(i < 6)
+				user.pixel_y += 8
+			else
+				user.pixel_y -= 8
 			sleep(1)
-		user.flying = prevFlying
+
+		REMOVE_TRAIT(user, TRAIT_FLYING, "leap")
+		user.pixel_y = 0 // In case leap was varedited to be longer or shorter
 
 		if(HAS_TRAIT(user, TRAIT_FAT) && prob(66))
-			user.visible_message("<span class='danger'>[user.name]</b> crashes due to [user.p_their()] heavy weight!</span>")
+			user.visible_message(SPAN_DANGER("<b>[user.name]</b> crashes due to [user.p_their()] heavy weight!"))
 			//playsound(user.loc, 'zhit.wav', 50, 1)
 			user.AdjustWeakened(20 SECONDS)
 			user.AdjustStunned(10 SECONDS)
@@ -534,10 +600,10 @@
 
 	if(isobj(user.loc))
 		var/obj/container = user.loc
-		to_chat(user, "<span class='warning'>You leap and slam your head against the inside of [container]! Ouch!</span>")
+		to_chat(user, SPAN_WARNING("You leap and slam your head against the inside of [container]! Ouch!"))
 		user.AdjustParalysis(6 SECONDS)
 		user.AdjustWeakened(10 SECONDS)
-		container.visible_message("<span class='danger'>[user.loc]</b> emits a loud thump and rattles a bit.</span>")
+		container.visible_message(SPAN_DANGER("[user.loc]</b> emits a loud thump and rattles a bit."))
 		playsound(user.loc, 'sound/effects/bang.ogg', 50, 1)
 		var/wiggle = 6
 		while(wiggle > 0)
@@ -548,6 +614,26 @@
 		container.pixel_x = 0
 		container.pixel_y = 0
 
+/datum/spell/leap/proc/get_blocking_atom(turf/turf_to_check)
+	if(!turf_to_check)
+		return FALSE
+
+	if(turf_to_check.density)
+		return turf_to_check
+
+	for(var/atom/movable/hit_thing in turf_to_check)
+		if(isliving(hit_thing))
+			var/mob/living/hit_mob = hit_thing
+			if(hit_mob.density)
+				return hit_mob
+
+		if(isobj(hit_thing))
+			var/obj/hit_obj = hit_thing
+			if(hit_obj.density)
+				return hit_obj
+
+	return FALSE
+
 ////////////////////////////////////////////////////////////////////////
 
 // WAS: /datum/bioEffect/polymorphism
@@ -556,7 +642,7 @@
 	name = "Polymorphism"
 	desc = "Enables the subject to reconfigure their appearance to mimic that of others."
 
-	spelltype =/obj/effect/proc_holder/spell/polymorph
+	spelltype =/datum/spell/polymorph
 	//cooldown = 1800
 	activation_messages = list("You don't feel entirely like yourself somehow.")
 	deactivation_messages = list("You feel secure in your identity.")
@@ -566,23 +652,21 @@
 	..()
 	block = GLOB.polymorphblock
 
-/obj/effect/proc_holder/spell/polymorph
+/datum/spell/polymorph
 	name = "Polymorph"
 	desc = "Mimic the appearance of others!"
-	panel = "Abilities"
 	base_cooldown = 1800
 
 	clothes_req = FALSE
-	stat_allowed = CONSCIOUS
 
-	selection_activated_message		= "<span class='notice'>You body becomes unstable. Click on a target to cast transform into them.</span>"
-	selection_deactivated_message	= "<span class='notice'>Your body calms down again.</span>"
+	selection_activated_message		= SPAN_NOTICE("You body becomes unstable. Click on a target to cast transform into them.")
+	selection_deactivated_message	= SPAN_NOTICE("Your body calms down again.")
 
-	invocation_type = "none"
+	antimagic_flags = NONE
 
 	action_icon_state = "genetic_poly"
 
-/obj/effect/proc_holder/spell/polymorph/create_new_targeting()
+/datum/spell/polymorph/create_new_targeting()
 	var/datum/spell_targeting/click/T = new()
 	T.try_auto_target = FALSE
 	T.click_radius = -1
@@ -590,10 +674,10 @@
 	T.selection_type = SPELL_SELECTION_RANGE
 	return T
 
-/obj/effect/proc_holder/spell/polymorph/cast(list/targets, mob/user = usr)
+/datum/spell/polymorph/cast(list/targets, mob/user = usr)
 	var/mob/living/carbon/human/target = targets[1]
 
-	user.visible_message("<span class='warning'>[user]'s body shifts and contorts.</span>")
+	user.visible_message(SPAN_WARNING("[user]'s body shifts and contorts."))
 
 	spawn(10)
 		if(target && user)
@@ -610,7 +694,7 @@
 	name = "Empathic Thought"
 	desc = "The subject becomes able to read the minds of others for certain information."
 
-	spelltype = /obj/effect/proc_holder/spell/empath
+	spelltype = /datum/spell/empath
 	activation_messages = list("You suddenly notice more about others than you did before.")
 	deactivation_messages = list("You no longer feel able to sense intentions.")
 	instability = GENE_INSTABILITY_MINOR
@@ -619,41 +703,40 @@
 	..()
 	block = GLOB.empathblock
 
-/obj/effect/proc_holder/spell/empath
+/datum/spell/empath
 	name = "Read Mind"
 	desc = "Read the minds of others for information."
-	base_cooldown = 180
+	base_cooldown = 18 SECONDS
 	clothes_req = FALSE
 	human_req = TRUE
-	stat_allowed = CONSCIOUS
-	invocation_type = "none"
+	antimagic_flags = MAGIC_RESISTANCE_MIND
 
 	action_icon_state = "genetic_empath"
 
-/obj/effect/proc_holder/spell/empath/create_new_targeting()
+/datum/spell/empath/create_new_targeting()
 	var/datum/spell_targeting/targeted/T = new()
 	T.allowed_type = /mob/living/carbon
 	T.selection_type = SPELL_SELECTION_RANGE
 	return T
 
-/obj/effect/proc_holder/spell/empath/cast(list/targets, mob/user = usr)
+/datum/spell/empath/cast(list/targets, mob/user = usr)
 	for(var/mob/living/carbon/M in targets)
 		if(!iscarbon(M))
-			to_chat(user, "<span class='warning'>You may only use this on other organic beings.</span>")
+			to_chat(user, SPAN_WARNING("You may only use this on other organic beings."))
 			return
 
 		if(M.dna?.GetSEState(GLOB.psyresistblock))
-			to_chat(user, "<span class='warning'>You can't see into [M.name]'s mind at all!</span>")
+			to_chat(user, SPAN_WARNING("You can't see into [M.name]'s mind at all!"))
 			return
 
-		if(M.stat == 2)
-			to_chat(user, "<span class='warning'>[M.name] is dead and cannot have [M.p_their()] mind read.</span>")
+		if(M.stat == DEAD)
+			to_chat(user, SPAN_WARNING("[M.name] is dead and cannot have [M.p_their()] mind read."))
 			return
 		if(M.health < 0)
-			to_chat(user, "<span class='warning'>[M.name] is dying, and [M.p_their()] thoughts are too scrambled to read.</span>")
+			to_chat(user, SPAN_WARNING("[M.name] is dying, and [M.p_their()] thoughts are too scrambled to read."))
 			return
 
-		to_chat(user, "<span class='notice'>Mind Reading of <b>[M.name]:</b></span>")
+		to_chat(user, SPAN_NOTICE("Mind Reading of <b>[M.name]:</b>"))
 
 		var/pain_condition = M.health / M.maxHealth
 		// lower health means more pain
@@ -671,33 +754,33 @@
 
 		switch(pain_condition)
 			if(0.81 to INFINITY)
-				to_chat(user, "<span class='notice'><b>Condition</b>: [M.name] feels good.</span>")
+				to_chat(user, SPAN_NOTICE("<b>Condition</b>: [M.name] feels good."))
 			if(0.61 to 0.8)
-				to_chat(user, "<span class='notice'><b>Condition</b>: [M.name] is suffering mild pain.</span>")
+				to_chat(user, SPAN_NOTICE("<b>Condition</b>: [M.name] is suffering mild pain."))
 			if(0.41 to 0.6)
-				to_chat(user, "<span class='notice'><b>Condition</b>: [M.name] is suffering significant pain.</span>")
+				to_chat(user, SPAN_NOTICE("<b>Condition</b>: [M.name] is suffering significant pain."))
 			if(0.21 to 0.4)
-				to_chat(user, "<span class='notice'><b>Condition</b>: [M.name] is suffering severe pain.</span>")
+				to_chat(user, SPAN_NOTICE("<b>Condition</b>: [M.name] is suffering severe pain."))
 			else
-				to_chat(user, "<span class='notice'><b>Condition</b>: [M.name] is suffering excruciating pain.</span>")
+				to_chat(user, SPAN_NOTICE("<b>Condition</b>: [M.name] is suffering excruciating pain."))
 				thoughts = "haunted by [M.p_their()] own mortality"
 
 		switch(M.a_intent)
 			if(INTENT_HELP)
-				to_chat(user, "<span class='notice'><b>Mood</b>: You sense benevolent thoughts from [M.name].</span>")
+				to_chat(user, SPAN_NOTICE("<b>Mood</b>: You sense benevolent thoughts from [M.name]."))
 			if(INTENT_DISARM)
-				to_chat(user, "<span class='notice'><b>Mood</b>: You sense cautious thoughts from [M.name].</span>")
+				to_chat(user, SPAN_NOTICE("<b>Mood</b>: You sense cautious thoughts from [M.name]."))
 			if(INTENT_GRAB)
-				to_chat(user, "<span class='notice'><b>Mood</b>: You sense hostile thoughts from [M.name].</span>")
+				to_chat(user, SPAN_NOTICE("<b>Mood</b>: You sense hostile thoughts from [M.name]."))
 			if(INTENT_HARM)
-				to_chat(user, "<span class='notice'><b>Mood</b>: You sense cruel thoughts from [M.name].</span>")
+				to_chat(user, SPAN_NOTICE("<b>Mood</b>: You sense cruel thoughts from [M.name]."))
 				for(var/mob/living/L in view(7,M))
 					if(L == M)
 						continue
 					thoughts = "thinking about punching [L.name]"
 					break
 			else
-				to_chat(user, "<span class='notice'><b>Mood</b>: You sense strange thoughts from [M.name].</span>")
+				to_chat(user, SPAN_NOTICE("<b>Mood</b>: You sense strange thoughts from [M.name]."))
 
 		if(ishuman(M))
 			var/numbers[0]
@@ -705,56 +788,54 @@
 			if(H.mind && H.mind.initial_account)
 				numbers += H.mind.initial_account.account_number
 				numbers += H.mind.initial_account.account_pin
-			if(numbers.len>0)
-				to_chat(user, "<span class='notice'><b>Numbers</b>: You sense the number[numbers.len>1?"s":""] [english_list(numbers)] [numbers.len>1?"are":"is"] important to [M.name].</span>")
-		to_chat(user, "<span class='notice'><b>Thoughts</b>: [M.name] is currently [thoughts].</span>")
+			if(length(numbers)>0)
+				to_chat(user, SPAN_NOTICE("<b>Numbers</b>: You sense the number[length(numbers)>1?"s":""] [english_list(numbers)] [length(numbers)>1?"are":"is"] important to [M.name]."))
+		to_chat(user, SPAN_NOTICE("<b>Thoughts</b>: [M.name] is currently [thoughts]."))
 
 		if(M.dna?.GetSEState(GLOB.empathblock))
-			to_chat(M, "<span class='warning'>You sense [user.name] reading your mind.</span>")
+			to_chat(M, SPAN_WARNING("You sense [user.name] reading your mind."))
 		else if(prob(5) || M.mind?.assigned_role=="Chaplain")
-			to_chat(M, "<span class='warning'>You sense someone intruding upon your thoughts...</span>")
+			to_chat(M, SPAN_WARNING("You sense someone intruding upon your thoughts..."))
 
 ///////////////////Vanilla Morph////////////////////////////////////
 
 /datum/mutation/grant_spell/morph
 	name = "Morphism"
 	desc = "Enables the subject to reconfigure their appearance to that of any human."
-	spelltype =/obj/effect/proc_holder/spell/morph
+	spelltype =/datum/spell/morph
 	activation_messages = list("Your body feels like it can alter its appearance.")
 	deactivation_messages = list("Your body doesn't feel capable of altering its appearance.")
-	instability = GENE_INSTABILITY_MINOR
+	instability = GENE_INSTABILITY_MODERATE
 
 /datum/mutation/grant_spell/morph/New()
 	..()
 	block = GLOB.morphblock
 
-/obj/effect/proc_holder/spell/morph
+/datum/spell/morph
 	name = "Morph"
 	desc = "Mimic the appearance of your choice!"
-	panel = "Abilities"
 	base_cooldown = 1800
 
 	clothes_req = FALSE
-	stat_allowed = CONSCIOUS
-	invocation_type = "none"
+	antimagic_flags = NONE
 
 	action_icon_state = "genetic_morph"
 
-/obj/effect/proc_holder/spell/morph/create_new_targeting()
+/datum/spell/morph/create_new_targeting()
 	return new /datum/spell_targeting/self
 
-/obj/effect/proc_holder/spell/morph/cast(list/targets, mob/user = usr)
+/datum/spell/morph/cast(list/targets, mob/user = usr)
 	if(!ishuman(user))
 		return
 
 	if(ismob(user.loc))
-		to_chat(user, "<span class='warning'>You can't change your appearance right now!</span>")
+		to_chat(user, SPAN_WARNING("You can't change your appearance right now!"))
 		return
 	var/mob/living/carbon/human/M = user
 	var/obj/item/organ/external/head/head_organ = M.get_organ("head")
 	var/obj/item/organ/internal/eyes/eyes_organ = M.get_int_organ(/obj/item/organ/internal/eyes)
 
-	var/new_gender = alert(user, "Please select gender.", "Character Generation", "Male", "Female")
+	var/new_gender = tgui_alert(user, "Please select gender.", "Character Generation", list("Male", "Female"))
 	if(new_gender)
 		if(new_gender == "Male")
 			M.change_gender(MALE)
@@ -762,104 +843,105 @@
 			M.change_gender(FEMALE)
 
 	if(eyes_organ)
-		var/new_eyes = input("Please select eye color.", "Character Generation", eyes_organ.eye_color) as null|color
-		if(new_eyes)
-			M.change_eye_color(new_eyes)
+		var/new_eyes = tgui_input_color(user, "Please select eye color.", "Character Generation", eyes_organ.eye_color)
+		if(isnull(new_eyes))
+			return
+		M.change_eye_color(new_eyes)
 
 	if(istype(head_organ))
 		//Alt heads.
 		if(head_organ.dna.species.bodyflags & HAS_ALT_HEADS)
 			var/list/valid_alt_heads = M.generate_valid_alt_heads()
-			var/new_alt_head = input("Please select alternate head", "Character Generation", head_organ.alt_head) as null|anything in valid_alt_heads
+			var/new_alt_head = tgui_input_list(user, "Please select alternate head", "Character Generation", valid_alt_heads)
 			if(new_alt_head)
 				M.change_alt_head(new_alt_head)
 
 		// hair
 		var/list/valid_hairstyles = M.generate_valid_hairstyles()
-		var/new_style = input("Please select hair style", "Character Generation", head_organ.h_style) as null|anything in valid_hairstyles
+		var/new_style = tgui_input_list(user, "Please select hair style", "Character Generation", valid_hairstyles)
 
 		// if new style selected (not cancel)
 		if(new_style)
 			M.change_hair(new_style)
 
-		var/new_hair = input("Please select hair color.", "Character Generation", head_organ.hair_colour) as null|color
-		if(new_hair)
+		var/new_hair = tgui_input_color(user, "Please select hair color.", "Character Generation", head_organ.hair_colour)
+		if(!isnull(new_hair))
 			M.change_hair_color(new_hair)
 
 		var/datum/sprite_accessory/hair_style = GLOB.hair_styles_public_list[head_organ.h_style]
 		if(hair_style.secondary_theme && !hair_style.no_sec_colour)
-			new_hair = input("Please select secondary hair color.", "Character Generation", head_organ.sec_hair_colour) as null|color
-			if(new_hair)
+			new_hair = tgui_input_color(user, "Please select secondary hair color.", "Character Generation", head_organ.sec_hair_colour)
+			if(!isnull(new_hair))
 				M.change_hair_color(new_hair, TRUE)
 
 		// facial hair
 		var/list/valid_facial_hairstyles = M.generate_valid_facial_hairstyles()
-		new_style = input("Please select facial style", "Character Generation", head_organ.f_style) as null|anything in valid_facial_hairstyles
+		new_style = tgui_input_list(user, "Please select facial style", "Character Generation", valid_facial_hairstyles)
 
 		if(new_style)
 			M.change_facial_hair(new_style)
 
-		var/new_facial = input("Please select facial hair color.", "Character Generation", head_organ.facial_colour) as null|color
-		if(new_facial)
+		var/new_facial = tgui_input_color(user, "Please select facial hair color.", "Character Generation", head_organ.facial_colour)
+		if(!isnull(new_facial))
 			M.change_facial_hair_color(new_facial)
 
 		var/datum/sprite_accessory/facial_hair_style = GLOB.facial_hair_styles_list[head_organ.f_style]
 		if(facial_hair_style.secondary_theme && !facial_hair_style.no_sec_colour)
-			new_facial = input("Please select secondary facial hair color.", "Character Generation", head_organ.sec_facial_colour) as null|color
-			if(new_facial)
+			new_facial = tgui_input_color(user, "Please select secondary facial hair color.", "Character Generation", head_organ.sec_facial_colour)
+			if(!isnull(new_facial))
 				M.change_facial_hair_color(new_facial, TRUE)
 
 		//Head accessory.
 		if(head_organ.dna.species.bodyflags & HAS_HEAD_ACCESSORY)
 			var/list/valid_head_accessories = M.generate_valid_head_accessories()
-			var/new_head_accessory = input("Please select head accessory style", "Character Generation", head_organ.ha_style) as null|anything in valid_head_accessories
-			if(new_head_accessory)
+			var/new_head_accessory = tgui_input_list(user, "Please select head accessory style", "Character Generation", valid_head_accessories)
+			if(!isnull(new_head_accessory))
 				M.change_head_accessory(new_head_accessory)
 
-			var/new_head_accessory_colour = input("Please select head accessory colour.", "Character Generation", head_organ.headacc_colour) as null|color
-			if(new_head_accessory_colour)
+			var/new_head_accessory_colour = tgui_input_color(user, "Please select head accessory color.", "Character Generation", head_organ.headacc_colour)
+			if(!isnull(new_head_accessory_colour))
 				M.change_head_accessory_color(new_head_accessory_colour)
 
 
 	//Body accessory.
-	if((M.dna.species.tail && M.dna.species.bodyflags & (HAS_TAIL)) || (M.dna.species.wing && M.dna.species.bodyflags & (HAS_WING)))
+	if((M.dna.species.tail && M.dna.species.bodyflags & (HAS_TAIL)) || (M.dna.species.wing && M.dna.species.bodyflags & (HAS_WING)) || (M.dna.species.spines && M.dna.species.bodyflags & (HAS_BACK_SPINES)))
 		var/list/valid_body_accessories = M.generate_valid_body_accessories()
-		if(valid_body_accessories.len > 1) //By default valid_body_accessories will always have at the very least a 'none' entry populating the list, even if the user's species is not present in any of the list items.
-			var/new_body_accessory = input("Please select body accessory style", "Character Generation", M.body_accessory) as null|anything in valid_body_accessories
-			if(new_body_accessory)
+		if(length(valid_body_accessories) > 1) //By default valid_body_accessories will always have at the very least a 'none' entry populating the list, even if the user's species is not present in any of the list items.
+			var/new_body_accessory = tgui_input_list(user, "Please select body accessory style", "Character Generation", valid_body_accessories)
+			if(!isnull(new_body_accessory))
 				M.change_body_accessory(new_body_accessory)
 
 	if(istype(head_organ))
 		//Head markings.
 		if(M.dna.species.bodyflags & HAS_HEAD_MARKINGS)
 			var/list/valid_head_markings = M.generate_valid_markings("head")
-			var/new_marking = input("Please select head marking style", "Character Generation", M.m_styles["head"]) as null|anything in valid_head_markings
-			if(new_marking)
+			var/new_marking = tgui_input_list(user, "Please select head marking style", "Character Generation", valid_head_markings)
+			if(!isnull(new_marking))
 				M.change_markings(new_marking, "head")
 
-			var/new_marking_colour = input("Please select head marking colour.", "Character Generation", M.m_colours["head"]) as null|color
-			if(new_marking_colour)
+			var/new_marking_colour = tgui_input_color(user, "Please select head marking color.", "Character Generation", M.m_colours["head"])
+			if(!isnull(new_marking_colour))
 				M.change_marking_color(new_marking_colour, "head")
 
 	//Body markings.
 	if(M.dna.species.bodyflags & HAS_BODY_MARKINGS)
 		var/list/valid_body_markings = M.generate_valid_markings("body")
-		var/new_marking = input("Please select body marking style", "Character Generation", M.m_styles["body"]) as null|anything in valid_body_markings
-		if(new_marking)
+		var/new_marking = tgui_input_list(user, "Please select body marking style", "Character Generation", valid_body_markings)
+		if(!isnull(new_marking))
 			M.change_markings(new_marking, "body")
 
-		var/new_marking_colour = input("Please select body marking colour.", "Character Generation", M.m_colours["body"]) as null|color
-		if(new_marking_colour)
+		var/new_marking_colour = tgui_input_color(user, "Please select body marking color.", "Character Generation", M.m_colours["body"])
+		if(!isnull(new_marking_colour))
 			M.change_marking_color(new_marking_colour, "body")
 	//Tail markings.
 	if(M.dna.species.bodyflags & HAS_TAIL_MARKINGS)
 		var/list/valid_tail_markings = M.generate_valid_markings("tail")
-		var/new_marking = input("Please select tail marking style", "Character Generation", M.m_styles["tail"]) as null|anything in valid_tail_markings
-		if(new_marking)
+		var/new_marking = tgui_input_list("Please select tail marking style", "Character Generation", valid_tail_markings)
+		if(!isnull(new_marking))
 			M.change_markings(new_marking, "tail")
 
-		var/new_marking_colour = input("Please select tail marking colour.", "Character Generation", M.m_colours["tail"]) as null|color
-		if(new_marking_colour)
+		var/new_marking_colour = tgui_input_color(user, "Please select tail marking color.", "Character Generation", M.m_colours["tail"])
+		if(!isnull(new_marking_colour))
 			M.change_marking_color(new_marking_colour, "tail")
 
 	//Skin tone.
@@ -868,14 +950,14 @@
 		if(!new_tone)
 			new_tone = 35
 		else
-			new_tone = 35 - max(min(round(text2num(new_tone)), 220), 1)
+			new_tone = max(min(round(text2num(new_tone)), 220), 1)
 			M.change_skin_tone(new_tone)
 
 	if(M.dna.species.bodyflags & HAS_ICON_SKIN_TONE)
-		var/prompt = "Please select skin tone: 1-[M.dna.species.icon_skin_tones.len] ("
-		for(var/i = 1 to M.dna.species.icon_skin_tones.len)
+		var/prompt = "Please select skin tone: 1-[length(M.dna.species.icon_skin_tones)] ("
+		for(var/i = 1 to length(M.dna.species.icon_skin_tones))
 			prompt += "[i] = [M.dna.species.icon_skin_tones[i]]"
-			if(i != M.dna.species.icon_skin_tones.len)
+			if(i != length(M.dna.species.icon_skin_tones))
 				prompt += ", "
 		prompt += ")"
 
@@ -883,18 +965,18 @@
 		if(!new_tone)
 			new_tone = 0
 		else
-			new_tone = max(min(round(text2num(new_tone)), M.dna.species.icon_skin_tones.len), 1)
+			new_tone = max(min(round(text2num(new_tone)), length(M.dna.species.icon_skin_tones)), 1)
 			M.change_skin_tone(new_tone)
 
 	//Skin colour.
 	if(M.dna.species.bodyflags & HAS_SKIN_COLOR)
-		var/new_body_colour = input("Please select body colour.", "Character Generation", M.skin_colour) as null|color
-		if(new_body_colour)
+		var/new_body_colour = tgui_input_color(user, "Please select body color.", "Character Generation", M.skin_colour)
+		if(!isnull(new_body_colour))
 			M.change_skin_color(new_body_colour)
 
 	M.update_dna()
 
-	M.visible_message("<span class='notice'>[M] morphs and changes [M.p_their()] appearance!</span>", "<span class='notice'>You change your appearance!</span>", "<span class='warning'>Oh, god!  What the hell was that?  It sounded like flesh getting squished and bone ground into a different shape!</span>")
+	M.visible_message(SPAN_NOTICE("[M] morphs and changes [M.p_their()] appearance!"), SPAN_NOTICE("You change your appearance!"), SPAN_WARNING("Oh, god!  What the hell was that?  It sounded like flesh getting squished and bone ground into a different shape!"))
 
 /datum/mutation/grant_spell/remotetalk
 	name = "Telepathy"
@@ -902,7 +984,7 @@
 	deactivation_messages = list("You no longer feel you can project your thoughts.")
 	instability = GENE_INSTABILITY_MINOR
 
-	spelltype =/obj/effect/proc_holder/spell/remotetalk
+	spelltype =/datum/spell/remotetalk
 
 /datum/mutation/grant_spell/remotetalk/New()
 	..()
@@ -910,110 +992,113 @@
 
 /datum/mutation/grant_spell/remotetalk/activate(mob/living/M)
 	..()
-	M.AddSpell(new /obj/effect/proc_holder/spell/mindscan(null))
+	M.AddSpell(new /datum/spell/mindscan(null))
 
 /datum/mutation/grant_spell/remotetalk/deactivate(mob/user)
 	..()
-	for(var/obj/effect/proc_holder/spell/S in user.mob_spell_list)
-		if(istype(S, /obj/effect/proc_holder/spell/mindscan))
+	for(var/datum/spell/S in user.mob_spell_list)
+		if(istype(S, /datum/spell/mindscan))
 			user.RemoveSpell(S)
 
-/obj/effect/proc_holder/spell/remotetalk
+/datum/spell/remotetalk
 	name = "Project Mind"
 	desc = "Make people understand your thoughts!"
 	base_cooldown = 0
 
 	clothes_req = FALSE
-	stat_allowed = CONSCIOUS
-	invocation_type = "none"
+	antimagic_flags = MAGIC_RESISTANCE_MIND
 
 	action_icon_state = "genetic_project"
 
-/obj/effect/proc_holder/spell/remotetalk/create_new_targeting()
+/datum/spell/remotetalk/create_new_targeting()
 	return new /datum/spell_targeting/telepathic
 
-/obj/effect/proc_holder/spell/remotetalk/cast(list/targets, mob/user = usr)
-	if(!ishuman(user))
+/datum/spell/remotetalk/cast(list/targets, mob/user = usr)
+	if(!isliving(user))
 		return
 	if(user.mind?.miming) // Dont let mimes telepathically talk
-		to_chat(user,"<span class='warning'>You can't communicate without breaking your vow of silence.</span>")
+		to_chat(user,SPAN_WARNING("You can't communicate without breaking your vow of silence."))
 		return
-	var/say = input("What do you wish to say") as text|null
+	var/say = tgui_input_text(user, "What do you wish to say?", "Project Mind")
 	if(!say || usr.stat)
 		return
-	say = strip_html(say)
-	say = pencode_to_html(say, usr, format = 0, fields = 0)
+	say = pencode_to_html(say, usr, format = FALSE, fields = FALSE)
 
 	for(var/mob/living/target in targets)
 		log_say("(TPATH to [key_name(target)]) [say]", user)
 		user.create_log(SAY_LOG, "Telepathically said '[say]' using [src]", target)
 		if(target.dna?.GetSEState(GLOB.remotetalkblock))
-			target.show_message("<span class='abductor'>You hear [user.real_name]'s voice: [say]</span>")
+			target.show_message("<i>[SPAN_ABDUCTOR("You hear [user.real_name]'s voice: [say]")]</i>")
 		else
-			target.show_message("<span class='abductor'>You hear a voice that seems to echo around the room: [say]</span>")
-		user.show_message("<span class='abductor'>You project your mind into [(target in user.get_visible_mobs()) ? target.name : "the unknown entity"]: [say]</span>")
+			target.show_message("<i>[SPAN_ABDUCTOR("You hear a voice that seems to echo around the room: [say]")]</i>")
+		user.show_message("<i>[SPAN_ABDUCTOR("You project your mind into [(target in user.get_visible_mobs()) ? target.name : "the unknown entity"]: [say]")]</i>")
 		for(var/mob/dead/observer/G in GLOB.player_list)
 			G.show_message("<i>Telepathic message from <b>[user]</b> ([ghost_follow_link(user, ghost=G)]) to <b>[target]</b> ([ghost_follow_link(target, ghost=G)]): [say]</i>")
 
-/obj/effect/proc_holder/spell/mindscan
+/datum/spell/mindscan
 	name = "Scan Mind"
 	desc = "Offer people a chance to share their thoughts!"
 	base_cooldown = 0
 	clothes_req = FALSE
-	stat_allowed = CONSCIOUS
-	invocation_type = "none"
+	antimagic_flags = MAGIC_RESISTANCE_MIND
 	action_icon_state = "genetic_mindscan"
-	var/list/available_targets = list()
+	var/list/expanded_minds = list()
 
-/obj/effect/proc_holder/spell/mindscan/create_new_targeting()
+/datum/spell/mindscan/create_new_targeting()
 	return new /datum/spell_targeting/telepathic
 
-/obj/effect/proc_holder/spell/mindscan/cast(list/targets, mob/user = usr)
-	if(!ishuman(user))
+/datum/spell/mindscan/cast(list/targets, mob/user = usr)
+	if(!isliving(user))
 		return
 	for(var/mob/living/target in targets)
 		var/message = "You feel your mind expand briefly... (Click to send a message.)"
 		if(target.dna?.GetSEState(GLOB.remotetalkblock))
 			message = "You feel [user.real_name] request a response from you... (Click here to project mind.)"
-		user.show_message("<span class='abductor'>You offer your mind to [(target in user.get_visible_mobs()) ? target.name : "the unknown entity"].</span>")
-		target.show_message("<span class='abductor'><A href='?src=[UID()];target=[target.UID()];user=[user.UID()]'>[message]</a></span>")
-		available_targets += target
-		addtimer(CALLBACK(src, PROC_REF(removeAvailability), target), 100)
+		user.show_message("<i>[SPAN_ABDUCTOR("You offer your mind to [(target in user.get_visible_mobs()) ? target.name : "the unknown entity"].")]</i>")
+		target.show_message("<i>[SPAN_ABDUCTOR("<a href='byond://?src=[UID()];from=[target.UID()];to=[user.UID()]'>[message]</a>")]</i>")
+		expanded_minds += target
+		addtimer(CALLBACK(src, PROC_REF(removeAvailability), target), 10 SECONDS)
 
-/obj/effect/proc_holder/spell/mindscan/proc/removeAvailability(mob/living/target)
-	if(target in available_targets)
-		available_targets -= target
-		if(!(target in available_targets))
-			target.show_message("<span class='abductor'>You feel the sensation fade...</span>")
+/datum/spell/mindscan/proc/removeAvailability(mob/living/target)
+	if(target in expanded_minds)
+		expanded_minds -= target
+		if(!(target in expanded_minds))
+			target.show_message("<i>[SPAN_ABDUCTOR("You feel the sensation fade...")]</i>")
 
-/obj/effect/proc_holder/spell/mindscan/Topic(href, href_list)
-	var/mob/living/user
-	if(href_list["user"])
-		user = locateUID(href_list["user"])
-	if(href_list["target"])
-		if(!user)
-			return
-		var/mob/living/target = locateUID(href_list["target"])
-		if(!(target in available_targets))
-			return
-		available_targets -= target
-		var/say = input("What do you wish to say") as text|null
-		if(!say)
-			return
-		say = strip_html(say)
-		say = pencode_to_html(say, target, format = 0, fields = 0)
-		user.create_log(SAY_LOG, "Telepathically responded '[say]' using [src]", target)
-		log_say("(TPATH to [key_name(target)]) [say]", user)
-		if(target.dna?.GetSEState(GLOB.remotetalkblock))
-			target.show_message("<span class='abductor'>You project your mind into [user.name]: [say]</span>")
-		else
-			target.show_message("<span class='abductor'>You fill the space in your thoughts: [say]</span>")
-		user.show_message("<span class='abductor'>You hear [target.name]'s voice: [say]</span>")
-		for(var/mob/dead/observer/G in GLOB.player_list)
-			G.show_message("<i>Telepathic response from <b>[target]</b> ([ghost_follow_link(target, ghost=G)]) to <b>[user]</b> ([ghost_follow_link(user, ghost=G)]): [say]</i>")
+/datum/spell/mindscan/Topic(href, href_list)
+	var/mob/living/message_source
+	message_source = locateUID(href_list["from"])
+	if(!message_source)
+		return
+	if(!message_source || !(message_source in expanded_minds))
+		return
 
-/obj/effect/proc_holder/spell/mindscan/Destroy()
-	available_targets.Cut()
+	expanded_minds -= message_source
+
+	var/mob/living/message_target = locateUID(href_list["to"])
+	if(!message_target)
+		return
+
+	var/say = tgui_input_text(message_source, "What do you wish to say?", "Expanded Mind")
+	if(!say)
+		return
+	say = pencode_to_html(say, message_source, format = FALSE, fields = FALSE)
+
+	message_source.create_log(SAY_LOG, "Telepathically responded '[say]' using [src]", message_target)
+	log_say("(TPATH to [key_name(message_target)]) [say]", message_source)
+
+	if(message_source.dna?.GetSEState(GLOB.remotetalkblock))
+		message_source.show_message("<i>[SPAN_ABDUCTOR("You project your mind into [message_target]: [say]")]</i>")
+	else
+		message_source.show_message("<i>[SPAN_ABDUCTOR("You fill the space in your thoughts: [say]")]</i>")
+
+	message_target.show_message("<i>[SPAN_ABDUCTOR("You hear [message_source]'s voice: [say]")]</i>")
+
+	for(var/mob/dead/observer/G in GLOB.player_list)
+		G.show_message("<i>Telepathic response from <b>[message_source]</b> ([ghost_follow_link(message_source, ghost=G)]) to <b>[message_target]</b> ([ghost_follow_link(message_target, ghost=G)]): [say]</i>")
+
+/datum/spell/mindscan/Destroy()
+	expanded_minds.Cut()
 	return ..()
 
 /datum/mutation/grant_spell/remoteview
@@ -1022,28 +1107,32 @@
 	deactivation_messages = list("Your mind can no longer can see things from afar.")
 	instability = GENE_INSTABILITY_MINOR
 
-	spelltype =/obj/effect/proc_holder/spell/remoteview
+	spelltype =/datum/spell/remoteview
 
 /datum/mutation/grant_spell/remoteview/New()
 	..()
 	block = GLOB.remoteviewblock
 
+/datum/mutation/grant_spell/remoteview/deactivate(mob/user)
+	. = ..()
+	if(ishuman(user))
+		var/mob/living/carbon/human/H = user
+		H.remoteview_target = null
+		H.reset_perspective()
 
-/obj/effect/proc_holder/spell/remoteview
+/datum/spell/remoteview
 	name = "Remote View"
 	desc = "Spy on people from any range!"
-	base_cooldown = 100
 
 	clothes_req = FALSE
-	stat_allowed = CONSCIOUS
-	invocation_type = "none"
+	antimagic_flags = MAGIC_RESISTANCE_MIND
 
 	action_icon_state = "genetic_view"
 
-/obj/effect/proc_holder/spell/remoteview/create_new_targeting()
+/datum/spell/remoteview/create_new_targeting()
 	return new /datum/spell_targeting/remoteview
 
-/obj/effect/proc_holder/spell/remoteview/cast(list/targets, mob/user = usr)
+/datum/spell/remoteview/cast(list/targets, mob/user = usr)
 	var/mob/living/carbon/human/H
 	if(ishuman(user))
 		H = user
@@ -1053,7 +1142,7 @@
 	var/mob/target
 
 	if(istype(H.l_hand, /obj/item/tk_grab) || istype(H.r_hand, /obj/item/tk_grab))
-		to_chat(H, "<span class='warning'>Your mind is too busy with that telekinetic grab.</span>")
+		to_chat(H, SPAN_WARNING("Your mind is too busy with that telekinetic grab."))
 		H.remoteview_target = null
 		H.reset_perspective()
 		return
@@ -1121,9 +1210,11 @@
 	name = "Flash Protection"
 	activation_messages = list("You stop noticing the glare from lights...")
 	deactivation_messages = list("Lights begin glaring again...")
-	instability = GENE_INSTABILITY_MINOR
+	instability = GENE_INSTABILITY_MODERATE
 	traits_to_add = list(TRAIT_FLASH_PROTECTION)
 
 /datum/mutation/flash_protection/New()
 	..()
 	block = GLOB.noflashblock
+
+#undef EAT_MOB_DELAY

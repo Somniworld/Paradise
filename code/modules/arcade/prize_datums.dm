@@ -8,22 +8,16 @@ GLOBAL_DATUM_INIT(global_prizes, /datum/prizes, new())
 		prizes += new itempath()
 
 /datum/prizes/proc/PlaceOrder(obj/machinery/prize_counter/prize_counter, itemID)
-	if(!prize_counter.Adjacent(usr))
-		to_chat(usr, "<span class='warning'>You need to be closer!</span>")
-		return
-	if(!prize_counter)
-		return 0
 	var/datum/prize_item/item = GLOB.global_prizes.prizes[itemID]
+	if(!prize_counter || prize_counter.tickets < item.cost)
+		return
 	if(!item)
-		return 0
-	if(prize_counter.tickets >= item.cost)
-		new item.typepath(prize_counter.loc)
-		prize_counter.tickets -= item.cost
-		prize_counter.visible_message("<span class='notice'>Enjoy your prize!</span>")
-		return 1
-	else
-		prize_counter.visible_message("<span class='warning'>Not enough tickets!</span>")
-		return 0
+		return
+
+	new item.typepath(prize_counter.loc)
+	prize_counter.tickets -= item.cost
+	to_chat(usr, SPAN_NOTICE("Enjoy your prize!"))
+	playsound(prize_counter, 'sound/machines/machine_vend.ogg', 50, TRUE)
 
 //////////////////////////////////////
 //			prize_item datum		//
@@ -117,6 +111,18 @@ GLOBAL_DATUM_INIT(global_prizes, /datum/prizes, new())
 	typepath = /obj/item/ammo_box/caps
 	cost = 30
 
+/datum/prize_item/firecracker
+	name = "Firecracker Grenade"
+	desc = "A loud and obnoxious firecracker. Hold away from ears and small children."
+	typepath = /obj/item/grenade/firecracker
+	cost = 50
+
+/datum/prize_item/wallet
+	name = "Cheap Wallet"
+	desc = "A cheap and big enough for standard issue ID cards."
+	typepath = /obj/item/storage/wallet/cheap
+	cost = 30
+
 /datum/prize_item/crayons
 	name = "Box of Crayons"
 	desc = "A six-pack of crayons, just like back in kindergarten."
@@ -135,16 +141,16 @@ GLOBAL_DATUM_INIT(global_prizes, /datum/prizes, new())
 	typepath = /obj/item/clothing/gloves/ring/shadow
 	cost = 40
 
+/datum/prize_item/unum
+	name = "Deck of UNUM! Cards"
+	desc = "Everyone's favorite card game!"
+	typepath = /obj/item/deck/unum
+	cost = 45
+
 /datum/prize_item/double_tiny_cards
 	name = "Double Deck of Tiny Cards"
 	desc = "Anyone fancy a tiny game of 108-card Pickup?"
 	typepath = /obj/item/deck/cards/tiny/doublecards
-	cost = 50
-
-/datum/prize_item/wallet
-	name = "Colored Wallet"
-	desc = "Brightly colored and big enough for standard issue ID cards."
-	typepath = /obj/item/storage/wallet/color
 	cost = 50
 
 /datum/prize_item/id_sticker
@@ -230,13 +236,13 @@ GLOBAL_DATUM_INIT(global_prizes, /datum/prizes, new())
 /datum/prize_item/action_figure
 	name = "Random Action Figure"
 	desc = "A random action figure, collect them all!"
-	typepath = /obj/item/toy/prizeball/figure
+	typepath = /obj/item/toy/prizeball/action_figure
 	cost = 75
 
-/datum/prize_item/AI
+/datum/prize_item/ai
 	name = "Toy AI Unit"
 	desc = "Law 1: Maximize fun for crew."
-	typepath = /obj/item/toy/AI
+	typepath = /obj/item/toy/ai
 	cost = 75
 
 /datum/prize_item/capgun
@@ -274,12 +280,6 @@ GLOBAL_DATUM_INIT(global_prizes, /datum/prizes, new())
 	desc = "A cool-looking turtleneck."
 	typepath = /obj/item/clothing/under/syndicate/tacticool
 	cost = 90
-
-/datum/prize_item/nanomob_booster
-	name = "Nano-Mob Hunter Trading Card Booster Pack"
-	desc = "Contains 6 random Nano-Mob Hunter Trading Cards. May contain a holographic card!"
-	typepath = /obj/item/storage/box/nanomob_booster_pack
-	cost = 100
 
 /datum/prize_item/fakespell
 	name = "Fake Spellbook"
@@ -352,6 +352,11 @@ GLOBAL_DATUM_INIT(global_prizes, /datum/prizes, new())
 	desc = "A plastic replica of an energy blade."
 	typepath = /obj/item/toy/sword
 	cost = 150
+/datum/prize_item/fake_heretic_amulet
+	name = "Fake religious icon"
+	desc = "A strange medallion, which makes its wearer look like they're part of some cult."
+	typepath = /obj/item/clothing/neck/fake_heretic_amulet
+	cost = 150
 
 /datum/prize_item/fakespace
 	name = "Space Carpet"
@@ -371,6 +376,12 @@ GLOBAL_DATUM_INIT(global_prizes, /datum/prizes, new())
 	typepath = /obj/item/clothing/gloves/fingerless/rapid/headpat
 	cost = 150
 
+/datum/prize_item/bootsofjumping
+	name = "Boots of Jumping"
+	desc = "Boots that were made for jumping. And that's just what they'll do."
+	typepath = /obj/item/clothing/shoes/leather/jump
+	cost = 150
+
 /datum/prize_item/tommygun
 	name = "Tommy Gun"
 	desc = "A replica tommy gun that fires foam darts."
@@ -386,11 +397,17 @@ GLOBAL_DATUM_INIT(global_prizes, /datum/prizes, new())
 /datum/prize_item/chainsaw
 	name = "Toy Chainsaw"
 	desc = "A full-scale model chainsaw, based on that massacre in Space Texas."
-	typepath = /obj/item/twohanded/toy/chainsaw
+	typepath = /obj/item/toy/chainsaw
 	cost = 200
+
+/datum/prize_item/round_tuit
+	name = "Round Tuit"
+	desc = "Just think of all the things you could do, if you carried a round tuit with you."
+	typepath = /obj/item/toy/round_tuit/colorful
+	cost = 1000
 
 /datum/prize_item/bike
 	name = "Awesome Bike!"
 	desc = "WOAH."
-	typepath = /obj/structure/chair/wheelchair/bike
-	cost = 10000	//max stack + 1 tickets.
+	typepath = /obj/vehicle/bike
+	cost = 7000

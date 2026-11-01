@@ -4,9 +4,7 @@
 
 /mob/living/simple_animal/hostile/winter
 	faction = list("hostile", "syndicate", "winter")
-	speak_chance = 0
 	turns_per_move = 5
-	speed = 1
 	maxHealth = 50
 	health = 50
 	icon = 'icons/mob/winter_mob.dmi'
@@ -51,7 +49,7 @@
 	ranged = TRUE
 	retreat_distance = 5
 	minimum_distance = 5
-	projectiletype = /obj/item/projectile/snowball
+	projectiletype = /obj/projectile/snowball
 
 /mob/living/simple_animal/hostile/winter/reindeer
 	name = "reindeer"
@@ -59,7 +57,7 @@
 	icon_state = "reindeer"
 	icon_living = "reindeer"
 	icon_dead = "reindeer-dead"
-	butcher_results = list(/obj/item/reagent_containers/food/snacks/meat = 3)
+	butcher_results = list(/obj/item/food/meat = 3)
 	maxHealth = 80
 	health = 80
 	melee_damage_lower = 5
@@ -89,41 +87,43 @@
 			new next_stage(get_turf(src))
 			qdel(src)	//hide the body
 
-/mob/living/simple_animal/hostile/winter/santa/stage_1		//stage 1: slow melee
-	maxHealth = 150
-	health = 150
+/// stage 1: slow melee
+/mob/living/simple_animal/hostile/winter/santa/stage_1
 	desc = "GET THE FAT MAN!"
 	next_stage = /mob/living/simple_animal/hostile/winter/santa/stage_2
-	death_message = "<span class='danger'>HO HO HO! YOU THOUGHT IT WOULD BE THIS EASY?!?</span>"
+	death_message = SPAN_DANGER("HO HO HO! YOU THOUGHT IT WOULD BE THIS EASY?!?")
 	speed = 2
 	melee_damage_lower = 10
 	melee_damage_upper = 20
 
-/mob/living/simple_animal/hostile/winter/santa/stage_2		//stage 2: slow ranged
+/// stage 2: slow ranged
+/mob/living/simple_animal/hostile/winter/santa/stage_2
 	desc = "GET THE FAT MAN AGAIN!"
 	next_stage = /mob/living/simple_animal/hostile/winter/santa/stage_3
-	death_message = "<span class='danger'>YOU'VE BEEN VERY NAUGHTY! PREPARE TO DIE!</span>"
+	death_message = SPAN_DANGER("YOU'VE BEEN VERY NAUGHTY! PREPARE TO DIE!")
 	maxHealth = 200		//DID YOU REALLY BELIEVE IT WOULD BE THIS EASY!??!!
 	health = 200
 	ranged = TRUE
-	projectiletype = /obj/item/projectile/ornament
+	projectiletype = /obj/projectile/ornament
 	retreat_distance = 5
 	minimum_distance = 5
 
-/mob/living/simple_animal/hostile/winter/santa/stage_3		//stage 3: fast rapidfire ranged
+/// stage 3: fast rapidfire ranged
+/mob/living/simple_animal/hostile/winter/santa/stage_3
 	desc = "WHY WON'T HE DIE ALREADY!?"
 	next_stage = /mob/living/simple_animal/hostile/winter/santa/stage_4
-	death_message = "<span class='danger'>FACE MY FINAL FORM AND KNOW DESPAIR!</span>"
+	death_message = SPAN_DANGER("FACE MY FINAL FORM AND KNOW DESPAIR!")
 	maxHealth = 250
 	health = 250
 	ranged = TRUE
 	rapid = 3
 	speed = 0	//he's lost some weight from the fighting
-	projectiletype = /obj/item/projectile/ornament
+	projectiletype = /obj/projectile/ornament
 	retreat_distance = 3
 	minimum_distance = 3
 
-/mob/living/simple_animal/hostile/winter/santa/stage_4		//stage 4: fast spinebreaker
+/// stage 4: fast spinebreaker
+/mob/living/simple_animal/hostile/winter/santa/stage_4
 	name = "Final Form Santa"
 	desc = "WHAT THE HELL IS HE!?! WHY WON'T HE STAY DEAD!?!"
 	maxHealth = 300		//YOU FACE JARAX- I MEAN SANTA!
@@ -136,10 +136,10 @@
 
 /mob/living/simple_animal/hostile/winter/santa/stage_4/death(gibbed)
 	if(can_die())
-		to_chat(world, "<span class='notice'><hr></span>")
-		to_chat(world, "<span class='notice'>THE FAT MAN HAS FALLEN!</span>")
-		to_chat(world, "<span class='notice'>SANTA CLAUS HAS BEEN DEFEATED!</span>")
-		to_chat(world, "<span class='notice'><hr></span>")
+		to_chat(world, SPAN_NOTICE("<hr>"))
+		to_chat(world, SPAN_NOTICE("THE FAT MAN HAS FALLEN!"))
+		to_chat(world, SPAN_NOTICE("SANTA CLAUS HAS BEEN DEFEATED!"))
+		to_chat(world, SPAN_NOTICE("<hr>"))
 	// Only execute the below if we successfully died
 	. = ..()
 	if(!.)

@@ -1,8 +1,6 @@
-/obj/effect/proc_holder/spell/rod_form
+/datum/spell/rod_form
 	name = "Rod Form"
 	desc = "Take on the form of an immovable rod, destroying all in your path."
-	clothes_req = TRUE
-	human_req = FALSE
 	base_cooldown = 600
 	cooldown_min = 200
 	invocation = "CLANG!"
@@ -13,12 +11,12 @@
 	sound = 'sound/effects/whoosh.ogg'
 	var/rod_delay = 2
 
-/obj/effect/proc_holder/spell/rod_form/create_new_targeting()
+/datum/spell/rod_form/create_new_targeting()
 	return new /datum/spell_targeting/self
 
-/obj/effect/proc_holder/spell/rod_form/cast(list/targets,mob/user = usr)
+/datum/spell/rod_form/cast(list/targets,mob/user = usr)
 	if(get_turf(user) != user.loc)
-		to_chat(user, "<span class='warning'>You cannot summon a rod in the ether, the spell fizzles out!</span>")
+		to_chat(user, SPAN_WARNING("You cannot summon a rod in the ether, the spell fizzles out!"))
 		revert_cast()
 		return FALSE
 	for(var/mob/living/M in targets)
@@ -40,13 +38,16 @@
 	notify = FALSE
 
 /obj/effect/immovablerod/wizard/Move()
+	. = ..()
 	if(get_dist(start_turf, get_turf(src)) >= max_distance)
 		qdel(src)
-	..()
 
 /obj/effect/immovablerod/wizard/Destroy()
 	if(wizard)
 		wizard.status_flags &= ~GODMODE
 		wizard.notransform = FALSE
 		wizard.forceMove(get_turf(src))
+		wizard = null
+
+	start_turf = null
 	return ..()

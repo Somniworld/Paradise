@@ -79,17 +79,18 @@ GLOBAL_LIST_EMPTY(channel_to_radio_key)
 			verb = "slurs"
 
 		if(AmountStuttering())
-			if(robot)
-				S.message = robostutter(S.message)
-			else
-				S.message = stutter(S.message)
+			S.message = stutter(S.message, getStaminaLoss(), robot)
 			verb = "stammers"
 
 		if(AmountCultSlurring())
 			S.message = cultslur(S.message)
 			verb = "slurs"
 
-		if(!IsVocal())
+		if(AmountHereticSlurring())
+			S.message = hereticslur(S.message)
+			verb = "slurs"
+
+		if(!IsVocal() || HAS_TRAIT(src, TRAIT_MUTE))
 			S.message = ""
 	return list("verb" = verb)
 
@@ -108,14 +109,20 @@ GLOBAL_LIST_EMPTY(channel_to_radio_key)
 	return returns
 
 
-/mob/living/say(message, verb = "says", sanitize = TRUE, ignore_speech_problems = FALSE, ignore_atmospherics = FALSE, ignore_languages = FALSE)
+/mob/living/say(message, verb = null, sanitize = TRUE, ignore_speech_problems = FALSE, ignore_atmospherics = FALSE, ignore_languages = FALSE, automatic = FALSE, bigvoice = FALSE)
 	if(client)
 		if(check_mute(client.ckey, MUTE_IC))
-			to_chat(src, "<span class='danger'>You cannot speak in IC (Muted).</span>")
+			to_chat(src, SPAN_DANGER("You cannot speak in IC (Muted)."))
 			return FALSE
 
 	if(sanitize)
-		message = trim_strip_html_properly(message)
+		if(speaks_ooc)
+			if(GLOB.configuration.general.enable_ooc_emoji)
+				message = emoji_parse(sanitize(message))
+			else
+				message = sanitize(message)
+		else
+			message = sanitize_for_ic(message)
 
 	if(stat)
 		if(stat == DEAD)
@@ -130,11 +137,14 @@ GLOBAL_LIST_EMPTY(channel_to_radio_key)
 	//parse the radio code and consume it
 	if(message_mode)
 		if(message_mode == "headset")
-			message = copytext(message, 2)	//it would be really nice if the parse procs could do this for us.
+			message = copytext_char(message, 2)	//it would be really nice if the parse procs could do this for us.
 		else
-			message = copytext(message, 3)
+			message = copytext_char(message, 3)
 
 	message = trim_left(message)
+
+	if(big_voice)
+		message = SPAN_REALLYBIG("[message]")
 
 	//parse the language code and consume it
 	var/list/message_pieces = list()
@@ -163,12 +173,13 @@ GLOBAL_LIST_EMPTY(channel_to_radio_key)
 		return TRUE
 
 	var/datum/multilingual_say_piece/first_piece = message_pieces[1]
-	verb = say_quote(message, first_piece.speaking)
+	if(isnull(verb))
+		verb = say_quote(message, first_piece.speaking)
 
 	if(is_muzzled())
 		var/obj/item/clothing/mask/muzzle/G = wear_mask
 		if(G.mute == MUZZLE_MUTE_ALL) //if the mask is supposed to mute you completely or just muffle you
-			to_chat(src, "<span class='danger'>You're muzzled and cannot speak!</span>")
+			to_chat(src, SPAN_DANGER("You're muzzled and cannot speak!"))
 			return
 		else if(G.mute == MUZZLE_MUTE_MUFFLE)
 			muffledspeech_all(message_pieces)
@@ -182,9 +193,12 @@ GLOBAL_LIST_EMPTY(channel_to_radio_key)
 		var/list/hsp = handle_speech_problems(message_pieces, verb)
 		verb = hsp["verb"]
 
+	if(cannot_speak_loudly())
+		return whisper(message)
+
 	// Do this so it gets logged for all types of communication
 	var/log_message = "[message_mode ? "([message_mode])" : ""] '[message]'"
-	create_log(SAY_LOG, log_message)
+	create_log(SAY_LOG, log_message, automatic = TRUE)
 
 	var/list/used_radios = list()
 	if(handle_message_mode(message_mode, message_pieces, verb, used_radios))
@@ -193,7 +207,7 @@ GLOBAL_LIST_EMPTY(channel_to_radio_key)
 	// Log of what we've said, plain message, no spans or junk
 	// handle_message_mode should have logged this already if it handled it
 	say_log += log_message
-	log_say(log_message, src)
+	log_say(log_message, src, automatic = TRUE)
 
 	var/list/handle_v = handle_speech_sound()
 	var/sound/speech_sound = handle_v[1]
@@ -204,15 +218,20 @@ GLOBAL_LIST_EMPTY(channel_to_radio_key)
 	var/message_range = world.view
 
 	//speaking into radios
-	if(used_radios.len)
+	if(length(used_radios))
 		italics = TRUE
 		message_range = 1
 		if(first_piece.speaking)
 			message_range = first_piece.speaking.get_talkinto_msg_range(message)
 
 		var/msg
-		if(!first_piece.speaking || !(first_piece.speaking.flags & NO_TALK_MSG))
-			msg = "<span class='notice'>[src] talks into [used_radios[1]]</span>"
+		if((!first_piece.speaking || !(first_piece.speaking.flags & NO_TALK_MSG)) && client)
+			msg = SPAN_NOTICE("[src] talks into [used_radios[1]]")
+			var/static/list/special_radio_channels = list("Syndicate", "SyndTeam", "Security", "Procedure", "Command", "Response Team", "Special Ops")
+			if(message_mode in special_radio_channels)
+				SEND_SOUND(src, sound('sound/items/radio_security.ogg', volume = rand(4, 16) * 5 * client.prefs.get_channel_volume(CHANNEL_RADIO_NOISE), channel = CHANNEL_RADIO_NOISE))
+			else
+				SEND_SOUND(src, sound('sound/items/radio_common.ogg', volume = rand(4, 16) * 5 * client.prefs.get_channel_volume(CHANNEL_RADIO_NOISE), channel = CHANNEL_RADIO_NOISE))
 
 		if(msg)
 			for(var/mob/living/M in hearers(5, src) - src)
@@ -226,9 +245,11 @@ GLOBAL_LIST_EMPTY(channel_to_radio_key)
 	var/list/listening = list()
 	var/list/listening_obj = list()
 
+	message_range += extra_message_range
+
 	if(T)
 		//make sure the air can transmit speech - speaker's side
-		var/datum/gas_mixture/environment = T.return_air()
+		var/datum/gas_mixture/environment = T.get_readonly_air()
 		var/pressure = environment ? environment.return_pressure() : 0
 		if(!ignore_atmospherics)
 			if(pressure < SOUND_MINIMUM_PRESSURE)
@@ -272,6 +293,8 @@ GLOBAL_LIST_EMPTY(channel_to_radio_key)
 			if(get_turf(M) in hearturfs)
 				listening |= M
 
+	SEND_SIGNAL(src, COMSIG_MOB_SAY, args)
+
 	var/list/speech_bubble_recipients = list()
 	var/speech_bubble_test = say_test(message)
 
@@ -300,8 +323,10 @@ GLOBAL_LIST_EMPTY(channel_to_radio_key)
 	return name
 
 /mob/living/whisper(message as text)
-	message = trim_strip_html_properly(message)
-
+	message = trim_strip_html_tags(message)
+	if(HAS_TRAIT(src, TRAIT_NO_WHISPERING) && !cannot_speak_loudly()) //If you're whispering cause you're out of breath, no blabbermouth will help with that
+		say(message)
+		return TRUE
 	//parse the language code and consume it
 	var/list/message_pieces = parse_languages(message)
 	if(istype(message_pieces, /datum/multilingual_say_piece)) // Little quirk to just easily deal with HIVEMIND languages
@@ -319,7 +344,7 @@ GLOBAL_LIST_EMPTY(channel_to_radio_key)
 /mob/living/proc/whisper_say(list/message_pieces, verb = "whispers")
 	if(client)
 		if(check_mute(client.ckey, MUTE_IC))
-			to_chat(src, "<span class='danger'>You cannot speak in IC (Muted).</span>")
+			to_chat(src, SPAN_DANGER("You cannot speak in IC (Muted)."))
 			return
 
 	if(stat)
@@ -327,13 +352,13 @@ GLOBAL_LIST_EMPTY(channel_to_radio_key)
 
 	if(is_muzzled())
 		if(istype(wear_mask, /obj/item/clothing/mask/muzzle/tapegag)) //just for tape
-			to_chat(src, "<span class='danger'>Your mouth is taped and you cannot speak!</span>")
+			to_chat(src, SPAN_DANGER("Your mouth is taped and you cannot speak!"))
 		else
-			to_chat(src, "<span class='danger'>You're muzzled and cannot speak!</span>")
+			to_chat(src, SPAN_DANGER("You're muzzled and cannot speak!"))
 		return
 
 	if(is_facehugged())
-		to_chat(src, "<span class='danger'>You can't get a word out with this horrible creature on your face!</span>")
+		to_chat(src, SPAN_DANGER("You can't get a word out with this horrible creature on your face!"))
 		return
 
 	var/message = multilingual_to_message(message_pieces)
@@ -429,7 +454,7 @@ GLOBAL_LIST_EMPTY(channel_to_radio_key)
 		if(M.client)
 			speech_bubble_recipients.Add(M.client)
 
-	if(eavesdropping.len)
+	if(length(eavesdropping))
 		stars_all(message_pieces)	//hopefully passing the message twice through stars() won't hurt... I guess if you already don't understand the language, when they speak it too quietly to hear normally you would be able to catch even less.
 		for(var/mob/M in eavesdropping)
 			M.hear_say(message_pieces, verb, italics, src, use_voice = FALSE)
@@ -438,8 +463,8 @@ GLOBAL_LIST_EMPTY(channel_to_radio_key)
 
 	speech_bubble("[bubble_icon][speech_bubble_test]", src, speech_bubble_recipients)
 
-	if(watching.len)
-		var/rendered = "<span class='game say'><span class='name'>[name]</span> [not_heard].</span>"
+	if(length(watching))
+		var/rendered = "<span class='game say'>[SPAN_NAME("[name]")] [not_heard].</span>"
 		for(var/mob/M in watching)
 			M.show_message(rendered, 2)
 

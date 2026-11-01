@@ -33,7 +33,8 @@ GLOBAL_DATUM_INIT(major_announcement, /datum/announcer, new(config_type = /datum
 		msg_sanitized = FALSE,
 		msg_language,
 		new_sound2 = null,
-		new_subtitle = null
+		new_subtitle = null,
+		force_translation = FALSE // If this announcement should be displayed to everyone no matter if they know the language or not
 	)
 
 	if(!message)
@@ -45,11 +46,11 @@ GLOBAL_DATUM_INIT(major_announcement, /datum/announcer, new(config_type = /datum
 	var/message_sound2 = new_sound2 ? sound(new_sound2) : null
 
 	if(!msg_sanitized)
-		message = trim_strip_html_properly(message, allow_lines = TRUE)
+		message = html_encode(message)
 
 	var/datum/language/message_language = GLOB.all_languages[msg_language ? msg_language : language]
 
-	var/list/combined_receivers = Get_Receivers(message_language)
+	var/list/combined_receivers = Get_Receivers(message_language, force_translation)
 	var/list/receivers = combined_receivers[1]
 	var/list/garbled_receivers = combined_receivers[2]
 
@@ -62,6 +63,12 @@ GLOBAL_DATUM_INIT(major_announcement, /datum/announcer, new(config_type = /datum
 
 	Message(formatted_message, garbled_formatted_message, receivers, garbled_receivers)
 
+	var/datum/feed_message/FM = new
+	FM.author = author ? author : "Automated Announcement System"
+	FM.title = subtitle ? "[title]: [subtitle]" : "[title]"
+	FM.body = message
+	GLOB.news_network.get_channel_by_name("Station Announcements Log")?.add_message(FM)
+
 	Sound(message_sound, combined_receivers[1] + combined_receivers[2])
 	if(message_sound2)
 		Sound(message_sound2, combined_receivers[1] + combined_receivers[2])
@@ -69,7 +76,7 @@ GLOBAL_DATUM_INIT(major_announcement, /datum/announcer, new(config_type = /datum
 	if(config.add_log)
 		Log(message, title)
 
-/datum/announcer/proc/Get_Receivers(datum/language/message_language)
+/datum/announcer/proc/Get_Receivers(datum/language/message_language, force_translation = FALSE)
 	var/list/receivers = list()
 	var/list/garbled_receivers = list()
 
@@ -77,6 +84,11 @@ GLOBAL_DATUM_INIT(major_announcement, /datum/announcer, new(config_type = /datum
 		for(var/mob/M in GLOB.player_list)
 			if(!isnewplayer(M) && M.client)
 				receivers |= M
+			if(!M.say_understands(null, message_language))
+				if(force_translation && HAS_TRAIT(M, TRAIT_FOREIGNER))
+					continue
+				receivers -= M
+				garbled_receivers |= M
 	else
 		for(var/obj/item/radio/R in GLOB.global_radios)
 			receivers |= R.send_announcement()
@@ -85,6 +97,8 @@ GLOBAL_DATUM_INIT(major_announcement, /datum/announcer, new(config_type = /datum
 				receivers -= M
 				continue
 			if(!M.say_understands(null, message_language))
+				if(force_translation && HAS_TRAIT(M, TRAIT_FOREIGNER))
+					continue
 				receivers -= M
 				garbled_receivers |= M
 		for(var/mob/M in GLOB.dead_mob_list)
@@ -95,9 +109,9 @@ GLOBAL_DATUM_INIT(major_announcement, /datum/announcer, new(config_type = /datum
 
 /datum/announcer/proc/Message(message, garbled_message, receivers, garbled_receivers)
 	for(var/mob/M in receivers)
-		to_chat(M, message)
+		to_chat(M, message, MESSAGE_TYPE_WARNING)
 	for(var/mob/M in garbled_receivers)
-		to_chat(M, garbled_message)
+		to_chat(M, garbled_message, MESSAGE_TYPE_WARNING)
 
 /datum/announcer/proc/Format(message, title, subtitle = null)
 	var/formatted_message
@@ -127,10 +141,6 @@ GLOBAL_DATUM_INIT(major_announcement, /datum/announcer, new(config_type = /datum
 /datum/announcer/proc/Log(message, message_title)
 	log_game("[key_name(usr)] has made \a [config.log_name]: [message_title] - [message] - [author]")
 	message_admins("[key_name_admin(usr)] has made \a [config.log_name].", 1)
-
-/proc/GetNameAndAssignmentFromId(obj/item/card/id/I)
-	// Format currently matches that of newscaster feeds: Registered Name (Assigned Rank)
-	return I.assignment ? "[I.registered_name] ([I.assignment])" : I.registered_name
 
 /datum/announcement_configuration/event
 	default_title = ANNOUNCE_KIND_EVENT
@@ -169,3 +179,9 @@ GLOBAL_DATUM_INIT(major_announcement, /datum/announcer, new(config_type = /datum
 	log_name = ANNOUNCE_KIND_AI
 	sound = sound('sound/misc/notice2.ogg')
 	style = "major"
+
+/datum/announcement_configuration/ptl
+	default_title = ANNOUNCE_KIND_PTL
+	sound = sound('sound/misc/notice2.ogg')
+	style = "major"
+

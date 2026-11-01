@@ -3,14 +3,68 @@ GLOBAL_LIST_INIT(station_departments, list(DEPARTMENT_COMMAND, DEPARTMENT_MEDICA
 											DEPARTMENT_SCIENCE, DEPARTMENT_SECURITY, DEPARTMENT_SUPPLY,
 											DEPARTMENT_SERVICE, DEPARTMENT_ASSISTANT))
 
+/// All roles that are within the command category
 GLOBAL_LIST_INIT(command_positions, list(
 	"Captain",
+	"Station Commander",
+	"Head of Command",
+	"Commanding Officer",
 	"Head of Personnel",
+	"Head of Service",
+	"Crew Relations Officer",
 	"Head of Security",
+	"Security Director",
+	"Sheriff",
 	"Chief Engineer",
+	"Engineering Director",
+	"Engine Foreman",
+	"Senior Engineer",
 	"Research Director",
+	"Senior Researcher",
+	"Chief Research Officer",
 	"Chief Medical Officer",
-	"Nanotrasen Representative"
+	"Senior Physician",
+	"Medical Director",
+	"Quartermaster",
+	"Chief Logistics Officer",
+	"Supply Director",
+	"Requisitions Foreman",
+	"Nanotrasen Representative",
+	"Magistrate",
+	"Judge",
+	"Blueshield",
+	"Blueshield Officer",
+	"Bodyguard",
+	"Command Escort",
+	"Nanotrasen Career Trainer"
+))
+
+/// Only roles that are command of departments, for revolution and similar stuff
+GLOBAL_LIST_INIT(command_head_positions, list(
+	"Captain",
+	"Station Commander",
+	"Head of Command",
+	"Commanding Officer",
+	"Head of Personnel",
+	"Head of Service",
+	"Crew Relations Officer",
+	"Head of Security",
+	"Security Director",
+	"Sheriff",
+	"Chief Engineer",
+	"Engineering Director",
+	"Engine Foreman",
+	"Senior Engineer",
+	"Research Director",
+	"Senior Researcher",
+	"Chief Research Officer",
+	"Chief Medical Officer",
+	"Senior Physician",
+	"Medical Director",
+	"Quartermaster",
+	"Chief Logistics Officer",
+	"Supply Director",
+	"Requisitions Foreman",
 ))
 
 
@@ -24,7 +78,6 @@ GLOBAL_LIST_INIT(engineering_positions, list(
 GLOBAL_LIST_INIT(medical_positions, list(
 	"Chief Medical Officer",
 	"Medical Doctor",
-	"Geneticist",
 	"Psychiatrist",
 	"Chemist",
 	"Virologist",
@@ -36,49 +89,50 @@ GLOBAL_LIST_INIT(medical_positions, list(
 GLOBAL_LIST_INIT(science_positions, list(
 	"Research Director",
 	"Scientist",
-	"Geneticist",	//Part of both medical and science
+	"Geneticist",
+	"Xenobiologist",
 	"Roboticist",
 ))
 
-//BS12 EDIT
-GLOBAL_LIST_INIT(support_positions, list(
+GLOBAL_LIST_INIT(service_positions, list(
 	"Head of Personnel",
 	"Bartender",
 	"Botanist",
 	"Chef",
 	"Janitor",
 	"Librarian",
-	"Quartermaster",
-	"Cargo Technician",
-	"Shaft Miner",
 	"Internal Affairs Agent",
 	"Chaplain",
 	"Clown",
-	"Mime",
-	"Barber",
-	"Magistrate",
-	"Nanotrasen Representative",
-	"Blueshield",
-	"Explorer"
+	"Mime"
 ))
 
 GLOBAL_LIST_INIT(supply_positions, list(
-	"Head of Personnel",
 	"Quartermaster",
 	"Cargo Technician",
-	"Shaft Miner"
+	"Smith",
+	"Shaft Miner",
+	"Explorer"
 ))
 
-GLOBAL_LIST_INIT(service_positions, (list("Head of Personnel") + (support_positions - supply_positions)))
-
-
+/// Roles that include any semblence of security, mostly for jobbans
 GLOBAL_LIST_INIT(security_positions, list(
 	"Head of Security",
 	"Warden",
 	"Detective",
 	"Security Officer",
-	"Magistrate"
+	"Magistrate",
+	"Blueshield"
 ))
+
+/// Active security roles
+GLOBAL_LIST_INIT(active_security_positions, list(
+	"Head of Security",
+	"Warden",
+	"Detective",
+	"Security Officer"
+))
+
 
 
 GLOBAL_LIST_INIT(assistant_positions, list(
@@ -89,7 +143,8 @@ GLOBAL_LIST_INIT(nonhuman_positions, list(
 	"AI",
 	"Cyborg",
 	"Drone",
-	"pAI"
+	"pAI",
+	"golem",
 ))
 
 /proc/get_job_datums()
@@ -116,15 +171,15 @@ GLOBAL_LIST_INIT(nonhuman_positions, list(
 
 GLOBAL_LIST_INIT(exp_jobsmap, list(
 	EXP_TYPE_LIVING = list(), // all living mobs
-	EXP_TYPE_CREW = list(titles = command_positions | engineering_positions | medical_positions | science_positions | support_positions | supply_positions | security_positions | assistant_positions | list("AI","Cyborg")), // crew positions
+	EXP_TYPE_CREW = list(titles = command_positions | engineering_positions | medical_positions | science_positions | service_positions | supply_positions | security_positions | assistant_positions | list("AI","Cyborg")), // crew positions
 	EXP_TYPE_SPECIAL = list(), // antags, ERT, etc
 	EXP_TYPE_GHOST = list(), // dead people, observers
-	EXP_TYPE_COMMAND = list(titles = command_positions),
+	EXP_TYPE_COMMAND = list(titles = command_head_positions),
 	EXP_TYPE_ENGINEERING = list(titles = engineering_positions),
 	EXP_TYPE_MEDICAL = list(titles = medical_positions),
 	EXP_TYPE_SCIENCE = list(titles = science_positions),
 	EXP_TYPE_SUPPLY = list(titles = supply_positions),
-	EXP_TYPE_SECURITY = list(titles = security_positions),
+	EXP_TYPE_SECURITY = list(titles = active_security_positions),
 	EXP_TYPE_SILICON = list(titles = list("AI","Cyborg")),
 	EXP_TYPE_SERVICE = list(titles = service_positions),
 ))

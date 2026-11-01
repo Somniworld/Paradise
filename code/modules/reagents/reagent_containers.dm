@@ -2,7 +2,6 @@
 	name = "Container"
 	desc = "..."
 	icon = 'icons/obj/chemical.dmi'
-	icon_state = null
 	w_class = WEIGHT_CLASS_TINY
 	var/amount_per_transfer_from_this = 5
 	var/visible_transfer_rate = TRUE
@@ -14,44 +13,77 @@
 	var/has_lid = FALSE // Used for containers where we want to put lids on and off
 	var/temperature_min = 0 // To limit the temperature of a reagent container can atain when exposed to heat/cold
 	var/temperature_max = 10000
+	new_attack_chain = TRUE
 
-/obj/item/reagent_containers/verb/set_APTFT() //set amount_per_transfer_from_this
-	set name = "Set transfer amount"
-	set category = "Object"
-	set src in usr
+/obj/item/reagent_containers/interact_with_atom(atom/target, mob/living/user, list/modifiers)
+	if(isliving(target))
+		user.changeNext_move(CLICK_CD_MELEE)
+		mob_act(target, user)
+		return ITEM_INTERACT_COMPLETE
+	if(normal_act(target, user))
+		return ITEM_INTERACT_COMPLETE
+	return ..()
 
-	if(!usr.Adjacent(src) || !ishuman(usr) || HAS_TRAIT(usr, TRAIT_HANDS_BLOCKED))
+// Overriden inside its subtypes. Might add the basic container shit here (eg, beaker/bucket behaviour)
+/obj/item/reagent_containers/proc/mob_act(mob/target, mob/living/user)
+	return FALSE
+
+/obj/item/reagent_containers/proc/normal_act(atom/target, mob/living/user)
+	return FALSE
+
+/obj/item/reagent_containers/proc/can_set_transfer_amount(mob/user)
+	if(!length(possible_transfer_amounts))
+		// Nothing to configure.
+		return FALSE
+	return is_valid_interaction(user)
+
+/obj/item/reagent_containers/proc/is_valid_interaction(mob/user)
+	if(isrobot(user) && src.loc == user)
+		// Borgs can configure their modules.
+		return TRUE
+	if(!Adjacent(user))
+		// No configuring the beaker across the room.
+		return FALSE
+	if(!ishuman(user))
+		// Although a funny idea, station pets changing transfer
+		// amounts on random conatiners would probably be frustrating
+		// for the crew.
+		return FALSE
+	if(HAS_TRAIT(user, TRAIT_HANDS_BLOCKED))
+		// I guess there's, like, a switch or a dial or something?
+		// Whatever, you need to use your hands for this.
+		return FALSE
+
+	return TRUE
+
+/obj/item/reagent_containers/AltClick(mob/user)
+	if(!can_set_transfer_amount(user))
 		return
 
-	var/default = null
-	if(amount_per_transfer_from_this in possible_transfer_amounts)
-		default = amount_per_transfer_from_this
-	var/new_transfer_rate = input("Amount per transfer from this:", "[src]", default) as null|anything in possible_transfer_amounts
+	var/new_transfer_rate = tgui_input_list(user, "Amount per transfer from this:", "[src]", possible_transfer_amounts, "[amount_per_transfer_from_this]")
 	if(!new_transfer_rate)
 		return
 
-	if(!usr.Adjacent(src))
-		to_chat(usr, "<span class='warning'>You have moved too far away!</span>")
-		return
-	if(!ishuman(usr) || HAS_TRAIT(usr, TRAIT_HANDS_BLOCKED))
-		to_chat(usr, "<span class='warning'>You can't use your hands!</span>")
+	// This looks redundant, but it's not. Time elapsed while the input
+	// list was open, so we need to re-check our conditions and give an
+	// error if they changed.
+	if(!can_set_transfer_amount(user))
+		if(!Adjacent(user))
+			to_chat(user, SPAN_WARNING("You have moved too far away!"))
+		if(!ishuman(user) || HAS_TRAIT(user, TRAIT_HANDS_BLOCKED))
+			to_chat(user, SPAN_WARNING("You can't use your hands!"))
 		return
 
 	amount_per_transfer_from_this = new_transfer_rate
-	to_chat(usr, "<span class='notice'>[src] will now transfer [amount_per_transfer_from_this] units at a time.</span>")
-
-/obj/item/reagent_containers/AltClick()
-	set_APTFT()
+	to_chat(user, SPAN_NOTICE("[src] will now transfer [amount_per_transfer_from_this] units at a time."))
 
 /obj/item/reagent_containers/Initialize(mapload)
 	. = ..()
 	if(!reagents) // Some subtypes create their own reagents
 		create_reagents(volume, temperature_min, temperature_max)
-	if(!possible_transfer_amounts)
-		verbs -= /obj/item/reagent_containers/verb/set_APTFT
 	if(spawned_disease)
 		var/datum/disease/F = new spawned_disease(0)
-		var/list/data = list("viruses" = list(F), "blood_color" = "#A10808")
+		var/list/data = list("viruses" = list(F), "blood_color" = "#A10808", "blood_type" = BLOOD_TYPE_FAKE_BLOOD)
 		reagents.add_reagent("blood", disease_amount, data)
 	add_initial_reagents()
 
@@ -66,7 +98,6 @@
 	if(!QDELETED(src))
 		..()
 
-
 /obj/item/reagent_containers/proc/add_lid()
 	if(has_lid)
 		container_type ^= REFILLABLE | DRAINABLE
@@ -77,27 +108,25 @@
 		container_type |= REFILLABLE | DRAINABLE
 		update_icon(UPDATE_OVERLAYS)
 
-/obj/item/reagent_containers/attack_self(mob/user)
-	if(has_lid)
-		if(is_open_container())
-			to_chat(usr, "<span class='notice'>You put the lid on [src].</span>")
-			add_lid()
-		else
-			to_chat(usr, "<span class='notice'>You take the lid off [src].</span>")
-			remove_lid()
+/obj/item/reagent_containers/activate_self(mob/user)
+	if(..() || !has_lid)
+		return
 
-/obj/item/reagent_containers/attack(mob/M, mob/user, def_zone)
-	if(user.a_intent == INTENT_HARM)
-		return ..()
+	if(is_open_container())
+		to_chat(usr, SPAN_NOTICE("You put the lid on [src]."))
+		add_lid()
+	else
+		to_chat(usr, SPAN_NOTICE("You take the lid off [src]."))
+		remove_lid()
 
 /obj/item/reagent_containers/wash(mob/user, atom/source)
 	if(is_open_container())
 		if(reagents.total_volume >= volume)
-			to_chat(user, "<span class='warning'>[src] is full.</span>")
+			to_chat(user, SPAN_WARNING("[src] is full."))
 			return
 		else
 			reagents.add_reagent("water", min(volume - reagents.total_volume, amount_per_transfer_from_this))
-			to_chat(user, "<span class='notice'>You fill [src] from [source].</span>")
+			to_chat(user, SPAN_NOTICE("You fill [src] from [source]."))
 			return
 	..()
 
@@ -105,8 +134,8 @@
 	. = ..()
 
 	if(visible_transfer_rate)
-		. += "<span class='notice'>It will transfer [amount_per_transfer_from_this] unit[amount_per_transfer_from_this != 1 ? "s" : ""] at a time.</span>"
+		. += SPAN_NOTICE("It will transfer [amount_per_transfer_from_this] unit[amount_per_transfer_from_this != 1 ? "s" : ""] at a time.")
 
 	// Items that have no valid possible_transfer_amounts shouldn't say their transfer rate is variable
 	if(possible_transfer_amounts)
-		. += "<span class='notice'>Alt-click to change the transfer amount.</span>"
+		. += SPAN_NOTICE("<b>Alt-Click</b> to change the transfer amount.")

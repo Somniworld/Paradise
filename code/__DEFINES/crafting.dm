@@ -11,6 +11,8 @@
 #define CAT_HOLIDAY	"Holiday"
 #define CAT_LARGE_DECORATIONS	"Large Decorations"
 #define CAT_CLOTHING	"Clothing"
+#define CAT_CLOTHING_GENERAL    "General Clothing"
+#define CAT_CLOTHING_RACIAL  "Racial Clothing"
 #define CAT_FOOD	"Foods"
 #define CAT_BREAD	"Breads"
 #define CAT_BURGER	"Burgers"
@@ -27,9 +29,9 @@
 #define CAT_SPAGHETTI	"Spaghettis"
 #define CAT_ICE	"Frozen"
 
-#define RECIPE_MICROWAVE	"Microwave"
-#define RECIPE_OVEN			"Oven"
-#define RECIPE_GRILL		"Grill"
-#define RECIPE_CANDY		"Candy"
+#define RECIPE_MICROWAVE	"microwave"
+#define RECIPE_OVEN			"oven"
+#define RECIPE_GRILL		"grill"
+#define RECIPE_CANDY		"candy machine"
 
 #define RECIPE_FAIL		null

@@ -2,10 +2,14 @@
 /datum/wires
 	/// TRUE if the wires will be different every time a new wire datum is created.
 	var/randomize = FALSE
+	/// TRUE if the wires are labelled for every user
+	var/labelled = FALSE
 	/// The atom the wires belong too. For example: an airlock.
 	var/atom/holder
 	/// The holder type; used to make sure that the holder is the correct type.
 	var/holder_type
+	/// Key that enables wire assignments to be common across different holders. If null, will use the holder_type as a key.
+	var/dictionary_key = null
 	/// The display name for the TGUI window. For example, given the var is "APC"...
 	/// When the TGUI window is opened, "wires" will be appended to it's title, and it would become "APC wires".
 	var/proper_name = "Unknown"
@@ -19,10 +23,6 @@
 	var/list/colors
 	/// An associative list of signalers attached to the wires. The wire color is the key, and the signaler object reference is the value.
 	var/list/assemblies
-	/// The width of the wire TGUI window.
-	var/window_x = 300
-	/// The height of the wire TGUI window. Will get longer as needed, based on the `wire_count`.
-	var/window_y = 100
 
 /datum/wires/New(atom/_holder)
 	..()
@@ -43,12 +43,13 @@
 	if(randomize)
 		randomize()
 		return
-
-	if(!GLOB.wire_color_directory[holder_type])
+	// If there is a dictionary key set, we'll want to use that. Otherwise, use the holder type.
+	var/key = dictionary_key ? dictionary_key : holder_type
+	if(!GLOB.wire_color_directory[key])
 		randomize()
-		GLOB.wire_color_directory[holder_type] = colors
+		GLOB.wire_color_directory[key] = colors
 	else
-		colors = GLOB.wire_color_directory[holder_type]
+		colors = GLOB.wire_color_directory[key]
 
 /datum/wires/Destroy()
 	for(var/color in colors)
@@ -92,10 +93,13 @@
 /datum/wires/ui_host()
 	return holder
 
-/datum/wires/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.physical_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/datum/wires/ui_state(mob/user)
+	return GLOB.physical_state
+
+/datum/wires/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "Wires", "[proper_name] wires", window_x, window_y + wire_count * 30, master_ui, state)
+		ui = new(user, src, "Wires", "[proper_name] wires")
 		ui.open()
 
 /datum/wires/ui_data(mob/user)
@@ -105,7 +109,8 @@
 	if(ishuman(user))
 		var/mob/living/carbon/human/H = user
 		var/obj/item/organ/internal/eyes/eyes = H.get_int_organ(/obj/item/organ/internal/eyes)
-		if(eyes && HAS_TRAIT(H, TRAIT_COLORBLIND)) // Check if the human has colorblindness.
+		var/obj/item/clothing/glasses/glasses = H.get_item_by_slot(ITEM_SLOT_EYES)
+		if(eyes && HAS_TRAIT(H, TRAIT_COLORBLIND) && (!glasses || !glasses.correct_wires)) // Check if the human has colorblindness.
 			replace_colors = eyes.replace_colours // Get the colorblind replacement colors list.
 
 	var/list/wires_list = list()
@@ -114,7 +119,14 @@
 		var/replaced_color = color
 		var/color_name = color
 
-		if(color in replace_colors) // If this color is one that needs to be replaced using the colorblindness list.
+		if(HAS_TRAIT(user, TRAIT_WIRE_BLIND)) //You are going to be seeing colours, colourblind or not. And it is going to be WRONG
+			replaced_color = rgb(rand(1,255), rand(1,255), rand(1,255))
+			var/list/fake_colour_chars = list("!", "@", "#", "$", "%", "^", "&", "*", "-", "?", "/")
+			color_name = ""
+			for(var/i in 1 to rand(5, 8))
+				color_name += pick(fake_colour_chars)
+
+		else if(color in replace_colors) // If this color is one that needs to be replaced using the colorblindness list.
 			replaced_color = replace_colors[color]
 			if(replaced_color in LIST_COLOR_RENAME) // If its an ugly written color name like "darkolivegreen", rename it to something like "dark green".
 				color_name = LIST_COLOR_RENAME[replaced_color]
@@ -129,6 +141,8 @@
 			"cut" = is_color_cut(color), // Whether the wire is cut or not. Used to display "cut" or "mend".
 			"attached" = is_attached(color) // Whether or not a signaler is attached to this wire.
 		))
+	if(HAS_TRAIT(user, TRAIT_WIRE_BLIND)) // If the wires are here and your brain thinks they're there and your computer tells you over here, do you recall which one you pulsed?
+		wires_list = shuffle(wires_list)
 	data["wires"] = wires_list
 
 	// Get the information shown at the bottom of wire TGUI window, such as "The red light is blinking", etc.
@@ -165,7 +179,7 @@
 		// Toggles the cut/mend status.
 		if("cut")
 			if(!istype(I, /obj/item/wirecutters) && !user.can_admin_interact())
-				to_chat(user, "<span class='error'>You need wirecutters!</span>")
+				to_chat(user, SPAN_ERROR("You need wirecutters!"))
 				return
 
 			if(istype(I))
@@ -176,7 +190,7 @@
 		// Pulse a wire.
 		if("pulse")
 			if(!istype(I, /obj/item/multitool) && !user.can_admin_interact())
-				to_chat(user, "<span class='error'>You need a multitool!</span>")
+				to_chat(user, SPAN_ERROR("You need a multitool!"))
 				return
 
 			playsound(holder, 'sound/weapons/empty.ogg', 20, 1)
@@ -197,14 +211,14 @@
 					return TRUE
 
 			if(!istype(I, /obj/item/assembly/signaler))
-				to_chat(user, "<span class='error'>You need a remote signaller!</span>")
+				to_chat(user, SPAN_ERROR("You need a remote signaller!"))
 				return
 
 			if(user.drop_item())
 				attach_assembly(color, I)
 				return TRUE
 			else
-				to_chat(user, "<span class='warning'>[user.get_active_hand()] is stuck to your hand!</span>")
+				to_chat(user, SPAN_WARNING("[user.get_active_hand()] is stuck to your hand!"))
 
 
 /**
@@ -282,6 +296,8 @@
 	var/can_probably_see_wires = FALSE
 	var/obj/item/held_item = user.get_active_hand()
 	var/obj/item/offhand = user.get_inactive_hand()
+	if(labelled)
+		can_probably_see_wires = TRUE
 	if(istype(held_item) && HAS_TRAIT(held_item, TRAIT_SHOW_WIRE_INFO))
 		can_probably_see_wires = TRUE
 	if(istype(offhand) && HAS_TRAIT(offhand, TRAIT_SHOW_WIRE_INFO))
@@ -293,7 +309,7 @@
 		return null
 
 	// even if you *think* you can see them, it's not guaranteed that you can.
-	if(HAS_TRAIT(holder, TRAIT_OBSCURED_WIRES))
+	if(HAS_TRAIT(holder, TRAIT_OBSCURED_WIRES) || HAS_TRAIT(user, TRAIT_WIRE_BLIND))
 		var/list/fake_wire_chars = list("!", "@", "#", "$", "%", "^", "&", "*", "-", "?", "/")
 		var/fake_wire_name = ""
 
@@ -360,6 +376,16 @@
  */
 /datum/wires/proc/cut_random()
 	cut(wires[rand(1, length(wires))])
+
+/**
+* Cuts a random uncut wire.
+*/
+/datum/wires/proc/cut_random_uncut_wire()
+	var/list/uncut_list = wires - cut_wires
+	if(!length(uncut_list))
+		return
+	var/random_wire = pick(uncut_list)
+	cut(random_wire)
 
 /**
  * Cuts all wires.
@@ -480,3 +506,15 @@
 /datum/wires/proc/is_attached(color)
 	if(assemblies[color])
 		return TRUE
+
+/// Use this proc if you want wires to be pulsed on EMP
+/datum/wires/proc/emp_pulse()
+	var/list/possible_wires = shuffle(wires)
+	var/remaining_pulses = 3
+
+	for(var/wire in possible_wires)
+		if(prob(33))
+			pulse(wire)
+			remaining_pulses--
+			if(!remaining_pulses)
+				break

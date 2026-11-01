@@ -59,13 +59,20 @@
 	add_fingerprint(user)
 	ui_interact(user)
 
+/obj/structure/dispenser/attack_ai(mob/user)
+	if(isrobot(user) && Adjacent(user)) //Robots can use it, but not the AI
+		attack_hand(user)
+
 /obj/structure/dispenser/attack_ghost(mob/user)
 	ui_interact(user)
 
-/obj/structure/dispenser/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/structure/dispenser/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/structure/dispenser/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "TankDispenser", name, 275, 100, master_ui, state)
+		ui = new(user, src, "TankDispenser", name)
 		ui.open()
 
 /obj/structure/dispenser/ui_data(user)
@@ -88,24 +95,26 @@
 	add_fingerprint(usr)
 	return TRUE
 
-/obj/structure/dispenser/attackby(obj/item/I, mob/user, params)
+/obj/structure/dispenser/item_interaction(mob/living/user, obj/item/I, list/modifiers)
 	if(istype(I, /obj/item/tank/internals/oxygen) || istype(I, /obj/item/tank/internals/air) || istype(I, /obj/item/tank/internals/anesthetic))
 		try_insert_tank(user, stored_oxygen_tanks, I)
-		return
+		return ITEM_INTERACT_COMPLETE
 
 	if(istype(I, /obj/item/tank/internals/plasma))
 		try_insert_tank(user, stored_plasma_tanks, I)
-		return
-
-	if(istype(I, /obj/item/wrench))
-		if(anchored)
-			to_chat(user, "<span class='notice'>You lean down and unwrench [src].</span>")
-			anchored = FALSE
-		else
-			to_chat(user, "<span class='notice'>You wrench [src] into place.</span>")
-			anchored = TRUE
-		return
+		return ITEM_INTERACT_COMPLETE
 	return ..()
+
+/obj/structure/dispenser/wrench_act(mob/living/user, obj/item/I)
+	I.play_tool_sound(src, 50)
+	if(anchored)
+		to_chat(user, SPAN_NOTICE("You lean down and unwrench [src]."))
+		anchored = FALSE
+	else
+		to_chat(user, SPAN_NOTICE("You wrench [src] into place."))
+		anchored = TRUE
+	return TRUE
+
 
 /// Called when the user clicks on the oxygen or plasma tank UI buttons, and tries to withdraw a tank.
 /obj/structure/dispenser/proc/try_remove_tank(mob/living/user, list/tank_list)
@@ -118,23 +127,23 @@
 	if(!user.put_in_hands(T))
 		T.forceMove(loc) // If the user's hands are full, place it on the tile of the dispenser.
 
-	to_chat(user, "<span class='notice'>You take [T] out of [src].</span>")
+	to_chat(user, SPAN_NOTICE("You take [T] out of [src]."))
 	update_icon(UPDATE_OVERLAYS)
 
 /// Called when the user clicks on the dispenser with a tank. Tries to insert the tank into the dispenser, and updates the UI if successful.
 /obj/structure/dispenser/proc/try_insert_tank(mob/living/user, list/tank_list, obj/item/tank/T)
 	if(LAZYLEN(tank_list) >= MAX_TANK_STORAGE)
-		to_chat(user, "<span class='warning'>[src] is full.</span>")
+		to_chat(user, SPAN_WARNING("[src] is full."))
 		return
 
 	if(!user.drop_item()) // Antidrop check
-		to_chat(user, "<span class='warning'>[T] is stuck to your hand!</span>")
+		to_chat(user, SPAN_WARNING("[T] is stuck to your hand!"))
 		return
 
 	T.forceMove(src)
 	tank_list.Add(T)
 	update_icon(UPDATE_OVERLAYS)
-	to_chat(user, "<span class='notice'>You put [T] in [src].</span>")
+	to_chat(user, SPAN_NOTICE("You put [T] in [src]."))
 	SStgui.update_uis(src)
 
 /obj/structure/dispenser/deconstruct(disassembled = TRUE)

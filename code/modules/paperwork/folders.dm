@@ -1,11 +1,13 @@
 /obj/item/folder
 	name = "folder"
-	desc = "A folder."
+	desc = "A folder for keeping all your important papers and photos."
 	icon = 'icons/obj/bureaucracy.dmi'
 	icon_state = "folder"
 	w_class = WEIGHT_CLASS_SMALL
 	pressure_resistance = 2
 	resistance_flags = FLAMMABLE
+	materials = list(MAT_CARDBOARD = 2000)
+	new_attack_chain = TRUE
 
 /obj/item/folder/emp_act(severity)
 	..()
@@ -14,52 +16,58 @@
 		A.emp_act(severity)
 
 /obj/item/folder/blue
-	desc = "A blue folder."
+	desc = "A blue folder for keeping all the blueprints of your great ideas."
 	icon_state = "folder_blue"
 
 /obj/item/folder/red
-	desc = "A red folder."
+	desc = "A red folder for storing all the documents you've \"acquired\"."
 	icon_state = "folder_red"
 
 /obj/item/folder/yellow
-	desc = "A yellow folder."
+	desc = "A yellow folder for keeping all your very important court forms."
 	icon_state = "folder_yellow"
 
 /obj/item/folder/white
-	desc = "A white folder."
+	desc = "A white folder for holding medical records, if anyone ever prints any."
 	icon_state = "folder_white"
 
 /obj/item/folder/update_overlays()
 	. = ..()
-	if(contents.len)
+	if(length(contents))
 		. += "folder_paper"
 
-/obj/item/folder/attackby(obj/item/W as obj, mob/user as mob, params)
-	if(istype(W, /obj/item/paper) || istype(W, /obj/item/photo) || istype(W, /obj/item/paper_bundle) || istype(W, /obj/item/documents))
+/obj/item/folder/item_interaction(mob/user, obj/item/used, list/modifiers)
+	if(istype(used, /obj/item/paper) || istype(used, /obj/item/photo) || istype(used, /obj/item/paper_bundle) || istype(used, /obj/item/documents))
 		user.drop_item()
-		W.loc = src
-		to_chat(user, "<span class='notice'>You put [W] into [src].</span>")
+		used.forceMove(src)
+		to_chat(user, SPAN_NOTICE("You put [used] into [src]."))
 		update_icon(UPDATE_OVERLAYS)
-	else if(is_pen(W))
-		rename_interactive(user, W)
-	else
-		return ..()
+		add_fingerprint(user)
+		return ITEM_INTERACT_COMPLETE
 
-/obj/item/folder/attack_self(mob/user as mob)
-	var/dat = "<title>[name]</title>"
+	if(is_pen(used))
+		rename_interactive(user, used)
+		add_fingerprint(user)
+		return ITEM_INTERACT_COMPLETE
+	return ..()
+
+/obj/item/folder/activate_self(mob/user)
+	if(!user)
+		return ..()
+	var/dat = {"<!DOCTYPE html><meta charset="UTF-8"><title>[name]</title>"}
 
 	for(var/obj/item/paper/P in src)
-		dat += "<A href='?src=[UID()];remove=\ref[P]'>Remove</A> - <A href='?src=[UID()];read=\ref[P]'>[P.name]</A><BR>"
+		dat += "<a href='byond://?src=[UID()];remove=\ref[P]'>Remove</a> - <a href='byond://?src=[UID()];read=\ref[P]'>[P.name]</a><br>"
 	for(var/obj/item/photo/Ph in src)
-		dat += "<A href='?src=[UID()];remove=\ref[Ph]'>Remove</A> - <A href='?src=[UID()];look=\ref[Ph]'>[Ph.name]</A><BR>"
+		dat += "<A href='byond://?src=[UID()];remove=\ref[Ph]'>Remove</A> - <A href='byond://?src=[UID()];look=\ref[Ph]'>[Ph.name]</A><BR>"
 	for(var/obj/item/paper_bundle/Pa in src)
-		dat += "<A href='?src=[UID()];remove=\ref[Pa]'>Remove</A> - <A href='?src=[UID()];browse=\ref[Pa]'>[Pa.name]</A><BR>"
+		dat += "<A href='byond://?src=[UID()];remove=\ref[Pa]'>Remove</A> - <A href='byond://?src=[UID()];browse=\ref[Pa]'>[Pa.name]</A><BR>"
 	for(var/obj/item/documents/doc in src)
-		dat += "<A href='?src=[UID()];remove=\ref[doc]'>Remove</A> - <A href='?src=[UID()];look=\ref[doc]'>[doc.name]</A><BR>"
+		dat += "<A href='byond://?src=[UID()];remove=\ref[doc]'>Remove</A> - <A href='byond://?src=[UID()];look=\ref[doc]'>[doc.name]</A><BR>"
 	user << browse(dat, "window=folder")
 	onclose(user, "folder")
 	add_fingerprint(usr)
-	return
+	return ITEM_INTERACT_COMPLETE
 
 /obj/item/folder/Topic(href, href_list)
 	..()
@@ -85,11 +93,11 @@
 		else if(href_list["browse"])
 			var/obj/item/paper_bundle/P = locate(href_list["browse"])
 			if(P && (P.loc == src) && istype(P))
-				P.attack_self(usr)
+				P.activate_self(usr)
 				onclose(usr, "[P.name]")
 
 		//Update everything
-		attack_self(usr)
+		activate_self(usr)
 		update_icon(UPDATE_OVERLAYS)
 	return
 
@@ -97,8 +105,8 @@
 	name = "folder- 'TOP SECRET'"
 	desc = "A folder stamped \"Top Secret - Property of Nanotrasen Corporation. Unauthorized distribution is punishable by death.\""
 
-/obj/item/folder/documents/New()
-	..()
+/obj/item/folder/documents/Initialize(mapload)
+	. = ..()
 	new /obj/item/documents/nanotrasen(src)
 	update_icon(UPDATE_OVERLAYS)
 
@@ -109,30 +117,32 @@
 /obj/item/folder/syndicate/red
 	icon_state = "folder_sred"
 
-/obj/item/folder/syndicate/red/New()
-	..()
+/obj/item/folder/syndicate/red/Initialize(mapload)
+	. = ..()
 	new /obj/item/documents/syndicate/red(src)
 	update_icon(UPDATE_OVERLAYS)
+
+/obj/item/folder/syndicate/fake_red
+	desc = "A folder stamped \"Top Secret - Property of The Syndicate\". Its glossy cover seems cheap."
+	icon_state = "folder_sred"
 
 /obj/item/folder/syndicate/blue
 	icon_state = "folder_sblue"
 
-/obj/item/folder/syndicate/blue/New()
-	..()
+/obj/item/folder/syndicate/blue/Initialize(mapload)
+	. = ..()
 	new /obj/item/documents/syndicate/blue(src)
 	update_icon(UPDATE_OVERLAYS)
 
 /obj/item/folder/syndicate/yellow
 	icon_state = "folder_syellow"
 
-/obj/item/folder/syndicate/yellow/full/New()
-	..()
+/obj/item/folder/syndicate/yellow/full/Initialize(mapload)
+	. = ..()
 	new /obj/item/documents/syndicate/yellow(src)
 	update_icon(UPDATE_OVERLAYS)
 
-/obj/item/folder/syndicate/mining/New()
+/obj/item/folder/syndicate/mining/Initialize(mapload)
 	. = ..()
 	new /obj/item/documents/syndicate/mining(src)
 	update_icon(UPDATE_OVERLAYS)
-
-

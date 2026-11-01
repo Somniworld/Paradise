@@ -14,12 +14,13 @@
 			var/atom/movable/thing = I.remove(src)
 			if(thing)
 				thing.forceMove(get_turf(src))
-				thing.throw_at(get_edge_target_turf(src, pick(GLOB.alldirs)), rand(1, 3), 5)
+				if(!QDELETED(thing)) // This is in case moving to the turf deletes the atom.
+					thing.throw_at(get_edge_target_turf(src, pick(GLOB.alldirs)), rand(1, 3), 5)
 
 	for(var/obj/item/I in get_equipped_items(include_pockets = TRUE))
-		unEquip(I, TRUE)
-		I.forceMove(get_turf(src))
-		I.throw_at(get_edge_target_turf(src, pick(GLOB.alldirs)), rand(1, 3), 5)
+		drop_item_to_ground(I, force = TRUE)
+		if(!QDELETED(I)) // This is in case moving to the turf deletes the atom.
+			I.throw_at(get_edge_target_turf(src, pick(GLOB.alldirs)), rand(1, 3), 5)
 
 	for(var/obj/item/organ/external/E in bodyparts)
 		if(istype(E, /obj/item/organ/external/chest))
@@ -32,7 +33,7 @@
 	for(var/mob/M in src)
 		LAZYREMOVE(stomach_contents, M)
 		M.forceMove(drop_location())
-		visible_message("<span class='danger'>[M] bursts out of [src]!</span>")
+		visible_message(SPAN_DANGER("[M] bursts out of [src]!"))
 
 	if(!ismachineperson(src))
 		hgibs(loc, dna)
@@ -43,21 +44,24 @@
 	return TRUE
 
 /mob/living/carbon/human/dust()
+	if(!IS_HORIZONTAL(src))
+		// keep us upright so the animation fits.
+		ADD_TRAIT(src, TRAIT_FORCED_STANDING, TRAIT_GENERIC)
 	if(!death(TRUE) && stat != DEAD)
 		return FALSE
 	notransform = TRUE
 	dust_animation()
-	QDEL_IN(src, 20)
+	QDEL_IN(src, 2 SECONDS)
 	return TRUE
 
 /mob/living/carbon/human/dust_animation()
 	// Animate them being dusted out of existence
 	var/obj/effect/dusting_anim/dust_effect = new(loc, UID())
 	filters += filter(type = "displace", size = 256, render_source = "*snap[UID()]")
-	animate(src, alpha = 0, time = 20, easing = (EASE_IN | SINE_EASING))
+	animate(src, alpha = 0, time = 2 SECONDS, easing = (EASE_IN | SINE_EASING))
 
 	new dna.species.remains_type(get_turf(src))
-	QDEL_IN(dust_effect, 20)
+	QDEL_IN(dust_effect, 2 SECONDS)
 	return TRUE
 
 /mob/living/carbon/human/melt()
@@ -101,6 +105,7 @@
 		// We're alive again, so re-build the entire healthdoll
 		healthdoll.cached_healthdoll_overlays.Cut()
 		update_health_hud()
+		update_stamina_hud()
 	// Update healthdoll
 	if(dna.species)
 		dna.species.update_sight(src)
@@ -166,3 +171,10 @@
 		update_body()
 		update_mutantrace()
 		UpdateAppearance() // reset hair from DNA
+
+/mob/living/carbon/human/proc/make_nugget(mob/living)
+	for(var/obj/item/organ/external/limb as anything in bodyparts)
+		if(limb.body_part == LEG_RIGHT || limb.body_part == LEG_LEFT || limb.body_part == ARM_RIGHT || limb.body_part == ARM_LEFT)
+			limb.droplimb()
+	emote("scream")
+	playsound(src, 'sound/misc/desceration-03.ogg', 70)

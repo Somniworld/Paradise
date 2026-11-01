@@ -2,145 +2,147 @@
 	name = "paper bundle"
 	icon = 'icons/obj/bureaucracy.dmi'
 	icon_state = "paper"
-	item_state = "paper"
-	throwforce = 0
+	inhand_icon_state = "paper"
 	w_class = WEIGHT_CLASS_TINY
 	throw_range = 2
 	throw_speed = 1
 	pressure_resistance = 2
 	attack_verb = list("bapped")
+	drop_sound = 'sound/items/handling/paper_drop.ogg'
+	pickup_sound =  'sound/items/handling/paper_pickup.ogg'
+	scatter_distance = 8
+	new_attack_chain = TRUE
 	var/amount = 0 //Amount of total items clipped to the paper. Note: If you have 2 paper, this should be 1
 	var/photos = 0 //Amount of photos clipped to the paper.
 	var/page = 1
 	var/screen = 0
-	drop_sound = 'sound/items/handling/paper_drop.ogg'
-	pickup_sound =  'sound/items/handling/paper_pickup.ogg'
 
-/obj/item/paper_bundle/New(default_papers = TRUE)
+/obj/item/paper_bundle/Initialize(mapload, default_papers = TRUE)
 	. = ..()
 	if(default_papers) // This is to avoid runtime occuring from a paper bundle being created without a paper in it.
 		new /obj/item/paper(src)
 		new /obj/item/paper(src)
 		amount += 1
 
-/obj/item/paper_bundle/attackby(obj/item/W as obj, mob/user as mob, params)
-	..()
+/obj/item/paper_bundle/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	if(used.get_heat())
+		burnpaper(used, user)
+		return ITEM_INTERACT_COMPLETE
+
 	var/obj/item/paper/P
-	if(istype(W, /obj/item/paper))
-		P = W
+	if(istype(used, /obj/item/paper))
+		P = used
 		if(istype(P, /obj/item/paper/carbon))
 			var/obj/item/paper/carbon/C = P
 			if(!C.iscopy && !C.copied)
-				to_chat(user, "<span class='notice'>Take off the carbon copy first.</span>")
+				to_chat(user, SPAN_NOTICE("Take off the carbon copy first."))
 				add_fingerprint(user)
-				return
+				return ITEM_INTERACT_COMPLETE
 
 		amount++
 		if(screen == 2)
 			screen = 1
-		to_chat(user, "<span class='notice'>You add [(P.name == "paper") ? "the paper" : P.name] to [(src.name == "paper bundle") ? "the paper bundle" : src.name].</span>")
-		user.unEquip(P)
-		P.loc = src
+		to_chat(user, SPAN_NOTICE("You add [(P.name == "paper") ? "the paper" : P.name] to [(src.name == "paper bundle") ? "the paper bundle" : src.name]."))
+		user.transfer_item_to(P, src)
 		if(ishuman(user))
 			var/mob/living/carbon/human/H = user
 			H.update_inv_l_hand()
 			H.update_inv_r_hand()
-	else if(istype(W, /obj/item/photo))
+		update_icon()
+		return ITEM_INTERACT_COMPLETE
+
+	if(istype(used, /obj/item/photo))
 		amount++
 		photos++
 		if(screen == 2)
 			screen = 1
-		to_chat(user, "<span class='notice'>You add [(W.name == "photo") ? "the photo" : W.name] to [(src.name == "paper bundle") ? "the paper bundle" : src.name].</span>")
-		user.unEquip(W)
-		W.loc = src
-	else if(istype(W, /obj/item/lighter))
-		burnpaper(W, user)
-	else if(istype(W, /obj/item/paper_bundle))
-		user.unEquip(W)
-		for(var/obj/O in W)
+		to_chat(user, SPAN_NOTICE("You add [(used.name == "photo") ? "the photo" : used.name] to [(src.name == "paper bundle") ? "the paper bundle" : src.name]."))
+		user.transfer_item_to(used, src)
+		update_icon()
+		return ITEM_INTERACT_COMPLETE
+
+	if(istype(used, /obj/item/paper_bundle))
+		for(var/obj/O in used)
 			O.loc = src
 			O.add_fingerprint(usr)
 			src.amount++
 			if(screen == 2)
 				screen = 1
-		to_chat(user, "<span class='notice'>You add \the [W.name] to [(src.name == "paper bundle") ? "the paper bundle" : src.name].</span>")
-		qdel(W)
-	else
-		if(is_pen(W) || istype(W, /obj/item/toy/crayon))
-			usr << browse("", "window=PaperBundle[UID()]") //Closes the dialog
-		P = src[page]
-		P.attackby(W, user, params)
+		to_chat(user, SPAN_NOTICE("You add \the [used.name] to [(src.name == "paper bundle") ? "the paper bundle" : src.name]."))
+		qdel(used)
+		return ITEM_INTERACT_COMPLETE
 
-	update_icon()
-	if(winget(usr, "PaperBundle[UID()]", "is-visible") == "true") // NOT MY FAULT IT IS A BUILT IN PROC PLEASE DO NOT HIT ME
-		attack_self(usr) //Update the browsed page.
-	add_fingerprint(usr)
-	return
+	if(is_pen(used) || istype(used, /obj/item/toy/crayon))
+		usr << browse("", "window=PaperBundle[UID()]") // Closes the dialog
+		P = get_page()
+		P.item_interaction(user, used, modifiers)
+		return ITEM_INTERACT_COMPLETE
 
-/obj/item/paper_bundle/proc/burnpaper(obj/item/lighter/P, mob/user)
-	var/class = "<span class='warning'>"
+	return ..()
 
-	if(P.lit && !user.restrained())
-		if(istype(P, /obj/item/lighter/zippo))
-			class = "<span class='rose'>"
+/obj/item/paper_bundle/proc/burnpaper(obj/item/heating_object, mob/user)
+	var/class = "warning"
 
-		user.visible_message("[class][user] holds [P] up to [src], it looks like [user.p_theyre()] trying to burn it!</span>", \
-		"[class]You hold [P] up to [src], burning it slowly.</span>")
+	if(istype(heating_object, /obj/item/lighter/zippo))
+		class = "rose"
 
-		spawn(20)
-			if(get_dist(src, user) < 2 && user.get_active_hand() == P && P.lit)
-				user.visible_message("[class][user] burns right through \the [src], turning it to ash. It flutters through the air before settling on the floor in a heap.</span>", \
-				"[class]You burn right through \the [src], turning it to ash. It flutters through the air before settling on the floor in a heap.</span>")
+	user.visible_message(
+		"<span class='[class]'>[user] holds [heating_object] up to [src], it looks like [user.p_theyre()] trying to burn it!</span>",
+		"<span class='[class]'>You hold [heating_object] up to [src], burning it slowly.</span>"
+	)
 
-				if(user.is_in_inactive_hand(src))
-					user.unEquip(src)
+	if(!do_after(user, 2 SECONDS, target = src) || !heating_object.get_heat())
+		return
+	user.visible_message("<span class='[class]'>[user] burns right through [src], turning it to ash. It flutters through the air before settling on the floor in a heap.</span>", \
+	"<span class='[class]'>You burn right through [src], turning it to ash. It flutters through the air before settling on the floor in a heap.</span>")
 
-				new /obj/effect/decal/cleanable/ash(get_turf(src))
-				qdel(src)
-
-			else
-				to_chat(user, "<span class='warning'>You must hold \the [P] steady to burn \the [src].</span>")
+	new /obj/effect/decal/cleanable/ash(get_turf(src))
+	qdel(src)
 
 /obj/item/paper_bundle/examine(mob/user)
 	. = ..()
+	. += SPAN_NOTICE("<b>Alt-Click</b> [src] with a pen in hand to rename it.")
+	. += SPAN_NOTICE("<b>Alt-Shift-Click</b> [src] to undo the paper bundle.")
 	if(in_range(user, src))
 		show_content(user)
 	else
-		. += "<span class='notice'>It is too far away.</span>"
+		. += SPAN_NOTICE("It is too far away.")
 
 /obj/item/paper_bundle/proc/show_content(mob/user as mob)
-	var/dat
-	var/obj/item/W = src[page]
+	var/dat = {"<!DOCTYPE html><meta charset="UTF-8">"}
+	var/obj/item/W = get_page()
 	switch(screen)
 		if(0)
 			dat+= "<DIV STYLE='float:left; text-align:left; width:33.33333%'></DIV>"
-			dat+= "<DIV STYLE='float:left; text-align:center; width:33.33333%'><A href='?src=[UID()];remove=1'>Remove [(istype(W, /obj/item/paper)) ? "paper" : "photo"]</A></DIV>"
-			dat+= "<DIV STYLE='float:left; text-align:right; width:33.33333%'><A href='?src=[UID()];next_page=1'>Next Page</A></DIV><BR><HR>"
+			dat+= "<DIV STYLE='float:left; text-align:center; width:33.33333%'><A href='byond://?src=[UID()];remove=1'>Remove [(istype(W, /obj/item/paper)) ? "paper" : "photo"]</A></DIV>"
+			dat+= "<DIV STYLE='float:left; text-align:right; width:33.33333%'><A href='byond://?src=[UID()];next_page=1'>Next Page</A></DIV><BR><HR>"
 		if(1)
-			dat+= "<DIV STYLE='float:left; text-align:left; width:33.33333%'><A href='?src=[UID()];prev_page=1'>Previous Page</A></DIV>"
-			dat+= "<DIV STYLE='float:left; text-align:center; width:33.33333%'><A href='?src=[UID()];remove=1'>Remove [(istype(W, /obj/item/paper)) ? "paper" : "photo"]</A></DIV>"
-			dat+= "<DIV STYLE='float:left; text-align:right; width:33.33333%'><A href='?src=[UID()];next_page=1'>Next Page</A></DIV><BR><HR>"
+			dat+= "<DIV STYLE='float:left; text-align:left; width:33.33333%'><A href='byond://?src=[UID()];prev_page=1'>Previous Page</A></DIV>"
+			dat+= "<DIV STYLE='float:left; text-align:center; width:33.33333%'><A href='byond://?src=[UID()];remove=1'>Remove [(istype(W, /obj/item/paper)) ? "paper" : "photo"]</A></DIV>"
+			dat+= "<DIV STYLE='float:left; text-align:right; width:33.33333%'><A href='byond://?src=[UID()];next_page=1'>Next Page</A></DIV><BR><HR>"
 		if(2)
-			dat+= "<DIV STYLE='float:left; text-align:left; width:33.33333%'><A href='?src=[UID()];prev_page=1'>Previous Page</A></DIV>"
-			dat+= "<DIV STYLE='float:left; text-align:center; width:33.33333%'><A href='?src=[UID()];remove=1'>Remove [(istype(W, /obj/item/paper)) ? "paper" : "photo"]</A></DIV><BR><HR>"
+			dat+= "<DIV STYLE='float:left; text-align:left; width:33.33333%'><A href='byond://?src=[UID()];prev_page=1'>Previous Page</A></DIV>"
+			dat+= "<DIV STYLE='float:left; text-align:center; width:33.33333%'><A href='byond://?src=[UID()];remove=1'>Remove [(istype(W, /obj/item/paper)) ? "paper" : "photo"]</A></DIV><BR><HR>"
 			dat+= "<DIV STYLE='float;left; text-align:right; with:33.33333%'></DIV>"
-	if(istype(src[page], /obj/item/paper))
+	if(istype(W, /obj/item/paper))
 		var/obj/item/paper/P = W
 		dat += P.show_content(usr, view = 0)
 		usr << browse(dat, "window=PaperBundle[UID()]")
-	else if(istype(src[page], /obj/item/photo))
+	else if(istype(W, /obj/item/photo))
 		var/obj/item/photo/P = W
 		usr << browse_rsc(P.img, "tmp_photo.png")
-		usr << browse(dat + "<html><head><title>[P.name]</title></head>" \
+		usr << browse(dat + "<html><meta charset='utf-8'><head><title>[P.name]</title></head>" \
 		+ "<body style='overflow:hidden'>" \
 		+ "<div> <img src='tmp_photo.png' width = '180'" \
 		+ "[P.scribble ? "<div><br> Written on the back:<br><i>[P.scribble]</i>" : ""]"\
 		+ "</body></html>", "window=PaperBundle[UID()]")
 
-/obj/item/paper_bundle/attack_self(mob/user as mob)
+/obj/item/paper_bundle/activate_self(mob/user)
+	if(..())
+		return
+
 	show_content(user)
 	add_fingerprint(usr)
-	return
 
 /obj/item/paper_bundle/Topic(href, href_list)
 	if(..())
@@ -167,12 +169,12 @@
 			playsound(loc, "pageturn", 50, 1)
 
 		if(href_list["remove"])
-			var/obj/item/W = src[page]
+			var/obj/item/W = get_page()
 			usr.put_in_hands(W)
-			to_chat(usr, "<span class='notice'>You remove [W] from the bundle.</span>")
+			to_chat(usr, SPAN_NOTICE("You remove [W] from the bundle."))
 			if(amount == 1)
-				var/obj/item/paper/P = src[1]
-				usr.unEquip(src)
+				var/obj/item/paper/P = get_page(1)
+				usr.unequip(src)
 				usr.put_in_hands(P)
 				usr.unset_machine() // Ensure the bundle GCs
 				for(var/obj/O in src) // just in case we somehow lose something (it's happened, especially with photos)
@@ -192,45 +194,37 @@
 			amount--
 			update_icon()
 	else
-		to_chat(usr, "<span class='notice'>You need to hold it in your hands to change pages.</span>")
+		to_chat(usr, SPAN_NOTICE("You need to hold it in your hands to change pages."))
 	if(ismob(loc))
-		attack_self(loc)
+		activate_self(loc)
 
 /obj/item/paper_bundle/AltClick(mob/user)
 	if(in_range(user, src) && !user.incapacitated())
 		if(is_pen(user.get_active_hand()))
-			rename()
+			rename(user)
 		return
 
 	. = ..()
 
-/obj/item/paper_bundle/verb/rename()
-	set name = "Rename bundle"
-	set category = "Object"
-	set src in usr
+/obj/item/paper_bundle/proc/rename(mob/user)
+	var/n_name = tgui_input_text(user, "What would you like to label the bundle?", "Bundle Labelling", name)
+	if(!Adjacent(user) || !n_name || user.stat)
+		return
+	name = "[(n_name ? "[n_name]" : "paper bundle")]"
+	add_fingerprint(user)
 
-	var/n_name = sanitize(copytext(input(usr, "What would you like to label the bundle?", "Bundle Labelling", name) as text, 1, MAX_MESSAGE_LEN))
-	if((loc == usr && usr.stat == 0))
-		name = "[(n_name ? text("[n_name]") : "paper bundle")]"
+/obj/item/paper_bundle/AltShiftClick(mob/user)
+	if(user.stat || HAS_TRAIT(user, TRAIT_HANDS_BLOCKED) || !Adjacent(user))
+		return
 
-	add_fingerprint(usr)
-
-
-
-/obj/item/paper_bundle/verb/remove_all()
-	set name = "Loose bundle"
-	set category = "Object"
-	set src in usr
-
-	to_chat(usr, "<span class='notice'>You loosen the bundle.</span>")
+	to_chat(user, SPAN_NOTICE("You loosen the bundle."))
 
 	for(var/obj/O in src)
-		O.loc = usr.loc
+		O.forceMove(get_turf(user))
 		O.layer = initial(O.layer)
 		O.plane = initial(O.plane)
-		O.add_fingerprint(usr)
+		O.add_fingerprint(user)
 
-	usr.unEquip(src)
 	qdel(src)
 
 /obj/item/paper_bundle/update_desc()
@@ -246,6 +240,7 @@
 		desc = "A single sheet of paper."
 	if(photos)
 		desc += "\nThere [photos == 1 ? "is a photo" : "are [photos] photos"] attached to it."
+
 /obj/item/paper_bundle/update_icon_state()
 	if(length(contents))
 		var/obj/item/paper/P = contents[1]
@@ -279,4 +274,9 @@
 			. += sheet
 
 	. += "clip"
-	update_desc()
+	update_appearance(UPDATE_DESC)
+
+/obj/item/paper_bundle/proc/get_page(page_override)
+	if(page_override)
+		return contents[page_override]
+	return contents[page]

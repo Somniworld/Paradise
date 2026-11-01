@@ -1,4 +1,5 @@
-/obj/item/reagent_containers/food/drinks/cans
+/obj/item/reagent_containers/drinks/cans
+	icon = 'icons/obj/drinks/cans.dmi'
 	container_type = NONE
 	var/can_opened = FALSE
 	var/is_glass = FALSE
@@ -7,27 +8,29 @@
 	var/can_shake = TRUE
 	var/can_burst = FALSE
 	var/burst_chance = 0
+	materials = list(MAT_METAL = 200)
 
-/obj/item/reagent_containers/food/drinks/cans/examine(mob/user)
+/obj/item/reagent_containers/drinks/cans/examine(mob/user)
 	. = ..()
 	if(can_opened)
-		. += "<span class='notice'>It has been opened.</span>"
-	else
-		. += "<span class='info'>Ctrl-click to shake it up!</span>"
+		. += SPAN_NOTICE("It has been opened.")
+	else if(can_shake)
+		. += SPAN_NOTICE("Ctrl-click to shake it up!")
 
-/obj/item/reagent_containers/food/drinks/cans/attack_self(mob/user)
-	if(can_opened)
-		return ..()
+/obj/item/reagent_containers/drinks/cans/activate_self(mob/user)
+	if(..() || can_opened)
+		return
+
 	if(times_shaken)
 		fizzy_open(user)
-		return ..()
+		return
 	playsound(loc, 'sound/effects/canopen.ogg', rand(10, 50), 1)
 	can_opened = TRUE
 	container_type |= OPENCONTAINER
-	to_chat(user, "<span class='notice'>You open the drink with an audible pop!</span>")
-	return ..()
+	to_chat(user, SPAN_NOTICE("You open the drink with an audible pop!"))
+	add_fingerprint(user)
 
-/obj/item/reagent_containers/food/drinks/cans/proc/crush(mob/user)
+/obj/item/reagent_containers/drinks/cans/proc/crush(mob/user)
 	var/obj/item/trash/can/crushed_can = new /obj/item/trash/can(user.loc)
 	crushed_can.icon_state = icon_state
 	//inherit material vars for recycling purposes
@@ -38,23 +41,26 @@
 		crushed_can.name = "broken bottle"
 	else
 		playsound(user.loc, 'sound/weapons/pierce.ogg', rand(10, 50), 1)
+	transfer_fingerprints_to(crushed_can)
+	crushed_can.add_fingerprint(user)
 	qdel(src)
 	return crushed_can
 
-/obj/item/reagent_containers/food/drinks/cans/CtrlClick(mob/user)
+/obj/item/reagent_containers/drinks/cans/CtrlClick(mob/user)
 	var/mob/living/carbon/human/H
 	if(!can_shake || !ishuman(user))
 		return ..()
 	H = user
 	if(can_opened)
-		to_chat(H, "<span class='warning'>You can't shake up an already opened drink!")
+		to_chat(H, SPAN_WARNING("You can't shake up an already opened drink!"))
 		return
-	if(src == H.l_hand || src == H.r_hand)
+	if(H.is_holding(src))
 		can_shake = FALSE
+		add_fingerprint(user)
 		addtimer(CALLBACK(src, PROC_REF(reset_shakable)), 1 SECONDS, TIMER_UNIQUE | TIMER_OVERRIDE)
-		to_chat(H, "<span class='notice'>You start shaking up [src].</span>")
+		to_chat(H, SPAN_NOTICE("You start shaking up [src]."))
 		if(do_after(H, 1 SECONDS, target = H))
-			visible_message("<span class='warning'>[user] shakes up [src]!</span>")
+			visible_message(SPAN_WARNING("[user] shakes up [src]!"))
 			if(times_shaken == 0)
 				times_shaken++
 				addtimer(CALLBACK(src, PROC_REF(reset_shaken)), 1 MINUTES, TIMER_UNIQUE | TIMER_OVERRIDE | TIMER_NO_HASH_WAIT)
@@ -67,70 +73,58 @@
 	else
 		return ..()
 
-/obj/item/reagent_containers/food/drinks/cans/attack(mob/M, mob/user, proximity)
-	if(!can_opened)
-		to_chat(user, "<span class='notice'>You need to open the drink!</span>")
-		return
-	else if(M == user && !reagents.total_volume && user.a_intent == INTENT_HARM && user.zone_selected == "head")
-		user.visible_message("<span class='warning'>[user] crushes [src] on [user.p_their()] forehead!</span>", "<span class='notice'>You crush [src] on your forehead.</span>")
+/obj/item/reagent_containers/drinks/cans/interact_with_atom(atom/target, mob/living/user, list/modifiers)
+	if(target == user && !reagents.total_volume && user.a_intent == INTENT_HARM && user.zone_selected == "head")
+		user.visible_message(SPAN_WARNING("[user] crushes [src] on [user.p_their()] forehead!"), SPAN_NOTICE("You crush [src] on your forehead."))
 		crush(user)
-		return
+		return ITEM_INTERACT_COMPLETE
 	return ..()
 
-/obj/item/reagent_containers/food/drinks/cans/attackby(obj/item/I, mob/user, params)
-	if(istype(I, /obj/item/storage/bag/trash/cyborg))
-		user.visible_message("<span class='notice'>[user] crushes [src] in [user.p_their()] trash compactor.</span>", "<span class='notice'>You crush [src] in your trash compactor.</span>")
-		var/obj/can = crush(user)
-		can.attackby(I, user, params)
-		return TRUE
-	..()
+/obj/item/reagent_containers/drinks/cans/item_interaction(mob/living/user, obj/item/used, list/modifiers) // This doesn't belong here.
+	if(istype(used, /obj/item/storage/bag/trash/cyborg))
+		user.visible_message(
+			SPAN_NOTICE("[user] crushes [src] in [user.p_their()] trash compactor."),
+			SPAN_NOTICE("You crush [src] in your trash compactor."),
+			SPAN_HEAR("You hear the crunch of a flimsy can.")
+		)
+		// Automatic crushed can pickup seems to be broken until storage is migrated.
+		crush(user)
+		return ITEM_INTERACT_COMPLETE
 
-/obj/item/reagent_containers/food/drinks/cans/afterattack(obj/target, mob/user, proximity)
-	if(!proximity)
-		return
-	if(istype(target, /obj/structure/reagent_dispensers) && !can_opened)
-		to_chat(user, "<span class='notice'>You need to open the drink!</span>")
-		return
-	else if(target.is_open_container() && !can_opened)
-		to_chat(user, "<span class='notice'>You need to open the drink!</span>")
-		return
-	else
-		return ..(target, user, proximity)
-
-/obj/item/reagent_containers/food/drinks/cans/throw_impact(atom/A)
+/obj/item/reagent_containers/drinks/cans/throw_impact(atom/A)
 	. = ..()
 	if(times_shaken < 5)
 		times_shaken++
 	else
 		handle_bursting()
 
-/obj/item/reagent_containers/food/drinks/cans/proc/fizzy_open(mob/user, burstopen = FALSE)
+/obj/item/reagent_containers/drinks/cans/proc/fizzy_open(mob/user, burstopen = FALSE)
 	playsound(loc, 'sound/effects/canopenfizz.ogg', rand(10, 50), 1)
 	can_opened = TRUE
 	container_type |= OPENCONTAINER
 
 	if(!burstopen && user)
-		to_chat(user, "<span class='notice'>You open the drink with an audible pop!</span>")
+		to_chat(user, SPAN_NOTICE("You open the drink with an audible pop!"))
 	else
-		visible_message("<span class='warning'>[src] bursts open!</span>")
+		visible_message(SPAN_WARNING("[src] bursts open!"))
 
 	if(times_shaken < 5)
-		visible_message("<span class='warning'>[src] fizzes violently!</span>")
+		visible_message(SPAN_WARNING("[src] fizzes violently!"))
 	else
-		visible_message("<span class='boldwarning'>[src] erupts into foam!</span>")
+		visible_message(SPAN_BOLDWARNING("[src] erupts into foam!"))
 		if(reagents.total_volume)
 			var/datum/effect_system/foam_spread/sodafizz = new
 			sodafizz.set_up(1, get_turf(src), reagents)
 			sodafizz.start()
 
 	for(var/mob/living/carbon/C in range(1, get_turf(src)))
-		to_chat(C, "<span class='warning'>You are splattered with [name]!</span>")
+		to_chat(C, SPAN_WARNING("You are splattered with [name]!"))
 		reagents.reaction(C, REAGENT_TOUCH)
 		C.wetlevel = max(C.wetlevel + 1, times_shaken)
 
 	reagents.remove_any(times_shaken / 5 * reagents.total_volume)
 
-/obj/item/reagent_containers/food/drinks/cans/proc/handle_bursting(mob/user)
+/obj/item/reagent_containers/drinks/cans/proc/handle_bursting(mob/user)
 	if(times_shaken != 5 || can_opened)
 		return
 
@@ -148,10 +142,10 @@
 		else
 			fizzy_open(burstopen = TRUE)
 
-/obj/item/reagent_containers/food/drinks/cans/proc/reset_shakable()
+/obj/item/reagent_containers/drinks/cans/proc/reset_shakable()
 	can_shake = TRUE
 
-/obj/item/reagent_containers/food/drinks/cans/proc/reset_shaken()
+/obj/item/reagent_containers/drinks/cans/proc/reset_shaken()
 	times_shaken--
 	if(can_burst)
 		can_burst = FALSE
@@ -159,124 +153,126 @@
 	if(times_shaken)
 		addtimer(CALLBACK(src, PROC_REF(reset_shaken)), (70 - (times_shaken * 10)) SECONDS, TIMER_UNIQUE | TIMER_OVERRIDE | TIMER_NO_HASH_WAIT)
 
-/obj/item/reagent_containers/food/drinks/cans/cola
+/obj/item/reagent_containers/drinks/cans/cola
 	name = "space cola"
 	desc = "Cola. In space."
 	icon_state = "cola"
 	list_reagents = list("cola" = 30)
 
-/obj/item/reagent_containers/food/drinks/cans/beer
-	name = "space beer"
-	desc = "Contains only water, malt and hops."
-	icon_state = "beer"
-	is_glass = TRUE
-	list_reagents = list("beer" = 30)
-
-/obj/item/reagent_containers/food/drinks/cans/adminbooze
+/obj/item/reagent_containers/drinks/cans/adminbooze
 	name = "admin booze"
 	desc = "Bottled Griffon tears. Drink with caution."
+	icon = 'icons/obj/drinks/bottles.dmi'
 	icon_state = "adminbooze"
 	is_glass = TRUE
 	list_reagents = list("adminordrazine" = 5, "capsaicin" = 5, "methamphetamine"= 20, "thirteenloko" = 20)
 
-/obj/item/reagent_containers/food/drinks/cans/madminmalt
+/obj/item/reagent_containers/drinks/cans/madminmalt
 	name = "madmin malt"
 	desc = "Bottled essence of angry admins. Drink with <i>EXTREME</i> caution."
+	icon = 'icons/obj/drinks/bottles.dmi'
 	icon_state = "madminmalt"
 	is_glass = TRUE
 	list_reagents = list("hell_water" = 20, "neurotoxin" = 15, "thirteenloko" = 15)
 
-/obj/item/reagent_containers/food/drinks/cans/badminbrew
+/obj/item/reagent_containers/drinks/cans/badminbrew
 	name = "badmin brew"
 	desc = "Bottled trickery and terrible admin work. Probably shouldn't drink this one at all."
+	icon = 'icons/obj/drinks/bottles.dmi'
 	icon_state = "badminbrew"
 	is_glass = TRUE
 	list_reagents = list("mutagen" = 25, "charcoal" = 10, "thirteenloko" = 15)
 
-/obj/item/reagent_containers/food/drinks/cans/ale
-	name = "Magm-Ale"
-	desc = "A true dorf's drink of choice."
-	icon_state = "alebottle"
-	item_state = "beer"
-	is_glass = TRUE
-	list_reagents = list("ale" = 30)
-
-/obj/item/reagent_containers/food/drinks/cans/space_mountain_wind
+/obj/item/reagent_containers/drinks/cans/space_mountain_wind
 	name = "Space Mountain Wind"
 	desc = "Blows right through you like a space wind."
 	icon_state = "space_mountain_wind"
 	list_reagents = list("spacemountainwind" = 30)
 
-/obj/item/reagent_containers/food/drinks/cans/thirteenloko
+/obj/item/reagent_containers/drinks/cans/thirteenloko
 	name = "Thirteen Loko"
 	desc = "The CMO has advised crew members that consumption of Thirteen Loko may result in seizures, blindness, drunkenness, or even death. Please Drink Responsibly."
 	icon_state = "thirteen_loko"
 	list_reagents = list("thirteenloko" = 25, "psilocybin" = 5)
 
-/obj/item/reagent_containers/food/drinks/cans/dr_gibb
+/obj/item/reagent_containers/drinks/cans/dr_gibb
 	name = "Dr. Gibb"
 	desc = "A delicious mixture of 42 different flavors."
 	icon_state = "dr_gibb"
 	list_reagents = list("dr_gibb" = 30)
 
 
-/obj/item/reagent_containers/food/drinks/cans/starkist
+/obj/item/reagent_containers/drinks/cans/starkist
 	name = "Star-kist"
 	desc = "The taste of a star in liquid form. And, a bit of tuna...?"
 	icon_state = "starkist"
 	list_reagents = list("brownstar" = 30)
 
-/obj/item/reagent_containers/food/drinks/cans/space_up
+/obj/item/reagent_containers/drinks/cans/space_up
 	name = "Space-Up"
 	desc = "Tastes like a hull breach in your mouth."
 	icon_state = "space-up"
 	list_reagents = list("space_up" = 30)
 
-/obj/item/reagent_containers/food/drinks/cans/lemon_lime
+/obj/item/reagent_containers/drinks/cans/lemon_lime
 	name = "Lemon-Lime"
 	desc = "You wanted ORANGE. It gave you Lemon Lime."
 	icon_state = "lemon-lime"
 	list_reagents = list("lemon_lime" = 30)
 
-/obj/item/reagent_containers/food/drinks/cans/iced_tea
+/obj/item/reagent_containers/drinks/cans/iced_tea
 	name = "Vrisk Serket Iced Tea"
 	desc = "That sweet, refreshing southern earthy flavor. That's where it's from, right? South Earth?"
 	icon_state = "ice_tea_can"
 	list_reagents = list("icetea" = 30)
 
-/obj/item/reagent_containers/food/drinks/cans/grape_juice
+/obj/item/reagent_containers/drinks/cans/grape_juice
 	name = "Grapel Juice"
 	desc = "500 pages of rules of how to appropriately enter into a combat with this juice!"
 	icon_state = "purple_can"
 	list_reagents = list("grapejuice" = 30)
 
-/obj/item/reagent_containers/food/drinks/cans/tonic
+/obj/item/reagent_containers/drinks/cans/electrolytes
+	name = "Electrolytez"
+	desc = "The fastest way to rehydration. Now with a giant Z on the can. Or is it a lightning bolt?"
+	icon_state = "electrolytes_can"
+	can_shake = FALSE
+	list_reagents = list("electrolytes" = 50)
+
+/obj/item/reagent_containers/drinks/cans/tonic
 	name = "T-Borg's Tonic Water"
 	desc = "Quinine tastes funny, but at least it'll keep that Space Malaria away."
 	icon_state = "tonic"
 	list_reagents = list("tonic" = 50)
 
-/obj/item/reagent_containers/food/drinks/cans/sodawater
+/obj/item/reagent_containers/drinks/cans/sodawater
 	name = "soda water"
 	desc = "A can of soda water. Still water's more refreshing cousin."
 	icon_state = "sodawater"
 	list_reagents = list("sodawater" = 50)
 
-/obj/item/reagent_containers/food/drinks/cans/synthanol
+/obj/item/reagent_containers/drinks/cans/ginger_ale
+	name = "Zingiber Gold"
+	desc = "A can of ginger ale. Second-best thing for a tummy ache."
+	icon_state = "ginger_ale_can"
+	list_reagents = list("ginger_ale" = 50)
+
+/obj/item/reagent_containers/drinks/cans/synthanol
 	name = "Beep's Classic Synthanol"
 	desc = "A can of IPC booze, however that works."
 	icon_state = "synthanolcan"
 	list_reagents = list("synthanol" = 50)
 
-/obj/item/reagent_containers/food/drinks/cans/bottler
+/obj/item/reagent_containers/drinks/cans/bottler
 	name = "generic beverage container"
-	desc = "this shouldn't ever be spawned. shame on you"
+	desc = ABSTRACT_TYPE_DESC
+	icon = 'icons/obj/drinks/paradise_punch.dmi'
 	icon_state = "glass_bottle"
 
-/obj/item/reagent_containers/food/drinks/cans/bottler/on_reagent_change()
+/obj/item/reagent_containers/drinks/cans/bottler/on_reagent_change()
 	update_icon(UPDATE_OVERLAYS)
 
-/obj/item/reagent_containers/food/drinks/cans/bottler/update_overlays()
+/obj/item/reagent_containers/drinks/cans/bottler/update_overlays()
 	. = ..()
 	if(reagents.total_volume)
 		var/image/filling = image('icons/obj/reagentfillings.dmi', src, "[icon_state]10")
@@ -298,19 +294,51 @@
 		filling.icon += mix_color_from_reagents(reagents.reagent_list)
 		. += filling
 
-/obj/item/reagent_containers/food/drinks/cans/bottler/glass_bottle
+/obj/item/reagent_containers/drinks/cans/bottler/glass_bottle
 	name = "glass bottle"
 	desc = "A glass bottle suitable for beverages."
-	icon_state = "glass_bottle"
 	is_glass = TRUE
 
-/obj/item/reagent_containers/food/drinks/cans/bottler/plastic_bottle
+/obj/item/reagent_containers/drinks/cans/bottler/plastic_bottle
 	name = "plastic bottle"
 	desc = "A plastic bottle suitable for beverages."
 	icon_state = "plastic_bottle"
 	is_plastic = TRUE
 
-/obj/item/reagent_containers/food/drinks/cans/bottler/metal_can
+/obj/item/reagent_containers/drinks/cans/bottler/metal_can
 	name = "metal can"
 	desc = "A metal can suitable for beverages."
 	icon_state = "metal_can"
+
+// ----------- drinks from Hispania!
+
+/obj/item/reagent_containers/drinks/cans/mrs_brown
+	name = "Mrs Brown"
+	desc = "A can of iced coffee. The can sports a big red star."
+	icon_state = "mrs_brown"
+	can_shake = FALSE
+	list_reagents = list("icecoffee" = 30)
+
+/obj/item/reagent_containers/drinks/cans/behemoth_energy
+	name = "Behemoth Energy"
+	desc = "Tear into a can of the meanest energy drink on the planet, Behemoth Energy."
+	icon_state = "behemoth"
+	list_reagents = list("sugar" = 5, "ale" = 10, "sodawater" = 10)
+
+/obj/item/reagent_containers/drinks/cans/behemoth_energy/Initialize(mapload)
+	..()
+	if(prob(30))
+		reagents.add_reagent("methamphetamine", 3)
+
+/obj/item/reagent_containers/drinks/cans/behemoth_energy_lite
+	name = "Behemoth Energy Zero"
+	desc = "Tear into a can of the meanest energy drink on the planet, Behemoth Energy. Yup, Quake was a good game."
+	icon_state = "behemoth_lite"
+	list_reagents = list("ale" = 10, "sodawater" = 20)
+
+/obj/item/reagent_containers/drinks/cans/behemoth_energy_lite/Initialize(mapload)
+	..()
+	if(prob(10))
+		reagents.add_reagent("methamphetamine", 3)
+
+// ----------- END of imports from Hispania!

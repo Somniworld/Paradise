@@ -11,7 +11,7 @@
 	if(notransform)
 		return
 	for(var/obj/item/W in src)
-		unEquip(W)
+		drop_item_to_ground(W)
 	notransform = TRUE
 	icon = null
 	invisibility = 101
@@ -21,7 +21,7 @@
 	if(client)
 		stop_sound_channel(CHANNEL_LOBBYMUSIC)
 
-	var/mob/living/silicon/ai/O = new (loc,,,1)//No MMI but safety is in effect.
+	var/mob/living/silicon/ai/O = new (loc, null, null,1)//No MMI but safety is in effect.
 	O.invisibility = 0
 	O.aiRestorePowerRoutine = 0
 
@@ -36,6 +36,8 @@
 	O.add_ai_verbs()
 
 	O.rename_self("AI", TRUE)
+
+	O.blurb_it()
 
 	INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(qdel), src) // To prevent the proc from returning null. Todo: Convert to QDEL_IN
 	return O
@@ -54,14 +56,14 @@
 	if(notransform)
 		return
 	for(var/obj/item/W in src)
-		unEquip(W)
+		drop_item_to_ground(W)
 
 	notransform = TRUE
 	icon = null
 	invisibility = 101
 
 	// Creating a new borg here will connect them to a default AI and notify that AI, if `connect_to_default_AI` is TRUE.
-	var/mob/living/silicon/robot/O = new /mob/living/silicon/robot(loc, connect_to_AI = connect_to_default_AI)
+	var/mob/living/silicon/robot/O = new /mob/living/silicon/robot(loc, connect_to_default_AI)
 
 	// If `AI` is passed in, we want to connect to that AI specifically.
 	if(AI)
@@ -90,13 +92,17 @@
 
 	if(O.mind && O.mind.assigned_role == "Cyborg")
 		var/obj/item/mmi/new_mmi
-		switch(O.mind.role_alt_title)
-			if("Robot")
+		switch(O.client.prefs.active_character.cyborg_brain_type)
+			if(ROBOBRAIN_BORG)
 				new_mmi = new /obj/item/mmi/robotic_brain(O)
 				if(new_mmi.brainmob)
 					new_mmi.brainmob.name = O.name
-			if("Cyborg")
+			if(MMI_BORG)
 				new_mmi = new /obj/item/mmi(O)
+			if(POSITRONIC_BORG)
+				new_mmi = new /obj/item/mmi/robotic_brain/positronic(O)
+				if(new_mmi.brainmob)
+					new_mmi.brainmob.name = O.name
 			else
 				// This should never happen, but oh well
 				new_mmi = new /obj/item/mmi(O)
@@ -118,7 +124,7 @@
 	if(notransform)
 		return
 	for(var/obj/item/W in src)
-		unEquip(W)
+		drop_item_to_ground(W)
 	regenerate_icons()
 	notransform = TRUE
 	icon = null
@@ -148,7 +154,7 @@
 		return
 	notransform = TRUE
 	for(var/obj/item/I in src)
-		unEquip(I)
+		drop_item_to_ground(I)
 	regenerate_icons()
 	icon = null
 	invisibility = INVISIBILITY_MAXIMUM
@@ -179,7 +185,7 @@
 	if(notransform)
 		return
 	for(var/obj/item/W in src)
-		unEquip(W)
+		drop_item_to_ground(W)
 	regenerate_icons()
 	notransform = TRUE
 	icon = null
@@ -194,15 +200,19 @@
 	new_corgi.update_pipe_vision()
 	qdel(src)
 
-/mob/living/carbon/human/Animalize()
+/mob/living/carbon/human/Animalize(mob/living/mob_type)
+	var/mobpath = mob_type
+	if(!mobpath)
+		var/list/mobtypes = typesof(/mob/living/simple_animal)
+		mobpath = tgui_input_list(usr, "Which type of mob should [src] turn into?", "Choose a Type", mobtypes)
 
-	var/list/mobtypes = typesof(/mob/living/simple_animal)
-	var/mobpath = input("Which type of mob should [src] turn into?", "Choose a type") in mobtypes
+	if(!ispath(mobpath, /mob/living))
+		return
 
 	if(notransform)
 		return
 	for(var/obj/item/W in src)
-		unEquip(W)
+		drop_item_to_ground(W)
 
 	regenerate_icons()
 	notransform = TRUE
@@ -212,28 +222,30 @@
 	for(var/t in bodyparts)
 		qdel(t)
 
-	var/mob/new_mob = new mobpath(src.loc)
+	var/mob/new_mob = new mobpath(loc)
 
 	new_mob.key = key
 	new_mob.a_intent = INTENT_HARM
-
-
 	to_chat(new_mob, "You suddenly feel more... animalistic.")
 	new_mob.update_pipe_vision()
 	qdel(src)
 
-/mob/proc/Animalize()
+/mob/proc/Animalize(mob/living/mob_type)
+	var/mobpath = mob_type
+	if(!mobpath)
+		var/list/mobtypes = typesof(/mob/living/simple_animal)
+		mobtypes |= subtypesof(/mob/living/basic)
+		mobpath = tgui_input_list(usr, "Which type of mob should [src] turn into?", "Choose a Type", mobtypes)
 
-	var/list/mobtypes = typesof(/mob/living/simple_animal)
-	var/mobpath = input("Which type of mob should [src] turn into?", "Choose a type") in mobtypes
+	if(!ispath(mobpath, /mob/living))
+		return
 
-	var/mob/new_mob = new mobpath(src.loc)
+	var/mob/new_mob = new mobpath(loc)
 
 	new_mob.key = key
 	new_mob.a_intent = INTENT_HARM
 	to_chat(new_mob, "You feel more... animalistic")
 	new_mob.update_pipe_vision()
-
 	qdel(src)
 
 
@@ -241,7 +253,7 @@
 	if(notransform)
 		return
 	for(var/obj/item/W in src)
-		unEquip(W)
+		drop_item_to_ground(W)
 	regenerate_icons()
 	notransform = TRUE
 	icon = null
@@ -260,4 +272,35 @@
 
 	to_chat(pai, "<B>You have become a pAI! Your name is [pai.name].</B>")
 	pai.update_pipe_vision()
+	qdel(src)
+
+/mob/living/carbon/proc/gorillize(rage = FALSE)
+	if(notransform)
+		return
+
+	if(stat == DEAD)
+		return
+
+	for(var/obj/item/W in get_all_slots())
+		drop_item_to_ground(W)
+
+	regenerate_icons()
+	notransform = TRUE
+	icon = null
+	invisibility = INVISIBILITY_MAXIMUM
+	visible_message(SPAN_WARNING("[src] transforms into a gorilla!"), SPAN_WARNING("You transform into a gorilla! Ooga ooga!"), SPAN_WARNING("You hear a loud roar!"))
+	var/mob/living/basic/gorilla/new_gorilla
+	if(rage)
+		var/mob/living/basic/gorilla/rampaging/rampaging_gorilla = new (get_turf(src))
+		new_gorilla = rampaging_gorilla
+	else
+		new_gorilla = new (get_turf(src))
+
+	playsound(new_gorilla, 'sound/creatures/gorilla.ogg', 50)
+
+	if(mind)
+		mind.transfer_to(new_gorilla)
+	else
+		new_gorilla.key = key
+
 	qdel(src)

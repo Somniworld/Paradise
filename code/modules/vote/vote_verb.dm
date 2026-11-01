@@ -7,16 +7,9 @@
 	else
 		to_chat(usr, "There is no active vote")
 
-/client/proc/start_vote()
-	set category = "Admin"
-	set name = "Start Vote"
-	set desc = "Start a vote on the server"
-
-	if(!check_rights(R_ADMIN))
-		return
-
+USER_VERB(start_vote, R_ADMIN, "Start Vote", "Start a vote on the server", VERB_CATEGORY_ADMIN)
 	if(SSvote.active_vote)
-		to_chat(usr, "A vote is already in progress")
+		to_chat(client, "A vote is already in progress")
 		return
 
 	// Ask admins which type of vote they want to start
@@ -28,7 +21,7 @@
 	for(var/vtype in vote_types)
 		votemap["[vtype]"] = vtype
 
-	var/choice = input(usr, "Select a vote type", "Vote") as null|anything in vote_types
+	var/choice = tgui_input_list(client, "Select a vote type", "Vote", vote_types)
 
 	if(choice == null)
 		return
@@ -36,26 +29,25 @@
 	if(choice != "\[CUSTOM]")
 		// Not custom, figure it out
 		var/datum/vote/votetype = votemap["[choice]"]
-		SSvote.start_vote(new votetype(usr.ckey))
+		SSvote.start_vote(new votetype(client.ckey))
 		return
 
 	// Its custom, lets ask
-	var/question = html_encode(input(usr, "What is the vote for?") as text|null)
-	if(!question)
+	var/question = tgui_input_text(client, "What is the vote for?", "Create Vote", encode = FALSE)
+	if(isnull(question))
 		return
 
 	var/list/choices = list()
 	for(var/i in 1 to 10)
-		var/option = capitalize(html_encode(input(usr, "Please enter an option or hit cancel to finish") as text|null))
-		if(!option || !usr.client)
+		var/option = tgui_input_text(client, "Please enter an option or hit cancel to finish", "Create Vote", encode = FALSE)
+		if(isnull(option) || !client)
 			break
 		choices |= option
 
-	var/c2 = alert(usr, "Show counts while vote is happening?", "Counts", "Yes", "No")
-	var/c3 = input(usr, "Select a result calculation type", "Vote", VOTE_RESULT_TYPE_MAJORITY) as anything in list(VOTE_RESULT_TYPE_MAJORITY)
+	var/c2 = tgui_alert(client, "Show counts while vote is happening?", "Counts", list("Yes", "No"))
+	var/c3 = input(client, "Select a result calculation type", "Vote", VOTE_RESULT_TYPE_MAJORITY) as anything in list(VOTE_RESULT_TYPE_MAJORITY)
 
-	var/datum/vote/V = new /datum/vote(usr.ckey, question, choices, TRUE)
+	var/datum/vote/V = new /datum/vote(client.ckey, question, choices, TRUE)
 	V.show_counts = (c2 == "Yes")
 	V.vote_result_type = c3
 	SSvote.start_vote(V)
-

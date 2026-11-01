@@ -33,29 +33,93 @@
 	upgradeXRay()
 	upgradeMotion()
 
-// AUTONAME
+// DVORAK
+/obj/machinery/camera/tracking_head
+	icon_state = "camera_base"
+	var/obj/effect/camera_head/camera_overlay
 
-/obj/machinery/camera/autoname
-	var/number = 0 //camera number in area
+/obj/machinery/camera/tracking_head/Initialize(mapload)
+	. = ..()
+	proximity_monitor = new(src, 6)
+	camera_overlay = new(get_turf(src))
+	switch(dir)
+		if(NORTH)
+			camera_overlay.pixel_x = 2
+			camera_overlay.pixel_y = 6
+
+		if(EAST)
+			camera_overlay.pixel_x = 6
+			camera_overlay.pixel_y = 23
+
+		if(SOUTH)
+			camera_overlay.pixel_x = 4
+			camera_overlay.pixel_y = 20
+
+		if(WEST)
+			camera_overlay.pixel_x = 20
+			camera_overlay.pixel_y = 23
+
+	camera_overlay.dir = dir
+	RegisterSignal(src, COMSIG_CAMERA_OFF, PROC_REF(prime_the_camera))
+
+/obj/machinery/camera/tracking_head/Destroy()
+	. = ..()
+	QDEL_NULL(camera_overlay)
+	UnregisterSignal(src, COMSIG_CAMERA_OFF)
+
+/obj/machinery/camera/tracking_head/process()
+	return PROCESS_KILL
+
+/obj/machinery/camera/tracking_head/update_icon_state()
+	return
+
+/obj/machinery/camera/tracking_head/update_overlays()
+	return
+
+/obj/machinery/camera/tracking_head/HasProximity(atom/movable/AM)
+	if(!isrobot(AM) && !iscarbon(AM)) // Only care about carbons and borgs.
+		return
+	if(camera_overlay.dir == get_dir(src, AM))
+		return
+	camera_overlay.dir = get_dir(src, AM)
+	playsound(get_turf(src), pick('sound/effects/turret/move1.wav', 'sound/effects/turret/move2.wav'), 10, TRUE, ignore_walls = FALSE, extrarange = SILENCED_SOUND_EXTRARANGE, falloff_distance = 0)
+
+/obj/machinery/camera/tracking_head/proc/prime_the_camera()
+	SIGNAL_HANDLER //COMSIG_CAMERA_OFF
+	visible_message(SPAN_DANGER("[src] begins to spark violently!"))
+	do_sparks(4, 0, src)
+	addtimer(CALLBACK(src, PROC_REF(explode_the_camera)), 2.5 SECONDS)
+
+/obj/machinery/camera/tracking_head/proc/explode_the_camera()
+	if(QDELETED(src))
+		return
+	explosion(loc, -1, -1, 2, flame_range = 4, cause = "Exploding DVORAK Camera")
+	qdel(src)
+
+/obj/effect/camera_head
+	icon = 'icons/obj/followingcamera.dmi'
+	icon_state = "camera_head"
+	mouse_opacity = MOUSE_OPACITY_TRANSPARENT
+
+/obj/machinery/camera/tracking_head/dvorak
+	non_chunking_camera = TRUE
+	network = list("DVORAK") //Shouldn't show on any camera net, be it camera bugs or station or AI.
+
+/obj/machinery/camera/motion/dvorak
+	non_chunking_camera = TRUE
+	network = list("DVORAK") //Shouldn't show on any camera net, be it camera bugs or station or AI.
 
 // This camera type automatically sets it's name to whatever the area that it's in is called.
 /obj/machinery/camera/autoname/Initialize(mapload)
-	number = 1
-	var/area/A = get_area(src)
-	if(!A)
-		number = rand(1, 100)
-		c_tag = "Unknown #[number]"
+	var/static/list/autonames_in_areas = list()
+
+	var/area/camera_area = get_area(src)
+	if(!camera_area)
+		c_tag = "Unknown #[rand(1, 100)]"
 		stack_trace("Camera with tag [c_tag] was spawned without an area, please report this to your nearest coder.")
 		return ..()
 
-	for(var/obj/machinery/camera/autoname/C in A.contents)
-		if(C == src)
-			continue
-		if(C.number)
-			number = max(number, C.number + 1)
-
-	c_tag = "[sanitize(A.name)] #[number]"
-
+	c_tag = "[sanitize(camera_area.name)] #[++autonames_in_areas[camera_area]]" // increase the number, then print it (this is what ++ before does)
 	return ..() // We do this here so the camera is not added to the cameranet until it has a name.
 
 // CHECKS
@@ -75,25 +139,34 @@
 // UPGRADE PROCS
 
 /obj/machinery/camera/proc/upgradeEmpProof()
+	if(isEmpProof())
+		return
 	assembly.upgrades.Add(new /obj/item/stack/sheet/mineral/plasma(assembly))
-	setPowerUsage()
+	apply_upgrades()
 
 /obj/machinery/camera/proc/upgradeXRay()
+	if(isXRay())
+		return
 	assembly.upgrades.Add(new /obj/item/analyzer(assembly))
-	setPowerUsage()
-	//Update what it can see.
-	GLOB.cameranet.updateVisibility(src, 0)
+	apply_upgrades()
 
 // If you are upgrading Motion, and it isn't in the camera's New(), add it to the machines list.
 /obj/machinery/camera/proc/upgradeMotion()
 	if(isMotion())
 		return
-	if(name == initial(name))
-		name = "motion-sensitive security camera"
 	assembly.upgrades.Add(new /obj/item/assembly/prox_sensor(assembly))
+	apply_upgrades()
+
+/obj/machinery/camera/proc/apply_upgrades()
 	setPowerUsage()
-	// Add it to machines that process
-	START_PROCESSING(SSmachines, src)
+	if(isMotion())
+		if(name == initial(name))
+			name = "motion-sensitive security camera"
+		set_area_motion(get_area(src))
+		if(!isprocessing)
+			START_PROCESSING(SSmachines, src)
+	if(isXRay())
+		GLOB.cameranet.update_visibility(src, 0)
 
 /obj/machinery/camera/proc/setPowerUsage()
 	var/mult = 1

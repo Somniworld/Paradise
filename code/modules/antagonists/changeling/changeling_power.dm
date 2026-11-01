@@ -1,11 +1,4 @@
 
-// Defines below to be used with the `power_type` var.
-/// Denotes that this power is free and should be given to all changelings by default.
-#define CHANGELING_INNATE_POWER			1
-/// Denotes that this power can only be obtained by purchasing it.
-#define CHANGELING_PURCHASABLE_POWER	2
-/// Denotes that this power can not be obtained normally. Primarily used for base types such as [/datum/action/changeling/weapon].
-#define CHANGELING_UNOBTAINABLE_POWER	3
 
 /datum/action/changeling
 	name = "Prototype Sting"
@@ -13,6 +6,8 @@
 	background_icon_state = "bg_changeling"
 	/// A reference to the changeling's changeling antag datum.
 	var/datum/antagonist/changeling/cling
+	/// Datum path used to determine the location and name of the power in changeling evolution menu UI
+	var/datum/changeling_power_category/category
 	/// Determines whether the power is always given to the changeling or if it must be purchased.
 	var/power_type = CHANGELING_UNOBTAINABLE_POWER
 	/// A description of what the power does.
@@ -29,7 +24,7 @@
 	var/req_stat = CONSCIOUS
 	/// If this power is active or not. Used for toggleable abilities.
 	var/active = FALSE
-	/// If this power can be used while the changeling has the `TRAIT_FAKE_DEATH` trait.
+	/// If this power can be used while the changeling has the `TRAIT_FAKEDEATH` trait.
 	var/bypass_fake_death = FALSE
 
 /*
@@ -50,10 +45,11 @@
 	cling = null
 	return ..()
 
-/datum/action/changeling/Trigger()
+/datum/action/changeling/Trigger(left_click)
 	try_to_sting(owner)
 
 /datum/action/changeling/proc/try_to_sting(mob/user, mob/target)
+	. = TRUE // Value doesn't appear to matter here, but it matters for the middle-click override in AltClickOn inside click.dm
 	user.changeNext_click(5)
 	if(!can_sting(user, target))
 		return
@@ -69,31 +65,35 @@
 
 /datum/action/changeling/proc/take_chemical_cost()
 	cling.chem_charges -= chemical_cost
+	cling.update_chem_charges_ui()
 
 /datum/action/changeling/proc/can_sting(mob/user, mob/target)
 	SHOULD_CALL_PARENT(TRUE)
 	if(req_human && (!ishuman(user) || issmall(user)))
-		to_chat(user, "<span class='warning'>We cannot do that in this form!</span>")
+		to_chat(user, SPAN_WARNING("We cannot do that in this form!"))
 		return FALSE
 	if(cling.chem_charges < chemical_cost)
-		to_chat(user, "<span class='warning'>We require at least [chemical_cost] unit\s of chemicals to do that!</span>")
+		to_chat(user, SPAN_WARNING("We require at least [chemical_cost] unit\s of chemicals to do that!"))
 		return FALSE
 	if(cling.absorbed_count < req_dna)
-		to_chat(user, "<span class='warning'>We require at least [req_dna] sample\s of compatible DNA.</span>")
+		to_chat(user, SPAN_WARNING("We require at least [req_dna] sample\s of compatible DNA."))
 		return FALSE
 	if(req_stat < user.stat)
-		to_chat(user, "<span class='warning'>We are incapacitated.</span>")
+		to_chat(user, SPAN_WARNING("We are incapacitated."))
 		return FALSE
 	if(HAS_TRAIT(user, TRAIT_FAKEDEATH) && !bypass_fake_death)
-		to_chat(user, "<span class='warning'>We are incapacitated.</span>")
+		to_chat(user, SPAN_WARNING("We are incapacitated."))
 		return FALSE
 	return TRUE
 
 // Transform the target to the chosen dna. Used in transform.dm and tiny_prick.dm (handy for changes since it's the same thing done twice)
 /datum/action/changeling/proc/transform_dna(mob/living/carbon/human/H, datum/dna/D)
+	var/internals_on = H.internal
 	if(!D)
 		return
 	var/changes_species = TRUE
 	if(H.dna.species.name == D.species.name)
 		changes_species = FALSE
 	H.change_dna(D, changes_species)
+	if(internals_on)
+		H.internal = internals_on

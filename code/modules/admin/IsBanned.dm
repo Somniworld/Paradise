@@ -21,7 +21,7 @@
 	var/ckey = ckey(key)
 
 	var/client/C = GLOB.directory[ckey]
-	if (C && ckey == C.ckey && computer_id == C.computer_id && address == C.address)
+	if(C && ckey == C.ckey && computer_id == C.computer_id && address == C.address)
 		return //don't recheck connected clients.
 
 	if((ckey in GLOB.admin_datums) || (ckey in GLOB.de_admins))
@@ -30,15 +30,17 @@
 			admin = 1
 
 	// Lets see if they are logged in on another paradise server
+	#ifdef MULTIINSTANCE
 	if(SSdbcore.IsConnected())
 		var/other_server_login = SSinstancing.check_player(ckey)
 		if(other_server_login)
 			return list("reason"="duplicate login", "desc"="\nReason: You are already logged in on server '[other_server_login]'. Please contact the server host if you believe this is an error.")
+	#endif
 
 	//Guest Checking
 	if(GLOB.configuration.general.guest_ban && check_guest && IsGuestKey(key))
 		log_adminwarn("Failed Login: [key] [computer_id] [address] - Guests not allowed")
-		// message_admins("<span class='notice'>Failed Login: [key] - Guests not allowed</span>")
+		// message_admins(SPAN_NOTICE("Failed Login: [key] - Guests not allowed"))
 		if(log_info)
 			INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(log_connection), ckey(key), address, computer_id, CONNECTION_TYPE_DROPPED_BANNED)
 		return list("reason"="guest", "desc"="\nReason: Guests not allowed. Please sign in with a BYOND account.")
@@ -75,7 +77,7 @@
 
 
 	// If 2FA is enabled, makes sure they were authed within the last minute
-	if(check_2fa && GLOB.configuration.system.api_host)
+	if(check_2fa)
 		// First see if they exist at all
 		var/datum/db_query/check_query = SSdbcore.NewQuery("SELECT 2fa_status, ip FROM player WHERE ckey=:ckey", list("ckey" = ckey(key)))
 
@@ -182,11 +184,11 @@
 		if(admin)
 			if(bantype == "ADMIN_PERMABAN" || bantype == "ADMIN_TEMPBAN")
 				log_admin("The admin [key] is admin banned, and has been disallowed access")
-				message_admins("<span class='adminnotice'>The admin [key] is admin banned, and has been disallowed access</span>")
+				message_admins(SPAN_ADMINNOTICE("The admin [key] is admin banned, and has been disallowed access"))
 			else
 				log_admin("The admin [key] has been allowed to bypass a matching ban on [pckey]")
-				message_admins("<span class='adminnotice'>The admin [key] has been allowed to bypass a matching ban on [pckey]</span>")
-				addclientmessage(ckey,"<span class='adminnotice'>You have been allowed to bypass a matching ban on [pckey].</span>")
+				message_admins(SPAN_ADMINNOTICE("The admin [key] has been allowed to bypass a matching ban on [pckey]"))
+				addclientmessage(ckey,SPAN_ADMINNOTICE("You have been allowed to bypass a matching ban on [pckey]."))
 				continue
 		var/expires = ""
 		if(text2num(duration) > 0)
@@ -205,7 +207,7 @@
 		if(log_info)
 			INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(log_connection), ckey(key), address, computer_id, CONNECTION_TYPE_DROPPED_BANNED)
 		qdel(query)
-		return .
+		return
 	qdel(query)
 
 	. = ..()	//default pager ban stuff
@@ -215,11 +217,10 @@
 		//So it's safe to let admins walk thru bans here
 		if(admin)
 			log_admin("The admin [key] has been allowed to bypass a matching ban")
-			message_admins("<span class='adminnotice'>The admin [key] has been allowed to bypass a matching ban</span>")
-			addclientmessage(ckey,"<span class='adminnotice'>You have been allowed to bypass a matching ban.</span>")
+			message_admins(SPAN_ADMINNOTICE("The admin [key] has been allowed to bypass a matching ban"))
+			addclientmessage(ckey,SPAN_ADMINNOTICE("You have been allowed to bypass a matching ban."))
 			return null
 		else
 			log_adminwarn("Failed Login: [key] [computer_id] [address] - Banned [.["message"]]")
 			if(log_info)
 				INVOKE_ASYNC(GLOBAL_PROC, GLOBAL_PROC_REF(log_connection), ckey(key), address, computer_id, CONNECTION_TYPE_DROPPED_BANNED)
-	return .

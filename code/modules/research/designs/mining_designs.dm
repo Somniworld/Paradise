@@ -27,7 +27,7 @@
 	id = "plasmacutter"
 	req_tech = list("materials" = 3, "plasmatech" = 3, "magnets" = 2)
 	build_type = PROTOLATHE
-	materials = list(MAT_METAL = 1500, MAT_GLASS = 500, MAT_PLASMA = 400)
+	materials = list(MAT_METAL = 2000, MAT_GLASS = 500, MAT_PLASMA = 400)
 	build_path = /obj/item/gun/energy/plasmacutter
 	category = list("Mining")
 
@@ -79,7 +79,7 @@
 	build_type = PROTOLATHE | MECHFAB
 	materials = list(MAT_METAL = 2000, MAT_GLASS = 1500, MAT_GOLD = 1500, MAT_URANIUM = 1000)
 	build_path = /obj/item/borg/upgrade/modkit/damage
-	category = list("Mining", "Cyborg Upgrade Modules")
+	category = list("Mining", "Cyborg Upgrades")
 
 /datum/design/cooldown_mod
 	name = "Kinetic Accelerator Cooldown Mod"
@@ -89,7 +89,7 @@
 	build_type = PROTOLATHE | MECHFAB
 	materials = list(MAT_METAL = 2000, MAT_GLASS = 1500, MAT_GOLD = 1500, MAT_URANIUM = 1000)
 	build_path = /obj/item/borg/upgrade/modkit/cooldown
-	category = list("Mining", "Cyborg Upgrade Modules")
+	category = list("Mining", "Cyborg Upgrades")
 
 /datum/design/range_mod
 	name = "Kinetic Accelerator Range Mod"
@@ -99,7 +99,7 @@
 	build_type = PROTOLATHE | MECHFAB
 	materials = list(MAT_METAL = 2000, MAT_GLASS = 1500, MAT_GOLD = 1500, MAT_URANIUM = 1000)
 	build_path = /obj/item/borg/upgrade/modkit/range
-	category = list("Mining", "Cyborg Upgrade Modules")
+	category = list("Mining", "Cyborg Upgrades")
 
 /datum/design/hyperaccelerator
 	name = "Kinetic Accelerator Mining AoE Mod"
@@ -109,4 +109,24 @@
 	build_type = PROTOLATHE | MECHFAB
 	materials = list(MAT_METAL = 8000, MAT_GLASS = 1500, MAT_SILVER = 2000, MAT_GOLD = 2000, MAT_DIAMOND = 2000)
 	build_path = /obj/item/borg/upgrade/modkit/aoe/turfs
-	category = list("Mining", "Cyborg Upgrade Modules")
+	category = list("Mining", "Cyborg Upgrades")
+
+/datum/design/mining_charges
+	name = "Experimental Mining Charge"
+	desc = "An experimental mining charge used to make big holes in rocks."
+	id = "megacharge"
+	req_tech = list("materials" = 5, "engineering" = 5, "plasmatech" = 6)
+	build_type = PROTOLATHE
+	materials = list(MAT_METAL = 4000, MAT_PLASMA = 6000, MAT_URANIUM = 1000)
+	build_path = /obj/item/grenade/plastic/miningcharge/mega
+	category = list("Mining")
+
+/datum/design/lavarods
+	name = "Lava-Resistant Iron Rods"
+	desc = "Treated, specialized iron rods. When exposed to the vacuum of space their coating breaks off, but they can hold up against the extreme heat of molten liquids."
+	id = "lavarod"
+	req_tech = list("materials" = 7, "engineering" = 5)
+	build_type = PROTOLATHE
+	materials = list(MAT_METAL = 1000, MAT_PLASMA = 1000, MAT_TITANIUM = 1000)
+	build_path = /obj/item/stack/rods/lava
+	category = list("Mining")

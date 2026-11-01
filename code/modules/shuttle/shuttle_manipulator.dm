@@ -22,6 +22,8 @@
 	var/datum/map_template/shuttle/preview_template
 	var/list/templates = list()
 	var/list/shuttle_data = list()
+	anchored = TRUE
+	layer = 5
 
 /obj/machinery/shuttle_manipulator/Initialize(mapload)
 	. = ..()
@@ -64,11 +66,15 @@
 		if("shuttle_and_preview_cooldown")
 			log_and_message_admins("has attempted to change the [var_name] variable. Please do not do this, this can cause entire Z levels to freeze if spammed too quickly.")
 			return FALSE // Extremely important that this doesn't get varedited by mistake, otherwise horrible, horrible things can happen to the server.
+	return ..()
 
-/obj/machinery/shuttle_manipulator/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.admin_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/shuttle_manipulator/ui_state(mob/user)
+	return GLOB.admin_state
+
+/obj/machinery/shuttle_manipulator/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "ShuttleManipulator", name, 650, 700, master_ui, state)
+		ui = new(user, src, "ShuttleManipulator", name)
 		ui.open()
 
 /obj/machinery/shuttle_manipulator/ui_data(mob/user)
@@ -110,7 +116,7 @@
 
 	// Status panel
 	data["shuttles"] = list()
-	for(var/i in SSshuttle.mobile)
+	for(var/i in SSshuttle.mobile_docking_ports)
 		var/obj/docking_port/mobile/M = i
 		if(!M)
 			continue
@@ -135,8 +141,8 @@
 	if(..())
 		return
 	if(shuttle_and_preview_cooldown > world.time)
-		to_chat(usr, "<span class='warning'>Please wait until the desired shuttle has finished being loaded.</span>")
-		return		
+		to_chat(usr, SPAN_WARNING("Please wait until the desired shuttle has finished being loaded."))
+		return
 	. = TRUE
 
 	switch(action)
@@ -153,14 +159,14 @@
 
 		if("jump_to")
 			if(params["type"] == "mobile")
-				for(var/i in SSshuttle.mobile)
+				for(var/i in SSshuttle.mobile_docking_ports)
 					var/obj/docking_port/mobile/M = i
 					if(M.id == params["id"])
 						usr.forceMove(get_turf(M))
 						break
 
 		if("fast_travel")
-			for(var/i in SSshuttle.mobile)
+			for(var/i in SSshuttle.mobile_docking_ports)
 				var/obj/docking_port/mobile/M = i
 				if(M.id == params["id"] && M.timer && M.timeLeft() >= 50)
 					M.setTimer(50)
@@ -173,7 +179,7 @@
 			var/datum/map_template/shuttle/S = GLOB.shuttle_templates[params["shuttle_id"]]
 			if(S)
 				unload_preview()
-				load_template(S)
+				preview_shuttle = SSshuttle.load_template(S)
 				if(preview_shuttle)
 					preview_template = S
 					usr.forceMove(get_turf(preview_shuttle))
@@ -181,21 +187,21 @@
 		if("load")
 			shuttle_and_preview_cooldown = world.time + PREVIEW_OR_SHUTTLE_SPAWN_COOLDOWN
 			var/datum/map_template/shuttle/S = GLOB.shuttle_templates[params["shuttle_id"]]
-			if(existing_shuttle == SSshuttle.backup_shuttle)
-				// TODO make the load button disabled
-				WARNING("The shuttle that the selected shuttle will replace \
-					is the backup shuttle. Backup shuttle is required to be \
-					intact for round sanity.")
-			else if(S)
+			if(S)
 				// If successful, returns the mobile docking port
 				var/obj/docking_port/mobile/mdp = action_load(S)
 				if(mdp)
 					usr.forceMove(get_turf(mdp))
 					message_admins("[key_name_admin(usr)] loaded [mdp] with the shuttle manipulator.")
-					log_admin("[key_name(usr)] loaded [mdp] with the shuttle manipulator.</span>")
-
+					log_admin("[key_name(usr)] loaded [mdp] with the shuttle manipulator.")
 
 /obj/machinery/shuttle_manipulator/proc/action_load(datum/map_template/shuttle/loading_template)
+	if(isnull(loading_template))
+		CRASH("No template passed.")
+	if(istype(loading_template, /datum/map_template/shuttle/emergency) && SSshuttle.emergency_locked_in)
+		message_admins("The emergency shuttle has been locked in. You can not load another shuttle.")
+		return
+
 	// Check for an existing preview
 	if(preview_shuttle && (loading_template != preview_template))
 		preview_shuttle.jumpToNullSpace()
@@ -203,7 +209,7 @@
 		preview_template = null
 
 	if(!preview_shuttle)
-		load_template(loading_template)
+		preview_shuttle = SSshuttle.load_template(loading_template)
 		preview_template = loading_template
 
 	// get the existing shuttle information, if any
@@ -215,6 +221,8 @@
 		timer = existing_shuttle.timer
 		mode = existing_shuttle.mode
 		D = existing_shuttle.get_docked()
+		if(!D) //lance moment
+			D = SSshuttle.getDock("emergency_away")
 	else
 		D = preview_shuttle.findRoundstartDock()
 
@@ -254,51 +262,6 @@
 	selected = null
 
 	return preview_shuttle
-
-/obj/machinery/shuttle_manipulator/proc/load_template(datum/map_template/shuttle/S)
-	// load shuttle template, centred at shuttle import landmark,
-	var/turf/landmark_turf = get_turf(locate("landmark*Shuttle Import"))
-	S.load(landmark_turf, centered = TRUE)
-
-	var/affected = S.get_affected_turfs(landmark_turf, centered=TRUE)
-
-	var/found = 0
-	// Search the turfs for docking ports
-	// - We need to find the mobile docking port because that is the heart of
-	//   the shuttle.
-	// - We need to check that no additional ports have slipped in from the
-	//   template, because that causes unintended behaviour.
-	for(var/T in affected)
-		for(var/obj/docking_port/P in T)
-			if(istype(P, /obj/docking_port/mobile))
-				var/obj/docking_port/mobile/M = P
-				found++
-				if(found > 1)
-					qdel(P, force=TRUE)
-					world.log << "Map warning: Shuttle Template [S.mappath] \
-						has multiple mobile docking ports."
-				else if(!M.timid)
-					// The shuttle template we loaded isn't "timid" which means
-					// it's already registered with the shuttles subsystem.
-					// This is a bad thing.
-					var/m = "Template [S] is non-timid! Unloading."
-					WARNING(m)
-					M.jumpToNullSpace()
-					return
-				else
-					preview_shuttle = P
-			if(istype(P, /obj/docking_port/stationary))
-				world.log << "Map warning: Shuttle Template [S.mappath] has a \
-					stationary docking port."
-	if(!found)
-		var/msg = "load_template(): Shuttle Template [S.mappath] has no \
-			mobile docking port. Aborting import."
-		for(var/T in affected)//wot do?
-			var/turf/T0 = T
-			T0.contents = null
-
-		message_admins(msg)
-		WARNING(msg)
 
 /obj/machinery/shuttle_manipulator/proc/unload_preview()
 	if(preview_shuttle)

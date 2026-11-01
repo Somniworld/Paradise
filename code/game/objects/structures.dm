@@ -3,9 +3,17 @@
 	pressure_resistance = 8
 	max_integrity = 300
 	face_while_pulling = TRUE
+	flags_ricochet = RICOCHET_HARD
+	receive_ricochet_chance_mod = 0.6
 	var/climbable
-	var/mob/living/climber
+	/// Determines if a structure adds the TRAIT_TURF_COVERED to its turf.
+	var/creates_cover = FALSE
+	var/list/mob/living/climbers = list()
 	var/broken = FALSE
+	/// How long this takes to unbuckle yourself from.
+	var/unbuckle_time = 0 SECONDS
+
+	new_attack_chain = TRUE
 
 /obj/structure/New()
 	..()
@@ -15,39 +23,46 @@
 			QUEUE_SMOOTH_NEIGHBORS(src)
 		if(smoothing_flags & SMOOTH_CORNERS)
 			icon_state = ""
-	if(climbable)
-		verbs += /obj/structure/proc/climb_on
 	if(SSticker)
-		GLOB.cameranet.updateVisibility(src)
+		GLOB.cameranet.update_visibility(src)
 
 /obj/structure/Initialize(mapload)
 	if(!armor)
-		armor = list(MELEE = 0, BULLET = 0, LASER = 0, ENERGY = 0, BOMB = 0, BIO = 0, RAD = 0, FIRE = 50, ACID = 50)
+		armor = list(MELEE = 0, BULLET = 0, LASER = 0, ENERGY = 0, BOMB = 0, RAD = 0, FIRE = 50, ACID = 50)
+	if(creates_cover && isturf(loc))
+		ADD_TRAIT(loc, TRAIT_TURF_COVERED, UNIQUE_TRAIT_SOURCE(src))
 	return ..()
 
 /obj/structure/Destroy()
+	climbers = null
 	if(SSticker)
-		GLOB.cameranet.updateVisibility(src)
+		GLOB.cameranet.update_visibility(src)
 	if(smoothing_flags & (SMOOTH_CORNERS|SMOOTH_BITMASK))
 		var/turf/T = get_turf(src)
 		QUEUE_SMOOTH_NEIGHBORS(T)
 	REMOVE_FROM_SMOOTH_QUEUE(src)
+	if(creates_cover && isturf(loc))
+		REMOVE_TRAIT(loc, TRAIT_TURF_COVERED, UNIQUE_TRAIT_SOURCE(src))
 	return ..()
 
-/obj/structure/proc/climb_on()
+/obj/structure/Move(atom/newloc, direct = 0, glide_size_override = 0, update_dir = TRUE)
+	var/atom/old = loc
+	if(!..())
+		return FALSE
 
-	set name = "Climb structure"
-	set desc = "Climbs onto a structure."
-	set category = null
-	set src in oview(1)
-
-	do_climb(usr)
+	if(creates_cover)
+		if(isturf(old))
+			REMOVE_TRAIT(old, TRAIT_TURF_COVERED, UNIQUE_TRAIT_SOURCE(src))
+		if(isturf(loc))
+			ADD_TRAIT(loc, TRAIT_TURF_COVERED, UNIQUE_TRAIT_SOURCE(src))
+	return TRUE
 
 /obj/structure/MouseDrop_T(atom/movable/C, mob/user as mob)
 	if(..())
-		return
+		return TRUE
 	if(C == user)
-		do_climb(user)
+		INVOKE_ASYNC(src, TYPE_PROC_REF(/obj/structure, start_climb), user)
+		return TRUE
 
 /obj/structure/proc/density_check()
 	for(var/obj/O in orange(0, src))
@@ -63,53 +78,68 @@
 		return FALSE
 	var/blocking_object = density_check()
 	if(blocking_object)
-		to_chat(user, "<span class='warning'>You cannot climb [src], as it is blocked by \a [blocking_object]!</span>")
+		to_chat(user, SPAN_WARNING("You cannot climb onto [src], as it is blocked by \a [blocking_object]!"))
 		return FALSE
 
-	var/turf/T = src.loc
-	if(!T || !istype(T)) return FALSE
-
-	usr.visible_message("<span class='warning'>[user] starts climbing onto \the [src]!</span>")
-	climber = user
-	if(!do_after(user, 50, target = src))
-		climber = null
+	if(!isturf(loc))
 		return FALSE
+	var/freerunner_multiplier = HAS_TRAIT(user, TRAIT_FREERUNNER) ? 0.8 : 1
+	if(HAS_MIND_TRAIT(user, TRAIT_TABLE_LEAP))
+		user.visible_message(SPAN_WARNING("[user] gets ready to vault up onto [src]!"))
+		if(!do_after(user, 0.5 SECONDS * freerunner_multiplier, target = src))
+			return FALSE
+	else
+		user.visible_message(SPAN_WARNING("[user] starts climbing onto [src]!"))
+		if(!do_after(user, 5 SECONDS * freerunner_multiplier, target = src))
+			return FALSE
 
 	if(!can_touch(user) || !climbable)
-		climber = null
 		return FALSE
 
-	var/old_loc = usr.loc
-	usr.loc = get_turf(src)
-	usr.Moved(old_loc, get_dir(old_loc, usr.loc), FALSE)
-	if(get_turf(user) == get_turf(src))
-		usr.visible_message("<span class='warning'>[user] climbs onto \the [src]!</span>")
-
-	climber = null
 	return TRUE
 
-/obj/structure/proc/structure_shaken()
+/obj/structure/proc/start_climb(mob/living/user)
+	climbers += user
+	RegisterSignal(user, COMSIG_PARENT_QDELETING, PROC_REF(remove_climber)) // Just in case the climber is deleted before finishing
+	if(do_climb(user))
+		user.forceMove(get_turf(src))
+		if(HAS_MIND_TRAIT(user, TRAIT_TABLE_LEAP))
+			user.visible_message(SPAN_WARNING("[user] leaps up onto [src]!"))
+		else
+			user.visible_message(SPAN_WARNING("[user] climbs onto [src]!"))
+	if(QDELETED(src)) // Table was destroyed while we were climbing it
+		return
+	climbers -= user
+	UnregisterSignal(user, COMSIG_PARENT_QDELETING)
+	return TRUE
 
+/obj/structure/proc/remove_climber(mob/living/climber)
+	SIGNAL_HANDLER // COMSIG_PARENT_QDELETING
+
+	climbers -= climber
+	UnregisterSignal(climber, COMSIG_PARENT_QDELETING)
+
+/obj/structure/proc/structure_shaken()
 	for(var/mob/living/M in get_turf(src))
 
 		if(IS_HORIZONTAL(M))
 			return //No spamming this on people.
 
 		M.Weaken(10 SECONDS)
-		to_chat(M, "<span class='warning'>You topple as \the [src] moves under you!</span>")
+		to_chat(M, SPAN_WARNING("You topple as \the [src] moves under you!"))
 
 		if(prob(25))
 
 			var/damage = rand(15,30)
 			var/mob/living/carbon/human/H = M
 			if(!istype(H))
-				to_chat(H, "<span class='warning'>You land heavily!</span>")
+				to_chat(H, SPAN_WARNING("You land heavily!"))
 				M.adjustBruteLoss(damage)
 				return
 
 			var/obj/item/organ/external/affecting
 
-			switch(pick(list("ankle","wrist","head","knee","elbow")))
+			switch(pick("ankle","wrist","head","knee","elbow"))
 				if("ankle")
 					affecting = H.get_organ(pick("l_foot", "r_foot"))
 				if("knee")
@@ -122,42 +152,46 @@
 					affecting = H.get_organ("head")
 
 			if(affecting)
-				to_chat(M, "<span class='warning'>You land heavily on your [affecting.name]!</span>")
+				to_chat(M, SPAN_WARNING("You land heavily on your [affecting.name]!"))
 				affecting.receive_damage(damage, 0)
 				if(affecting.parent)
 					affecting.parent.add_autopsy_data("Misadventure", damage)
 			else
-				to_chat(H, "<span class='warning'>You land heavily!</span>")
+				to_chat(H, SPAN_WARNING("You land heavily!"))
 				H.adjustBruteLoss(damage)
 
 			H.UpdateDamageIcon()
-	return
 
 /obj/structure/proc/can_touch(mob/living/user)
 	if(!istype(user))
-		return 0
+		return FALSE
 	if(!Adjacent(user))
-		return 0
+		return FALSE
 	if(user.restrained() || user.buckled)
-		to_chat(user, "<span class='notice'>You need your hands and legs free for this.</span>")
-		return 0
+		to_chat(user, SPAN_NOTICE("You need your hands and legs free for this."))
+		return FALSE
 	if(HAS_TRAIT(user, TRAIT_HANDS_BLOCKED))
-		return 0
+		return FALSE
 	if(issilicon(user))
-		to_chat(user, "<span class='notice'>You need hands for this.</span>")
-		return 0
-	return 1
+		to_chat(user, SPAN_NOTICE("You need hands for this."))
+		return FALSE
+	return TRUE
+
+/obj/structure/proc/get_climb_text()
+	return SPAN_NOTICE("You can <b>Click-Drag</b> yourself to [src] to climb on top of it after a short delay.")
 
 /obj/structure/examine(mob/user)
 	. = ..()
 	if(!(resistance_flags & INDESTRUCTIBLE))
 		if(resistance_flags & ON_FIRE)
-			. += "<span class='warning'>It's on fire!</span>"
+			. += SPAN_WARNING("It's on fire!")
 		if(broken)
-			. += "<span class='notice'>It appears to be broken.</span>"
+			. += SPAN_NOTICE("It appears to be broken.")
 		var/examine_status = examine_status(user)
 		if(examine_status)
 			. += examine_status
+	if(climbable)
+		. += get_climb_text()
 
 /obj/structure/proc/examine_status(mob/user) //An overridable proc, mostly for falsewalls.
 	var/healthpercent = (obj_integrity/max_integrity) * 100
@@ -168,7 +202,7 @@
 			return  "It appears heavily damaged."
 		if(0 to 25)
 			if(!broken)
-				return  "<span class='warning'>It's falling apart!</span>"
+				return  SPAN_WARNING("It's falling apart!")
 
 /obj/structure/proc/prevents_buckled_mobs_attacking()
 	return FALSE
@@ -178,3 +212,9 @@
 		take_damage(power / 8000, BURN, ENERGY)
 	power -= power / 2000 //walls take a lot out of ya
 	. = ..()
+
+/obj/structure/fall_and_crush(turf/target_turf, crush_damage, should_crit, crit_damage_factor, datum/tilt_crit/forced_crit, weaken_time, knockdown_time, ignore_gravity, should_rotate, angle, rightable, block_interactions)
+	. = ..(target_turf, crush_damage, should_crit, crit_damage_factor, forced_crit, weaken_time, knockdown_time, ignore_gravity, should_rotate, angle, rightable = TRUE, block_interactions_until_righted = FALSE)
+
+/obj/structure/rust_heretic_act()
+	take_damage(100, BRUTE, "melee", 1)

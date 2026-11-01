@@ -16,3 +16,9 @@
 	var/webmap_url
 	/// Is this map voteable?
 	var/voteable = TRUE
+	/// Minimum amount of players required for this map to be eligible in random map picks.
+	var/min_players_random = 0
+	/// Maximum amount of players required for this map to be eligible in random map picks.
+	var/max_players_random = INFINITY
+	/// Sound to play at the start of the game, aka the welcoming sound
+	var/welcome_sound = 'sound/AI/welcome.ogg'

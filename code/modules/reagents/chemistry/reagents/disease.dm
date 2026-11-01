@@ -2,25 +2,21 @@
 	name = "Spider eggs"
 	id = "spidereggs"
 	description = "A fine dust containing spider eggs. Oh gosh."
-	reagent_state = SOLID
 	color = "#FFFFFF"
-	can_synth = FALSE
 	taste_mult = 0
 
 /datum/reagent/spider_eggs/on_mob_life(mob/living/M)
 	if(volume > 2.5)
 		if(iscarbon(M))
 			if(!M.get_int_organ(/obj/item/organ/internal/body_egg))
-				new/obj/item/organ/internal/body_egg/spider_eggs(M) //Yes, even Xenos can fall victim to the plague that is spider infestation.
+				new/obj/item/organ/internal/body_egg/spider_eggs(M, M) //Yes, even Xenos can fall victim to the plague that is spider infestation.
 	return ..()
-
 
 /datum/reagent/nanomachines
 	name = "Nanomachines"
 	id = "nanomachines"
 	description = "Microscopic construction robots."
 	color = "#535E66" // rgb: 83, 94, 102
-	can_synth = FALSE
 	taste_mult = 0
 
 /datum/reagent/nanomachines/on_mob_life(mob/living/carbon/M)
@@ -28,18 +24,16 @@
 		M.ForceContractDisease(new /datum/disease/transformation/robot(0))
 	return ..()
 
-
 /datum/reagent/xenomicrobes
 	name = "Xenomicrobes"
 	id = "xenomicrobes"
 	description = "Microbes with an entirely alien cellular structure."
 	color = "#535E66" // rgb: 83, 94, 102
-	can_synth = FALSE
 	taste_mult = 0
 
 /datum/reagent/xenomicrobes/on_mob_life(mob/living/carbon/M)
 	if(volume > 1.5)
-		M.ContractDisease(new /datum/disease/transformation/xeno(0))
+		M.ForceContractDisease(new /datum/disease/transformation/xeno(0))
 	return ..()
 
 /datum/reagent/fungalspores
@@ -47,7 +41,6 @@
 	id = "fungalspores"
 	description = "Active fungal spores."
 	color = "#92D17D" // rgb: 146, 209, 125
-	can_synth = FALSE
 	taste_mult = 0
 
 /datum/reagent/fungalspores/on_mob_life(mob/living/carbon/M)
@@ -59,9 +52,7 @@
 	name = "Jagged Crystals"
 	id = "jagged_crystals"
 	description = "Rapid chemical decomposition has warped these crystals into twisted spikes."
-	reagent_state = SOLID
 	color = "#FA0000" // rgb: 250, 0, 0
-	can_synth = FALSE
 	taste_mult = 0
 
 /datum/reagent/jagged_crystals/on_mob_life(mob/living/carbon/M)
@@ -74,7 +65,6 @@
 	description = "A nasty bacteria found in spoiled food."
 	reagent_state = LIQUID
 	color = "#1E4600"
-	can_synth = FALSE
 	taste_mult = 0
 
 /datum/reagent/salmonella/on_mob_life(mob/living/carbon/M)
@@ -87,7 +77,6 @@
 	description = "Liquid gibbis."
 	reagent_state = LIQUID
 	color = "#FF0000"
-	can_synth = FALSE
 	taste_mult = 0
 
 /datum/reagent/gibbis/on_mob_life(mob/living/carbon/M)
@@ -101,7 +90,6 @@
 	description = "A disease-causing agent that is neither bacterial nor fungal nor viral and contains no genetic material."
 	reagent_state = LIQUID
 	color = "#FFFFFF"
-	can_synth = FALSE
 	taste_mult = 0
 
 /datum/reagent/prions/on_mob_life(mob/living/carbon/M)
@@ -115,7 +103,6 @@
 	description = "Hook me up to an IV of that sweet, sweet stuff!"
 	reagent_state = LIQUID
 	color = "#F7E6B1"
-	can_synth = FALSE
 	taste_description = "bacon"
 
 /datum/reagent/bacon_grease/on_mob_life(mob/living/carbon/M)
@@ -127,15 +114,14 @@
 	name = "Space heartworms"
 	id = "heartworms"
 	description = "Aww, gross! These things can't be good for your heart. They're gunna eat it!"
-	reagent_state = SOLID
 	color = "#925D6C"
-	can_synth = FALSE
 	taste_mult = 0
 
 /datum/reagent/heartworms/on_mob_life(mob/living/carbon/M)
 	if(volume > 4.5)
 		if(ishuman(M))
 			var/mob/living/carbon/human/H = M
+			// im not going to make this an organ datum, so that slime people dont get their brain instantly deleted
 			var/obj/item/organ/internal/heart/ate_heart = H.get_int_organ(/obj/item/organ/internal/heart)
 			if(ate_heart)
 				ate_heart.remove(H)
@@ -148,7 +134,6 @@
 	description = "A guaranteed heart-stopper!"
 	reagent_state = LIQUID
 	color = "#AB1CCF"
-	can_synth = FALSE
 	taste_mult = 0
 
 /datum/reagent/concentrated_initro/on_mob_life(mob/living/M)
@@ -169,6 +154,12 @@
 	nutriment_factor = 2 * REAGENTS_METABOLISM
 	color = "#899613" // rgb: 137, 150, 19
 	taste_description = "watery milk"
+
+/datum/reagent/consumable/virus_food/on_mob_life(mob/living/M)
+	. = ..()
+	for(var/datum/disease/advance/virus in M.viruses)
+		if(prob(3))
+			virus.progress += 20
 
 /datum/reagent/mutagen/mutagenvirusfood
 	name = "Mutagenic agar"
@@ -198,3 +189,32 @@
 	name = "Weakened virus plasma"
 	id = "weakplasmavirusfood"
 	color = "#CEC3C6" // rgb: 206,195,198
+
+/datum/reagent/consumable/stable_agar
+	name = "Stable agar"
+	id = "stable_agar"
+	color = "#50BDB0" // rgb: 80,206,192
+
+/datum/reagent/consumable/tracking_agar
+	name = "Tracking agar"
+	id = "tracking_agar"
+	color = "#2c8852" // rgb: 45,136,82
+
+/datum/reagent/virus_genes
+	name = "Viral Genetic Material"
+	id = "virus_genes"
+	color = "#e0717a"
+
+/// Depth 1 copy of the lists
+/datum/reagent/virus_genes/on_merge(list/_data)
+	var/list/result = list()
+	for(var/key in (data + _data))
+		result[key] = data[key]
+		if(_data[key])
+			result[key] += _data[key]
+	data = result
+
+/datum/reagent/viral_eraser
+	name = "Viral Eraser"
+	id = "viral_eraser"
+	color = "#ffe600" // rgb: 45,136,82

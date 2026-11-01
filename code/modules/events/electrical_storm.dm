@@ -1,4 +1,8 @@
 /datum/event/electrical_storm
+	name = "Electrical Storm"
+	nominal_severity = EVENT_LEVEL_MODERATE
+	role_weights = list(ASSIGNMENT_ENGINEERING = 4, ASSIGNMENT_JANITOR = 3)
+	role_requirements = list(ASSIGNMENT_ENGINEERING = 3, ASSIGNMENT_JANITOR = 1)
 	var/lightsoutAmount	= 1
 	var/lightsoutRange	= 25
 
@@ -13,12 +17,12 @@
 		for(var/obj/effect/landmark/lightsout/newEpicentre in GLOB.landmarks_list)
 			if(!(newEpicentre in epicentreList))
 				possibleEpicentres += newEpicentre
-		if(possibleEpicentres.len)
+		if(length(possibleEpicentres))
 			epicentreList += pick(possibleEpicentres)
 		else
 			break
 
-	if(!epicentreList.len)
+	if(!length(epicentreList))
 		return
 
 	for(var/thing in epicentreList)

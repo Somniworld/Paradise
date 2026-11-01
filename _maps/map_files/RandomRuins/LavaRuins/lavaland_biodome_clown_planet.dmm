@@ -3,48 +3,44 @@
 /turf/template_noop,
 /area/template_noop)
 "ab" = (
-/obj/structure/disposalpipe/segment{
-	dir = 4;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 4
 	},
 /turf/simulated/wall/r_wall,
 /area/ruin/powered/clownplanet)
 "ac" = (
-/obj/structure/disposalpipe/segment{
-	dir = 2;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 2
 	},
 /turf/simulated/wall/r_wall,
 /area/ruin/powered/clownplanet)
 "ad" = (
-/obj/structure/disposalpipe/segment{
-	dir = 4;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 4
 	},
-/turf/simulated/floor/plating,
+/turf/simulated/floor/plating/lavaland_air,
 /area/ruin/powered/clownplanet)
 "ae" = (
-/obj/structure/disposalpipe/segment{
-	dir = 2;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 2
 	},
-/turf/simulated/floor/plating,
+/turf/simulated/floor/plating/lavaland_air,
 /area/ruin/powered/clownplanet)
 "af" = (
 /obj/structure/disposalpipe/segment{
 	invisibility = 101
 	},
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "ag" = (
 /obj/effect/mob_spawn/human/corpse/damaged,
@@ -52,51 +48,50 @@
 /obj/structure/disposalpipe/segment{
 	invisibility = 101
 	},
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "ah" = (
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/obj/structure/disposalpipe/segment{
-	dir = 4;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aj" = (
 /obj/effect/decal/cleanable/pie_smudge,
 /obj/structure/disposalpipe/segment{
 	invisibility = 101
 	},
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "ak" = (
 /obj/structure/disposalpipe/segment{
@@ -105,35 +100,34 @@
 /obj/machinery/light/small{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "al" = (
 /obj/effect/decal/cleanable/dirt,
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/obj/structure/disposalpipe/segment{
-	dir = 1;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 1
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "am" = (
 /obj/structure/disposalpipe/segment{
@@ -141,93 +135,91 @@
 	invisibility = 101
 	},
 /obj/effect/decal/cleanable/dirt,
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "an" = (
 /obj/structure/disposalpipe/segment{
 	dir = 4;
 	invisibility = 101
 	},
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "ao" = (
 /obj/structure/window/reinforced,
-/obj/structure/disposalpipe/segment{
-	dir = 8;
-	icon_state = "pipe-c"
-	},
-/turf/simulated/floor/plating,
-/area/ruin/powered/clownplanet)
-"ap" = (
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
-	dir = 1
-	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/structure/disposalpipe/segment/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/turf/simulated/floor/plating/lavaland_air,
+/area/ruin/powered/clownplanet)
+"ap" = (
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
+	dir = 1
+	},
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
+	dir = 8
+	},
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/obj/structure/disposalpipe/segment{
-	dir = 8;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 8
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aq" = (
 /obj/structure/disposalpipe/trunk,
 /obj/structure/disposaloutlet{
 	dir = 1
 	},
-/turf/simulated/floor/plating,
+/turf/simulated/floor/plating/lavaland_air,
 /area/ruin/powered/clownplanet)
 "ar" = (
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "as" = (
 /obj/effect/decal/cleanable/dirt,
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "at" = (
 /obj/structure/disposalpipe/segment{
@@ -235,103 +227,76 @@
 	invisibility = 101
 	},
 /obj/effect/decal/cleanable/cobweb,
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "au" = (
 /obj/structure/disposalpipe/segment{
 	invisibility = 101
 	},
-/turf/simulated/floor/plating,
-/area/ruin/powered/clownplanet)
-"av" = (
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
-	dir = 1
-	},
-/obj/effect/turf_decal/tile/yellow{
-	dir = 8
-	},
-/obj/effect/turf_decal/tile/yellow{
-	dir = 4
-	},
-/obj/structure/disposalpipe/segment{
-	dir = 1;
-	icon_state = "pipe-c"
-	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/plating/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aw" = (
 /obj/machinery/light/small{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/obj/structure/disposalpipe/segment{
-	dir = 4;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "ay" = (
 /obj/effect/decal/cleanable/dirt,
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/obj/structure/disposalpipe/segment{
-	dir = 8;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 8
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "az" = (
 /obj/item/bikehorn,
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/obj/structure/disposalpipe/segment{
-	dir = 1;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 1
 	},
-/turf/simulated/floor/lubed,
-/area/ruin/powered/clownplanet)
-"aA" = (
-/obj/structure/disposalpipe/segment{
-	dir = 1;
-	icon_state = "pipe-c"
-	},
-/turf/simulated/wall/r_wall,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aB" = (
 /obj/structure/disposalpipe/segment{
@@ -339,37 +304,36 @@
 	invisibility = 101
 	},
 /obj/effect/decal/cleanable/pie_smudge,
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
 /obj/structure/disposalpipe/segment{
 	invisibility = 101
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aC" = (
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/obj/structure/disposalpipe/segment{
-	dir = 2;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 2
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aD" = (
 /obj/item/bikehorn,
@@ -377,82 +341,79 @@
 	dir = 4;
 	invisibility = 101
 	},
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aE" = (
-/obj/structure/disposalpipe/segment{
-	dir = 8;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 8
 	},
-/turf/simulated/floor/plating,
+/turf/simulated/floor/plating/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aF" = (
 /obj/effect/decal/cleanable/dirt,
 /obj/structure/disposalpipe/segment{
 	invisibility = 101
 	},
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aG" = (
 /obj/machinery/light/small{
 	dir = 4
 	},
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/obj/structure/disposalpipe/segment{
-	dir = 2;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 2
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aH" = (
 /obj/effect/decal/cleanable/dirt,
 /obj/machinery/light/small{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/obj/structure/disposalpipe/segment{
-	dir = 2;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 2
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aI" = (
 /obj/item/bikehorn,
@@ -460,51 +421,51 @@
 /obj/structure/disposalpipe/segment{
 	invisibility = 101
 	},
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aJ" = (
 /obj/item/bikehorn,
 /obj/structure/disposalpipe/segment{
 	invisibility = 101
 	},
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aK" = (
 /obj/structure/disposalpipe/segment{
 	dir = 4;
 	invisibility = 101
 	},
-/obj/effect/turf_decal/tile/red,
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner,
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 4
 	},
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 1
 	},
-/turf/simulated/floor/plasteel,
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aL" = (
 /obj/structure/disposalpipe/segment{
@@ -515,45 +476,41 @@
 /area/ruin/powered/clownplanet)
 "aM" = (
 /obj/effect/decal/cleanable/pie_smudge,
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aN" = (
 /obj/structure/disposalpipe/segment{
 	dir = 4;
 	invisibility = 101
 	},
-/turf/simulated/floor/plasteel{
-	dir = 4;
-	icon_state = "white"
-	},
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aO" = (
 /obj/effect/decal/cleanable/dirt,
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/obj/structure/disposalpipe/segment{
-	dir = 4;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aP" = (
 /obj/structure/disposalpipe/segment{
@@ -563,7 +520,7 @@
 /obj/structure/disposalpipe/segment{
 	invisibility = 101
 	},
-/turf/simulated/floor/plating,
+/turf/simulated/floor/plating/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aQ" = (
 /obj/structure/disposalpipe/segment{
@@ -576,10 +533,7 @@
 /obj/structure/disposalpipe/segment{
 	invisibility = 101
 	},
-/turf/simulated/floor/plasteel{
-	dir = 4;
-	icon_state = "white"
-	},
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aR" = (
 /obj/structure/disposalpipe/segment{
@@ -591,28 +545,24 @@
 /obj/structure/disposalpipe/segment{
 	invisibility = 101
 	},
-/turf/simulated/floor/plasteel{
-	dir = 4;
-	icon_state = "white"
-	},
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aS" = (
 /obj/effect/decal/cleanable/pie_smudge,
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/obj/structure/disposalpipe/segment{
-	dir = 2;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 2
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aT" = (
 /obj/structure/disposalpipe/segment{
@@ -620,34 +570,23 @@
 	invisibility = 101
 	},
 /obj/item/pickaxe,
-/turf/simulated/floor/plasteel{
-	dir = 4;
-	icon_state = "white"
-	},
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aU" = (
 /obj/effect/spawner/window/reinforced,
-/turf/simulated/floor/plating,
+/turf/simulated/floor/plating/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aV" = (
-/obj/structure/disposalpipe/segment{
-	dir = 4;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 4
 	},
-/turf/simulated/floor/plasteel{
-	dir = 4;
-	icon_state = "white"
-	},
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aW" = (
-/obj/structure/disposalpipe/segment{
-	dir = 2;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 2
 	},
-/turf/simulated/floor/plasteel{
-	dir = 4;
-	icon_state = "white"
-	},
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aX" = (
 /obj/structure/disposalpipe/trunk{
@@ -656,7 +595,7 @@
 /obj/structure/disposaloutlet{
 	dir = 8
 	},
-/turf/simulated/floor/plating,
+/turf/simulated/floor/plating/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aY" = (
 /obj/structure/disposalpipe/segment{
@@ -666,17 +605,14 @@
 /obj/machinery/light/small{
 	dir = 8
 	},
-/turf/simulated/floor/plasteel{
-	dir = 4;
-	icon_state = "white"
-	},
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "aZ" = (
 /obj/structure/disposalpipe/segment{
 	dir = 4;
 	invisibility = 101
 	},
-/turf/simulated/floor/light,
+/turf/simulated/floor/light/lavaland_air,
 /area/ruin/powered/clownplanet)
 "ba" = (
 /obj/structure/disposalpipe/segment{
@@ -686,10 +622,7 @@
 /obj/machinery/light/small{
 	dir = 4
 	},
-/turf/simulated/floor/plasteel{
-	dir = 4;
-	icon_state = "white"
-	},
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bb" = (
 /obj/structure/disposalpipe/segment{
@@ -702,269 +635,239 @@
 	dir = 4;
 	invisibility = 101
 	},
-/turf/simulated/floor/plasteel{
-	dir = 4;
-	icon_state = "white"
-	},
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bc" = (
-/turf/simulated/floor/light,
+/turf/simulated/floor/light/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bd" = (
-/obj/structure/disposalpipe/segment{
-	dir = 1;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 1
 	},
-/turf/simulated/floor/plasteel{
-	dir = 4;
-	icon_state = "white"
-	},
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "be" = (
 /obj/machinery/light/small{
 	dir = 4
 	},
-/obj/structure/disposalpipe/segment{
-	dir = 8;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 8
 	},
-/turf/simulated/floor/plasteel{
-	dir = 4;
-	icon_state = "white"
-	},
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bf" = (
-/turf/simulated/mineral/clown/volcanic,
+/turf/simulated/mineral/volcanic/clown,
 /area/ruin/powered/clownplanet)
 "bg" = (
 /obj/item/pickaxe,
-/turf/simulated/floor/plasteel{
-	dir = 4;
-	icon_state = "white"
-	},
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bh" = (
-/turf/simulated/floor/plasteel{
-	dir = 4;
-	icon_state = "white"
-	},
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bi" = (
-/obj/effect/turf_decal/tile/red,
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner,
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 4
 	},
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 1
 	},
-/obj/structure/disposalpipe/segment{
-	dir = 4;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 4
 	},
-/turf/simulated/floor/plasteel,
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bj" = (
 /obj/effect/decal/cleanable/dirt,
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/obj/structure/disposalpipe/segment{
-	dir = 2;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 2
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bk" = (
-/obj/structure/disposalpipe/segment{
-	dir = 1;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 1
 	},
-/turf/simulated/floor/plating,
+/turf/simulated/floor/plating/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bl" = (
 /obj/item/bikehorn,
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/obj/structure/disposalpipe/segment{
-	dir = 2;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 2
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bm" = (
-/obj/structure/disposalpipe/segment{
-	dir = 8;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 8
 	},
-/turf/simulated/floor/plasteel{
-	dir = 4;
-	icon_state = "white"
-	},
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bn" = (
 /obj/effect/decal/cleanable/cobweb,
-/obj/effect/turf_decal/tile/red,
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner,
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 4
 	},
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 1
 	},
-/turf/simulated/floor/plasteel,
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bo" = (
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
 /obj/structure/disposalpipe/junction{
 	dir = 1
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bp" = (
 /obj/effect/decal/cleanable/pie_smudge,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow,
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
 /obj/structure/disposalpipe/junction/y,
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bq" = (
-/obj/machinery/disposal/deliveryChute{
+/obj/machinery/disposal/delivery_chute{
 	dir = 1
 	},
 /obj/structure/disposalpipe/trunk,
-/turf/simulated/floor/plasteel{
-	dir = 4;
-	icon_state = "white"
-	},
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "br" = (
-/obj/effect/turf_decal/tile/red,
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner,
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 4
 	},
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 1
 	},
-/turf/simulated/floor/plasteel,
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bs" = (
 /obj/machinery/light{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/red,
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner,
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 4
 	},
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 1
 	},
-/turf/simulated/floor/plasteel,
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bu" = (
 /obj/effect/decal/cleanable/blood/oil,
-/obj/structure/disposalpipe/segment{
-	dir = 2;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 2
 	},
-/turf/simulated/floor/plating,
+/turf/simulated/floor/plating/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bv" = (
 /obj/effect/mob_spawn/human/corpse/damaged,
 /obj/effect/decal/cleanable/blood/old,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bw" = (
-/obj/effect/turf_decal/tile/red,
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner,
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 4
 	},
-/obj/effect/turf_decal/tile/red{
+/obj/effect/turf_decal/tiles/department/security/corner{
 	dir = 1
 	},
-/obj/structure/disposalpipe/segment{
-	dir = 8;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 8
 	},
-/turf/simulated/floor/plasteel,
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bx" = (
 /obj/effect/decal/cleanable/dirt,
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
-/obj/effect/baseturf_helper/lava_land/surface,
-/turf/simulated/floor/lubed,
+/obj/effect/baseturf_helper/lava/mapping_lava,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "by" = (
 /obj/structure/table/glass,
 /obj/item/gun/magic/wand/slipping,
-/turf/simulated/floor/carpet,
+/turf/simulated/floor/carpet/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bB" = (
-/turf/simulated/floor/mineral/bananium/lubed,
+/turf/simulated/floor/mineral/bananium/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bD" = (
 /obj/structure/mecha_wreckage/honker,
@@ -972,44 +875,44 @@
 	dir = 4;
 	invisibility = 101
 	},
-/turf/simulated/floor/plating,
+/turf/simulated/floor/plating/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bH" = (
 /obj/effect/decal/cleanable/dirt,
-/turf/simulated/floor/mineral/bananium/lubed,
+/turf/simulated/floor/mineral/bananium/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bL" = (
-/obj/item/reagent_containers/food/drinks/trophy/gold_cup,
+/obj/item/reagent_containers/drinks/trophy/gold_cup,
 /obj/structure/table/glass,
-/turf/simulated/floor/carpet,
+/turf/simulated/floor/carpet/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bM" = (
-/turf/simulated/floor/carpet,
+/turf/simulated/floor/carpet/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bN" = (
-/obj/machinery/disposal/deliveryChute,
+/obj/machinery/disposal/delivery_chute,
 /obj/structure/disposalpipe/trunk{
 	dir = 1
 	},
-/turf/simulated/floor/carpet,
+/turf/simulated/floor/carpet/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bO" = (
 /obj/effect/decal/cleanable/cobweb,
-/turf/simulated/floor/mineral/bananium/lubed,
+/turf/simulated/floor/mineral/bananium/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bP" = (
 /obj/structure/statue/bananium/clown,
-/turf/simulated/floor/carpet,
+/turf/simulated/floor/carpet/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bQ" = (
 /obj/structure/table/glass,
 /obj/item/grown/bananapeel/bluespace,
-/turf/simulated/floor/carpet,
+/turf/simulated/floor/carpet/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bR" = (
 /obj/structure/table/glass,
 /obj/item/clothing/shoes/magboots/clown,
-/turf/simulated/floor/carpet,
+/turf/simulated/floor/carpet/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bS" = (
 /obj/item/coin/clown,
@@ -1019,34 +922,30 @@
 /obj/machinery/light/small{
 	dir = 8
 	},
-/turf/simulated/floor/carpet,
+/turf/simulated/floor/carpet/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bT" = (
 /obj/item/slime_extract/rainbow,
 /obj/structure/table/glass,
-/turf/simulated/floor/carpet,
+/turf/simulated/floor/carpet/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bU" = (
 /obj/item/bikehorn/airhorn,
-/turf/simulated/floor/carpet,
+/turf/simulated/floor/carpet/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bW" = (
 /obj/item/bikehorn,
-/turf/simulated/floor/mineral/bananium/lubed,
+/turf/simulated/floor/mineral/bananium/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "bY" = (
 /obj/effect/mob_spawn/human/corpse/damaged,
 /obj/effect/decal/cleanable/blood/old,
-/turf/simulated/floor/mineral/bananium/lubed,
-/area/ruin/powered/clownplanet)
-"bZ" = (
-/obj/machinery/door/airlock/bananium,
-/turf/simulated/floor/mineral/bananium/lubed,
+/turf/simulated/floor/mineral/bananium/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "ca" = (
 /obj/item/bikehorn,
 /obj/effect/decal/cleanable/dirt,
-/turf/simulated/floor/mineral/bananium/lubed,
+/turf/simulated/floor/mineral/bananium/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "cc" = (
 /turf/simulated/wall/r_wall,
@@ -1058,13 +957,13 @@
 /turf/simulated/wall/r_wall,
 /area/ruin/powered/clownplanet)
 "cu" = (
-/turf/simulated/floor/plating,
+/turf/simulated/floor/plating/lavaland_air,
 /area/ruin/powered/clownplanet)
 "dK" = (
 /obj/machinery/light/small{
 	dir = 1
 	},
-/turf/simulated/floor/carpet,
+/turf/simulated/floor/carpet/lavaland_air,
 /area/ruin/powered/clownplanet)
 "dL" = (
 /obj/item/coin/clown,
@@ -1074,17 +973,17 @@
 /obj/machinery/light/small{
 	dir = 4
 	},
-/turf/simulated/floor/carpet,
+/turf/simulated/floor/carpet/lavaland_air,
 /area/ruin/powered/clownplanet)
 "dM" = (
 /obj/machinery/light{
 	dir = 1
 	},
-/turf/simulated/floor/mineral/bananium/lubed,
+/turf/simulated/floor/mineral/bananium/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "dO" = (
 /obj/machinery/light,
-/turf/simulated/floor/mineral/bananium/lubed,
+/turf/simulated/floor/mineral/bananium/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "eX" = (
 /obj/effect/mapping_helpers/no_lava,
@@ -1103,7 +1002,7 @@
 /obj/structure/disposalpipe/segment/corner{
 	dir = 8
 	},
-/turf/simulated/mineral/clown/volcanic,
+/turf/simulated/mineral/volcanic/clown,
 /area/ruin/powered/clownplanet)
 "pv" = (
 /obj/machinery/light{
@@ -1112,20 +1011,20 @@
 /turf/simulated/floor/plating/asteroid/basalt/lava_land_surface,
 /area/ruin/powered/clownplanet)
 "qo" = (
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
 /obj/structure/disposalpipe/segment/corner{
 	dir = 1
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "qS" = (
 /obj/structure/disposalpipe/segment{
@@ -1133,30 +1032,29 @@
 	invisibility = 101
 	},
 /obj/effect/decal/cleanable/dirt,
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
 /obj/structure/disposalpipe/segment{
 	invisibility = 101
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "sL" = (
-/obj/structure/disposalpipe/segment{
-	dir = 4;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 4
 	},
-/turf/simulated/floor/light,
+/turf/simulated/floor/light/lavaland_air,
 /area/ruin/powered/clownplanet)
 "ye" = (
-/turf/simulated/floor/plating/lava/smooth,
+/turf/simulated/floor/lava/lava_land_surface,
 /area/ruin/powered/clownplanet)
 "CB" = (
 /obj/item/paper/crumpled/bloody/ruins/lavaland/clown_planet/hope,
@@ -1171,11 +1069,10 @@
 /turf/simulated/wall/r_wall,
 /area/ruin/powered/clownplanet)
 "HG" = (
-/obj/structure/disposalpipe/segment{
-	dir = 8;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 8
 	},
-/turf/simulated/floor/light,
+/turf/simulated/floor/light/lavaland_air,
 /area/ruin/powered/clownplanet)
 "HQ" = (
 /obj/structure/disposalpipe/segment{
@@ -1186,6 +1083,12 @@
 	invisibility = 101
 	},
 /turf/simulated/wall/r_wall,
+/area/ruin/powered/clownplanet)
+"JO" = (
+/obj/machinery/door/airlock/bananium{
+	dir = 4
+	},
+/turf/simulated/floor/mineral/bananium/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "KX" = (
 /obj/item/grown/bananapeel{
@@ -1199,10 +1102,10 @@
 /obj/structure/disposalpipe/segment{
 	invisibility = 101
 	},
-/turf/simulated/floor/light,
+/turf/simulated/floor/light/lavaland_air,
 /area/ruin/powered/clownplanet)
 "LH" = (
-/obj/machinery/disposal/deliveryChute{
+/obj/machinery/disposal/delivery_chute{
 	desc = "The following is engraved upon the chute: A FATE WORSE THAN DEATH LIES WITHIN";
 	dir = 1;
 	name = "THE TRIAL OF HONKITUDE"
@@ -1213,7 +1116,7 @@
 /area/ruin/powered/clownplanet)
 "Mv" = (
 /obj/effect/mapping_helpers/no_lava,
-/mob/living/simple_animal/hostile/retaliate/clown,
+/mob/living/basic/clown,
 /turf/simulated/floor/plating/asteroid/basalt/lava_land_surface,
 /area/lavaland/surface/outdoors/explored)
 "MR" = (
@@ -1231,10 +1134,7 @@
 /obj/structure/disposalpipe/segment{
 	invisibility = 101
 	},
-/turf/simulated/floor/plasteel{
-	dir = 4;
-	icon_state = "white"
-	},
+/turf/simulated/floor/plasteel/lavaland_air,
 /area/ruin/powered/clownplanet)
 "TD" = (
 /obj/structure/disposalpipe/trunk,
@@ -1245,9 +1145,8 @@
 /turf/simulated/floor/noslip/lavaland,
 /area/ruin/powered/clownplanet)
 "VH" = (
-/obj/structure/disposalpipe/segment{
-	dir = 8;
-	icon_state = "pipe-c"
+/obj/structure/disposalpipe/segment/corner{
+	dir = 8
 	},
 /turf/simulated/wall/r_wall,
 /area/ruin/powered/clownplanet)
@@ -1256,20 +1155,20 @@
 	dir = 4;
 	invisibility = 101
 	},
-/obj/effect/turf_decal/tile/yellow,
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner,
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 1
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 8
 	},
-/obj/effect/turf_decal/tile/yellow{
+/obj/effect/turf_decal/tiles/department/chemistry/corner{
 	dir = 4
 	},
 /obj/structure/disposalpipe/segment{
 	invisibility = 101
 	},
-/turf/simulated/floor/lubed,
+/turf/simulated/floor/lubed/lavaland_air,
 /area/ruin/powered/clownplanet)
 "Xm" = (
 /obj/item/clothing/head/cone,
@@ -1406,9 +1305,9 @@ ye
 ye
 ye
 ab
-aA
+EG
 ab
-aA
+EG
 ye
 cc
 cc
@@ -1443,7 +1342,7 @@ VH
 aH
 ay
 aS
-aA
+EG
 ye
 cc
 cc
@@ -1476,7 +1375,7 @@ ah
 af
 aI
 af
-av
+qo
 aL
 ye
 cc
@@ -1509,7 +1408,7 @@ ap
 am
 ah
 af
-aA
+EG
 aL
 aL
 cc
@@ -1539,7 +1438,7 @@ ye
 ye
 ae
 af
-av
+qo
 am
 aL
 aX
@@ -1607,7 +1506,7 @@ ye
 ac
 ag
 af
-av
+qo
 aL
 am
 aL
@@ -1718,7 +1617,7 @@ aL
 aL
 bi
 ch
-aA
+EG
 cc
 cc
 cc
@@ -1787,7 +1686,7 @@ ay
 as
 an
 aC
-av
+qo
 cc
 dK
 bQ
@@ -1811,23 +1710,23 @@ cc
 ye
 cu
 ah
-aA
+EG
 ah
-av
+qo
 ah
 af
 af
 au
 bk
 aC
-av
+qo
 bj
 ch
 bN
 bM
 bU
 bM
-bZ
+JO
 bB
 bH
 bB
@@ -1851,7 +1750,7 @@ aL
 an
 aO
 af
-av
+qo
 bl
 bo
 ay
@@ -1886,9 +1785,9 @@ WZ
 WZ
 qo
 aC
-av
+qo
 bp
-aA
+EG
 bv
 cc
 bL
@@ -1957,7 +1856,7 @@ bb
 bm
 aL
 bu
-aA
+EG
 bB
 bB
 cc

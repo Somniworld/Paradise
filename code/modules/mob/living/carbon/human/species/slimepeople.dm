@@ -6,11 +6,19 @@
 #define SLIMEPERSON_MINHUNGER 250
 #define SLIMEPERSON_REGROWTHDELAY 450 // 45 seconds
 
+
 /datum/species/slime
 	name = "Slime People"
 	name_plural = "Slime People"
 	max_age = 130
 	language = "Bubblish"
+
+	blurb = "Slime People are gelatinous and translucent beings hailing from the tropical world of Xarxis 5 and surrounding Xarxis Republic. \
+	Relatively recent entrants to the galactic scene, the Xarxis Republic, and slime people by extension, were discovered in the mid-2400s by a TSF survery fleet..<br/><br/> \
+	Today, the Xarxis Republic is a member state of the Trans-Solar Federation, having become an Associate State following first contact, and later moving through several stages of integration.  \
+	While a great deal of Slime People prefer the comforts and traditions of their home system and the Federation, a number have decided to take their chances in the wider sector, in \
+	search of adventure, profit, and freedom among the stars."
+
 	icobase = 'icons/mob/human_races/r_slime.dmi'
 	remains_type = /obj/effect/decal/remains/slime
 	inherent_factions = list("slime")
@@ -41,10 +49,9 @@
 	//Has default darksight of 2.
 
 	vision_organ = null
+	meat_type = /obj/item/food/meat/human
 	has_organ = list(
-		"brain" = /obj/item/organ/internal/brain/slime,
-		"heart" = /obj/item/organ/internal/heart/slime,
-		"lungs" = /obj/item/organ/internal/lungs/slime
+		"brain" = /obj/item/organ/internal/brain/slime
 		)
 	mutantears = null
 	suicide_messages = list(
@@ -53,6 +60,9 @@
 		"is turning a dull, brown color and melting into a puddle!")
 
 	var/reagent_skin_coloring = FALSE
+	var/static_bodyflags = HAS_SKIN_COLOR | NO_EYES
+
+	plushie_type = /obj/item/toy/plushie/slimeplushie
 
 /datum/species/slime/on_species_gain(mob/living/carbon/human/H)
 	..()
@@ -72,6 +82,7 @@
 		if(istype(i, /datum/action/innate/regrow))
 			i.Remove(H)
 	UnregisterSignal(H, COMSIG_HUMAN_UPDATE_DNA)
+
 
 /datum/species/slime/proc/blend(mob/living/carbon/human/H)
 	var/new_color = BlendRGB(H.skin_colour, "#acacac", 0.5) // Blends this to make it work better
@@ -95,8 +106,6 @@
 			blend(H)
 	..()
 
-
-
 /datum/species/slime/can_hear(mob/living/carbon/human/H) // fucking snowflakes
 	. = FALSE
 	if(!HAS_TRAIT(H, TRAIT_DEAF))
@@ -105,7 +114,7 @@
 /datum/action/innate/slimecolor
 	name = "Toggle Recolor"
 	check_flags = AB_CHECK_CONSCIOUS
-	icon_icon = 'icons/effects/effects.dmi'
+	button_icon = 'icons/effects/effects.dmi'
 	button_icon_state = "greenglow"
 
 /datum/action/innate/slimecolor/Activate()
@@ -121,44 +130,44 @@
 /datum/action/innate/regrow
 	name = "Regrow limbs"
 	check_flags = AB_CHECK_CONSCIOUS
-	icon_icon = 'icons/effects/effects.dmi'
+	button_icon = 'icons/effects/effects.dmi'
 	button_icon_state = "greenglow"
 
 /datum/action/innate/regrow/Activate()
 	var/mob/living/carbon/human/H = owner
 	if(H.nutrition < SLIMEPERSON_MINHUNGER)
-		to_chat(H, "<span class='warning'>You're too hungry to regenerate a limb!</span>")
+		to_chat(H, SPAN_WARNING("You're too hungry to regenerate a limb!"))
 		return
 
 	var/list/missing_limbs = list()
 	for(var/l in H.bodyparts_by_name)
 		var/obj/item/organ/external/E = H.bodyparts_by_name[l]
 		if(!istype(E))
-			var/list/limblist = H.dna.species.has_limbs[l]
-			var/obj/item/organ/external/limb = limblist["path"]
+			var/list/limb_list = H.dna.species.has_limbs[l]
+			var/obj/item/organ/external/limb = limb_list["path"]
 			var/parent_organ = initial(limb.parent_organ)
 			var/obj/item/organ/external/parentLimb = H.bodyparts_by_name[parent_organ]
 			if(!istype(parentLimb))
 				continue
 			missing_limbs[initial(limb.name)] = l
 
-	if(!missing_limbs.len)
-		to_chat(H, "<span class='warning'>You're not missing any limbs!</span>")
+	if(!length(missing_limbs))
+		to_chat(H, SPAN_WARNING("You're not missing any limbs!"))
 		return
 
-	var/limb_select = input(H, "Choose a limb to regrow", "Limb Regrowth") as null|anything in missing_limbs
+	var/limb_select = tgui_input_list(H, "Choose a limb to regrow", "Limb Regrowth", missing_limbs)
 	if(!limb_select) // If the user hit cancel on the popup, return
 		return
 	var/chosen_limb = missing_limbs[limb_select]
 
-	H.visible_message("<span class='notice'>[H] begins to hold still and concentrate on [H.p_their()] missing [limb_select]...</span>", "<span class='notice'>You begin to focus on regrowing your missing [limb_select]... (This will take [round(SLIMEPERSON_REGROWTHDELAY/10)] seconds, and you must hold still.)</span>")
+	H.visible_message(SPAN_NOTICE("[H] begins to hold still and concentrate on [H.p_their()] missing [limb_select]..."), SPAN_NOTICE("You begin to focus on regrowing your missing [limb_select]... (This will take [round(SLIMEPERSON_REGROWTHDELAY/10)] seconds, and you must hold still.)"))
 	if(do_after(H, SLIMEPERSON_REGROWTHDELAY, FALSE, H, extra_checks = list(CALLBACK(H, TYPE_PROC_REF(/mob/living, IsStunned))), use_default_checks = FALSE)) // Override the check for weakness, only check for stunned
 		if(H.incapacitated(extra_checks = list(CALLBACK(H, TYPE_PROC_REF(/mob/living, IsStunned))), use_default_checks = FALSE)) // Override the check for weakness, only check for stunned
-			to_chat(H, "<span class='warning'>You cannot regenerate missing limbs in your current state.</span>")
+			to_chat(H, SPAN_WARNING("You cannot regenerate missing limbs in your current state."))
 			return
 
 		if(H.nutrition < SLIMEPERSON_MINHUNGER)
-			to_chat(H, "<span class='warning'>You're too hungry to regenerate a limb!</span>")
+			to_chat(H, SPAN_WARNING("You're too hungry to regenerate a limb!"))
 			return
 
 		var/obj/item/organ/external/O = H.bodyparts_by_name[chosen_limb]
@@ -166,7 +175,7 @@
 		var/stored_brute = 0
 		var/stored_burn = 0
 		if(istype(O))
-			to_chat(H, "<span class='warning'>You distribute the damaged tissue around your body, out of the way of your new pseudopod!</span>")
+			to_chat(H, SPAN_WARNING("You distribute the damaged tissue around your body, out of the way of your new pseudopod!"))
 			var/obj/item/organ/external/doomedStump = O
 			stored_brute = doomedStump.brute_dam
 			stored_burn = doomedStump.burn_dam
@@ -177,11 +186,11 @@
 		// Parent check
 		var/obj/item/organ/external/potential_parent = H.bodyparts_by_name[initial(limb_path.parent_organ)]
 		if(!istype(potential_parent))
-			to_chat(H, "<span class='danger'>You've lost the organ that you've been growing your new part on!</span>")
+			to_chat(H, SPAN_DANGER("You've lost the organ that you've been growing your new part on!"))
 			return // No rayman for you
 		// Grah this line will leave a "not used" warning, in spite of the fact that the new() proc WILL do the thing.
 		// Bothersome.
-		var/obj/item/organ/external/new_limb = new limb_path(H)
+		var/obj/item/organ/external/new_limb = new limb_path(H, H)
 		new_limb.open = ORGAN_CLOSED // This is just so that the compiler won't think that new_limb is unused, because the compiler is horribly stupid.
 		H.adjustBruteLoss(stored_brute)
 		H.adjustFireLoss(stored_burn)
@@ -189,10 +198,19 @@
 		H.updatehealth()
 		H.UpdateDamageIcon()
 		H.adjust_nutrition(-SLIMEPERSON_HUNGERCOST)
-		H.visible_message("<span class='notice'>[H] finishes regrowing [H.p_their()] missing [new_limb]!</span>", "<span class='notice'>You finish regrowing your [limb_select]</span>")
+		H.visible_message(SPAN_NOTICE("[H] finishes regrowing [H.p_their()] missing [new_limb]!"), SPAN_NOTICE("You finish regrowing your [limb_select]"))
 		new_limb.add_limb_flags()
 	else
-		to_chat(H, "<span class='warning'>You need to hold still in order to regrow a limb!</span>")
+		to_chat(H, SPAN_WARNING("You need to hold still in order to regrow a limb!"))
+
+/datum/species/slime/generate_random_appearance(prosthesis_prob = 0, appearance = null, use_gender = null)
+	return ..()
+
+/datum/species/slime/randomize_body_color()
+	return rand_hex_color()
+
+/datum/species/slime/randomize_facial_hair_style(datum/robolimb/robohead, species_shaved_prob = 60, gender)
+	return ..()
 
 #undef SLIMEPERSON_COLOR_SHIFT_TRIGGER
 #undef SLIMEPERSON_ICON_UPDATE_PERIOD

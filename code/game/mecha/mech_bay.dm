@@ -1,5 +1,6 @@
 /turf/simulated/floor/mech_bay_recharge_floor
 	name = "mech bay recharge station"
+	desc = "A spot to recharge a mecha's power cell."
 	icon = 'icons/mecha/mech_bay.dmi'
 	icon_state = "recharge_floor"
 
@@ -51,11 +52,11 @@
 	. = ..()
 	component_parts = list()
 	component_parts += new /obj/item/circuitboard/mech_recharger(null)
-	component_parts += new /obj/item/stock_parts/capacitor/super(null)
-	component_parts += new /obj/item/stock_parts/capacitor/super(null)
-	component_parts += new /obj/item/stock_parts/capacitor/super(null)
-	component_parts += new /obj/item/stock_parts/capacitor/super(null)
-	component_parts += new /obj/item/stock_parts/capacitor/super(null)
+	component_parts += new /obj/item/stock_parts/capacitor/quadratic(null)
+	component_parts += new /obj/item/stock_parts/capacitor/quadratic(null)
+	component_parts += new /obj/item/stock_parts/capacitor/quadratic(null)
+	component_parts += new /obj/item/stock_parts/capacitor/quadratic(null)
+	component_parts += new /obj/item/stock_parts/capacitor/quadratic(null)
 	component_parts += new /obj/item/stack/cable_coil(null, 1)
 	RefreshParts()
 	update_recharge_turf()
@@ -90,11 +91,6 @@
 		MC += C.rating
 	max_charge = MC * 25
 
-/obj/machinery/mech_bay_recharge_port/attackby(obj/item/I, mob/user, params)
-	if(exchange_parts(user, I))
-		return
-	return ..()
-
 /obj/machinery/mech_bay_recharge_port/screwdriver_act(mob/user, obj/item/I)
 	if(default_deconstruction_screwdriver(user, "recharge_port-o", "recharge_port", I))
 		return TRUE
@@ -127,9 +123,6 @@
 
 /obj/machinery/computer/mech_bay_power_console
 	name = "mech bay power control console"
-	density = TRUE
-	anchored = TRUE
-	icon = 'icons/obj/computer.dmi'
 	icon_keyboard = "tech_key"
 	icon_screen = "recharge_comp"
 	light_color = LIGHT_COLOR_FADEDPURPLE
@@ -181,10 +174,13 @@
 		return
 	ui_interact(user)
 
-/obj/machinery/computer/mech_bay_power_console/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = TRUE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/computer/mech_bay_power_console/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/computer/mech_bay_power_console/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "MechBayConsole", name, 400, 150, master_ui, state)
+		ui = new(user, src, "MechBayConsole", name)
 		ui.open()
 
 /obj/machinery/computer/mech_bay_power_console/ui_act(action, params)
@@ -211,7 +207,7 @@
 				)
 	return data
 
-/obj/machinery/computer/mech_bay_power_console/Initialize()
+/obj/machinery/computer/mech_bay_power_console/Initialize(mapload)
 	reconnect()
 	update_icon()
 	return ..()

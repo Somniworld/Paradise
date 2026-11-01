@@ -8,14 +8,11 @@
 
 /obj/machinery/computer/syndicate_depot
 	name = "depot computer"
-	icon = 'icons/obj/computer.dmi'
 	icon_keyboard = "syndie_key"
 	icon_screen = "tcboss"
 	light_color = LIGHT_COLOR_PURE_CYAN
 	req_access = list(ACCESS_SYNDICATE)
 	bubble_icon = "syndibot"
-	var/window_height = 400 // should be roughly 100 per section. Allow extra space for the lockout alert.
-	var/window_width = 400
 	var/security_lockout = FALSE
 	var/sound_yes = 'sound/machines/twobeep.ogg'
 	var/sound_no = 'sound/machines/buzz-sigh.ogg'
@@ -31,7 +28,7 @@
 
 /obj/machinery/computer/syndicate_depot/attack_ai(mob/user)
 	if(length(req_access) && !("syndicate" in user.faction))
-		to_chat(user, "<span class='warning'>A firewall blocks your access.</span>")
+		to_chat(user, SPAN_WARNING("A firewall blocks your access."))
 		return TRUE
 	return ..()
 
@@ -39,7 +36,7 @@
 	return
 
 /obj/machinery/computer/syndicate_depot/emag_act(mob/user)
-	to_chat(user, "<span class='notice'>The electronic systems in this console are far too advanced for your primitive hacking peripherals.</span>")
+	to_chat(user, SPAN_NOTICE("The electronic systems in this console are far too advanced for your primitive hacking peripherals."))
 	return
 
 /obj/machinery/computer/syndicate_depot/allowed(mob/user)
@@ -72,10 +69,13 @@
 /obj/machinery/computer/syndicate_depot/proc/disable_special_functions()
 	return
 
-/obj/machinery/computer/syndicate_depot/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = TRUE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/computer/syndicate_depot/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/computer/syndicate_depot/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "SyndicateComputerSimple",  name, window_width, window_height, master_ui, state)
+		ui = new(user, src, "SyndicateComputerSimple",  name)
 		ui.open()
 
 /obj/machinery/computer/syndicate_depot/ui_data(mob/user)
@@ -110,7 +110,7 @@
 		return
 	. = FALSE
 	if(!allowed(usr))
-		to_chat(usr, "<span class='warning'>Access denied.</span>")
+		to_chat(usr, SPAN_WARNING("Access denied."))
 		return
 	switch(action)
 		if("primary")
@@ -146,7 +146,6 @@
 /obj/machinery/computer/syndicate_depot/doors
 	name = "depot door control computer"
 	req_access = list()
-	window_height = 300
 	var/pub_access = FALSE
 
 /obj/machinery/computer/syndicate_depot/doors/ui_data(mob/user)
@@ -174,16 +173,16 @@
 		pub_access = !pub_access
 		if(pub_access)
 			depotarea.set_emergency_access(TRUE)
-			to_chat(user, "<span class='notice'>Emergency Access enabled.</span>")
+			to_chat(user, SPAN_NOTICE("Emergency Access enabled."))
 		else
 			depotarea.set_emergency_access(FALSE)
-			to_chat(user, "<span class='notice'>Emergency Access disabled.</span>")
+			to_chat(user, SPAN_NOTICE("Emergency Access disabled."))
 		playsound(user, sound_yes, 50, 0)
 
 /obj/machinery/computer/syndicate_depot/doors/secondary(mob/user, subcommand)
 	if(depotarea)
 		depotarea.toggle_falsewalls(src)
-		to_chat(user, "<span class='notice'>False walls toggled.</span>")
+		to_chat(user, SPAN_NOTICE("False walls toggled."))
 		playsound(user, sound_yes, 50, 0)
 
 
@@ -194,7 +193,6 @@
 	icon_screen = "explosive"
 	req_access = list()
 	alerts_when_broken = TRUE
-	window_height = 200 // this might appear big, but it has to have space for the lockout alert
 
 /obj/machinery/computer/syndicate_depot/selfdestruct/ui_data(mob/user)
 	var/list/data = ..()
@@ -224,7 +222,6 @@
 	icon_screen = "accelerator"
 	req_access = list(ACCESS_SYNDICATE_LEADER)
 	alerts_when_broken = TRUE
-	window_height = 280
 	var/area/syndicate_depot/perimeter/perimeterarea
 
 /obj/machinery/computer/syndicate_depot/shieldcontrol/Initialize(mapload)
@@ -288,7 +285,6 @@
 	icon_screen = "syndishuttle"
 	req_access = list()
 	alerts_when_broken = TRUE
-	window_height = 300
 	var/message_sent = FALSE
 
 /obj/machinery/computer/syndicate_depot/syndiecomms/Initialize(mapload)
@@ -327,10 +323,10 @@
 		return
 	if(message_sent)
 		playsound(user, 'sound/machines/buzz-sigh.ogg', 50, 0)
-		to_chat(user, "<span class='warning'>[src] has already been used to transmit a message to the Syndicate.</span>")
+		to_chat(user, SPAN_WARNING("[src] has already been used to transmit a message to the Syndicate."))
 		return
 	message_sent = TRUE
-	var/input = stripped_input(user, "Please choose a message to transmit to Syndicate HQ via quantum entanglement.  Transmission does not guarantee a response. This function may only be used ONCE.", "To abort, send an empty message.", "")
+	var/input = tgui_input_text(user, "Please choose a message to transmit to Syndicate HQ via quantum entanglement. Transmission does not guarantee a response. This function may only be used ONCE.", "Send Message")
 	if(!input)
 		message_sent = FALSE
 		return
@@ -341,22 +337,22 @@
 
 /obj/machinery/computer/syndicate_depot/syndiecomms/secondary(mob/user)
 	if(!istype(depotarea))
-		to_chat(user, "<span class='warning'>ERROR: [src] is unable to uplink to depot network.</span>")
+		to_chat(user, SPAN_WARNING("ERROR: [src] is unable to uplink to depot network."))
 		return
 	if(depotarea.local_alarm || depotarea.called_backup || depotarea.used_self_destruct)
-		to_chat(user, "<span class='warning'>Visitor sign-in is not possible while the depot is on security alert.</span>")
+		to_chat(user, SPAN_WARNING("Visitor sign-in is not possible while the depot is on security alert."))
 		return
 	if(depotarea.something_looted)
-		to_chat(user, "<span class='warning'>Visitor sign-in is not possible after supplies have been taken from a locker in the depot.</span>")
+		to_chat(user, SPAN_WARNING("Visitor sign-in is not possible after supplies have been taken from a locker in the depot."))
 		return
 	if("syndicate" in user.faction)
-		to_chat(user, "<span class='warning'>You are already recognized as a member of the Syndicate, and do not need to sign in.</span>")
+		to_chat(user, SPAN_WARNING("You are already recognized as a member of the Syndicate, and do not need to sign in."))
 		return
 	if(!user.mind || user.mind.special_role != SPECIAL_ROLE_TRAITOR)
-		to_chat(user, "<span class='warning'>Only verified agents of the Syndicate may sign in as visitors. Everyone else will be shot on sight.</span>")
+		to_chat(user, SPAN_WARNING("Only verified agents of the Syndicate may sign in as visitors. Everyone else will be shot on sight."))
 		return
 	if(depotarea.list_includes(user, depotarea.peaceful_list))
-		to_chat(user, "<span class='warning'>[user] is already signed in as a visiting agent.</span>")
+		to_chat(user, SPAN_WARNING("[user] is already signed in as a visiting agent."))
 		return
 	if(!depotarea.on_peaceful)
 		depotarea.peaceful_mode(TRUE, TRUE)
@@ -367,7 +363,7 @@
 	user.faction += "syndicate"
 	depotarea.alert_log += "[user.name] signed in as a visitor."
 	depotarea.list_add(user, depotarea.peaceful_list)
-	to_chat(user, {"<BR><span class='userdanger'>Welcome, Agent.</span>
+	to_chat(user, {"<BR>[SPAN_USERDANGER("Welcome, Agent.")]
 		<span class='warning'>You are now signed-in as a depot visitor.
 		Any other agents with you MUST sign in themselves.
 		You may explore all rooms here, except for bolted ones.
@@ -391,11 +387,10 @@
 	name = "syndicate teleporter console"
 	icon_screen = "telesci"
 	icon_keyboard = "teleport_key"
-	window_height = 300
 	req_access = list(ACCESS_SYNDICATE_LEADER)
 	var/obj/machinery/bluespace_beacon/syndicate/mybeacon
-	var/obj/effect/portal/redspace/myportal
-	var/obj/effect/portal/redspace/myportal2
+	var/obj/effect/portal/advanced/myportal
+	var/obj/effect/portal/advanced/myportal2
 	var/portal_enabled = FALSE
 	var/portaldir = WEST
 
@@ -436,7 +431,7 @@
 	var/list/L = list()
 	var/list/areaindex = list()
 
-	for(var/obj/item/radio/beacon/R in GLOB.beacons)
+	for(var/obj/item/beacon/R in GLOB.beacons)
 		var/turf/T = get_turf(R)
 		if(!T)
 			continue
@@ -448,20 +443,19 @@
 		else
 			areaindex[tmpname] = 1
 		L[tmpname] = R
-	var/desc = input("Please select a location to lock in.", "Syndicate Teleporter") in L
-	return(L[desc])
+	var/desc = tgui_input_list(usr, "Please select a location to lock in.", "Syndicate Teleporter", L)
+	return L[desc]
 
-/obj/machinery/computer/syndicate_depot/teleporter/proc/update_portal()
+/obj/machinery/computer/syndicate_depot/teleporter/proc/update_portal(turf/tele_target)
 	if(portal_enabled && !myportal)
-		var/turf/tele_target = choosetarget()
 		if(!tele_target)
 			return
 		var/turf/portal_turf = get_step(src, portaldir)
-		var/obj/effect/portal/redspace/P = new(portal_turf, tele_target, src, 0)
+		var/obj/effect/portal/advanced/P = new(portal_turf, tele_target, src, 0)
 		myportal = P
 		var/area/A = get_area(tele_target)
 		P.name = "[A] portal"
-		var/obj/effect/portal/redspace/P2 = new(get_turf(tele_target), portal_turf, src, 0)
+		var/obj/effect/portal/advanced/P2 = new(get_turf(tele_target), portal_turf, src, 0)
 		myportal2 = P2
 		P2.name = "mysterious portal"
 	else if(!portal_enabled && myportal)
@@ -495,31 +489,34 @@
 
 /obj/machinery/computer/syndicate_depot/teleporter/primary(mob/user)
 	if(!mybeacon && user)
-		to_chat(user, "<span class='notice'>Unable to connect to teleport beacon.</span>")
+		to_chat(user, SPAN_NOTICE("Unable to connect to teleport beacon."))
 		return
 	var/bresult = mybeacon.toggle()
-	to_chat(user, "<span class='notice'>Syndicate Teleporter Beacon: [bresult ? "<span class='green'>ON</span>" : "<span class='red'>OFF</span>"]</span>")
+	to_chat(user, SPAN_NOTICE("Syndicate Teleporter Beacon: [bresult ? SPAN_GREEN("ON") : SPAN_RED("OFF")]"))
 	playsound(user, sound_yes, 50, 0)
 
 /obj/machinery/computer/syndicate_depot/teleporter/secondary(mob/user)
 	if(!portal_enabled && myportal)
-		to_chat(user, "<span class='notice'>Outgoing Teleport Portal: deactivating... please wait...</span>")
+		to_chat(user, SPAN_NOTICE("Outgoing Teleport Portal: deactivating... please wait..."))
 		return
-	toggle_portal()
-	to_chat(user, "<span class='notice'>Outgoing Teleport Portal: [portal_enabled ? "<span class='green'>ON</span>" : "<span class='red'>OFF</span>"]</span>")
-	updateUsrDialog()
-	playsound(user, sound_yes, 50, 0)
 
-/obj/machinery/computer/syndicate_depot/teleporter/proc/toggle_portal()
+	var/turf/tele_target = null
+	if(!portal_enabled)
+		tele_target = choosetarget()
+		if(!tele_target)
+			return
+
 	portal_enabled = !portal_enabled
-	update_portal()
+	update_portal(tele_target)
+
+	to_chat(user, SPAN_NOTICE("Outgoing Teleport Portal: [portal_enabled ? SPAN_GREEN("ON") : SPAN_RED("OFF")]"))
+	playsound(user, sound_yes, 50, 0)
 
 
 /obj/machinery/computer/syndicate_depot/aiterminal
 	name = "syndicate ai terminal"
 	icon_screen = "command"
 	req_access = list()
-	window_height = 750 // has to be very tall since it has many sections which can expand
 
 /obj/machinery/computer/syndicate_depot/aiterminal/ui_data(mob/user)
 	var/list/data = ..()
@@ -592,3 +589,7 @@
 		qdel(B)
 		raise_alert("Sentry bot removed via emergency recall.")
 	playsound(user, sound_yes, 50, 0)
+
+#undef DEPOT_VISITOR_START
+#undef DEPOT_VISITOR_END
+#undef DEPOT_VISITOR_ADD

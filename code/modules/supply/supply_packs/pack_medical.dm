@@ -7,27 +7,44 @@
 
 
 /datum/supply_packs/medical/supplies
-	name = "Medical Supplies Crate"
-	contains = list(/obj/item/reagent_containers/glass/bottle/charcoal,
-					/obj/item/reagent_containers/glass/bottle/charcoal,
-					/obj/item/reagent_containers/glass/bottle/epinephrine,
-					/obj/item/reagent_containers/glass/bottle/epinephrine,
-					/obj/item/reagent_containers/glass/bottle/morphine,
-					/obj/item/reagent_containers/glass/bottle/morphine,
-					/obj/item/reagent_containers/glass/bottle/toxin,
-					/obj/item/reagent_containers/glass/bottle/toxin,
-					/obj/item/reagent_containers/glass/beaker/large,
-					/obj/item/reagent_containers/glass/beaker/large,
-					/obj/item/stack/medical/bruise_pack,
+	name = "Basic Medicines Crate"
+	contains = list(/obj/item/stack/medical/bruise_pack,
+					/obj/item/stack/medical/ointment,
 					/obj/item/reagent_containers/iv_bag/salglu,
+					/obj/item/storage/box/autoinjectors,
+					/obj/item/reagent_containers/glass/bottle/morphine,
+					/obj/item/reagent_containers/glass/bottle/morphine,
+					/obj/item/storage/pill_bottle/spaceacillin,
+					/obj/item/storage/pill_bottle/salbutamol,
+					/obj/item/storage/pill_bottle/painkillers)
+	cost = 250
+	containername = "basic medicines crate"
+
+/datum/supply_packs/medical/equipment
+	name = "Medical Equipment Crate"
+	contains = list(/obj/item/storage/box/bodybags,
 					/obj/item/storage/box/beakers,
+					/obj/item/reagent_containers/glass/beaker/large,
+					/obj/item/reagent_containers/glass/beaker/large,
 					/obj/item/storage/box/syringes,
-					/obj/item/storage/box/bodybags,
 					/obj/item/storage/box/iv_bags,
-					/obj/item/vending_refill/medical)
-	cost = 400
-	containertype = /obj/structure/closet/crate/medical
-	containername = "medical supplies crate"
+					/obj/item/storage/box/pillbottles,
+					/obj/item/storage/box/patch_packs,
+					/obj/item/storage/box/suture_pack,
+					/obj/item/storage/box/mesh_pack)
+	cost = 50
+	containername = "medical equipment crate"
+
+/datum/supply_packs/medical/body_bags
+	name = "Body Bag Crate"
+	contains = list(/obj/item/storage/box/bodybags,
+					/obj/item/storage/box/bodybags,
+					/obj/item/storage/box/bodybags,
+					/obj/item/storage/box/bodybags,
+					/obj/item/storage/box/bodybags,
+					/obj/item/storage/box/bodybags)
+	cost = 50
+	containername = "body bag crate"
 
 /datum/supply_packs/medical/firstaid
 	name = "First Aid Kits Crate"
@@ -35,7 +52,7 @@
 					/obj/item/storage/firstaid/regular,
 					/obj/item/storage/firstaid/regular,
 					/obj/item/storage/firstaid/regular)
-	cost = 250
+	cost = 200
 	containername = "first aid kits crate"
 
 /datum/supply_packs/medical/firstaidadv
@@ -60,6 +77,7 @@
 	name = "Brute Treatment Kits Crate"
 	contains = list(/obj/item/storage/firstaid/brute,
 					/obj/item/storage/firstaid/brute,
+					/obj/item/storage/firstaid/brute,
 					/obj/item/storage/firstaid/brute)
 	cost = 250
 	containername = "brute first aid kits crate"
@@ -67,6 +85,7 @@
 /datum/supply_packs/medical/firstaidburns
 	name = "Burns Treatment Kits Crate"
 	contains = list(/obj/item/storage/firstaid/fire,
+					/obj/item/storage/firstaid/fire,
 					/obj/item/storage/firstaid/fire,
 					/obj/item/storage/firstaid/fire)
 	cost = 250
@@ -76,16 +95,18 @@
 	name = "Toxin Treatment Kits Crate"
 	contains = list(/obj/item/storage/firstaid/toxin,
 					/obj/item/storage/firstaid/toxin,
+					/obj/item/storage/firstaid/toxin,
 					/obj/item/storage/firstaid/toxin)
-	cost = 250
+	cost = 150
 	containername = "toxin first aid kits crate"
 
 /datum/supply_packs/medical/firstaidoxygen
 	name = "Oxygen Treatment Kits Crate"
 	contains = list(/obj/item/storage/firstaid/o2,
 					/obj/item/storage/firstaid/o2,
+					/obj/item/storage/firstaid/o2,
 					/obj/item/storage/firstaid/o2)
-	cost = 250
+	cost = 50
 	containername = "oxygen first aid kits crate"
 
 /datum/supply_packs/medical/virus
@@ -105,7 +126,7 @@
 					/obj/item/storage/box/beakers,
 					/obj/item/reagent_containers/glass/bottle/mutagen)
 	cost = 350
-	containertype = /obj/structure/closet/crate/secure/plasma
+	containertype = /obj/structure/closet/crate/secure/medisec
 	containername = "virus crate"
 	access = ACCESS_CMO
 	announce_beacons = list("Medbay" = list("Virology", "Chief Medical Officer's Desk"))
@@ -119,7 +140,6 @@
 
 /datum/supply_packs/medical/vending/clothingvendor
 	name = "Medical Clothing Vendors Crate"
-	cost = 100
 	contains = list(/obj/item/vending_refill/medidrobe,
 					/obj/item/vending_refill/chemdrobe,
 					/obj/item/vending_refill/virodrobe)
@@ -129,12 +149,12 @@
 	name = "Blood Pack Variety Crate"
 	contains = list(/obj/item/reagent_containers/iv_bag,
 					/obj/item/reagent_containers/iv_bag,
-					/obj/item/reagent_containers/iv_bag/blood/APlus,
-					/obj/item/reagent_containers/iv_bag/blood/AMinus,
-					/obj/item/reagent_containers/iv_bag/blood/BPlus,
-					/obj/item/reagent_containers/iv_bag/blood/BMinus,
-					/obj/item/reagent_containers/iv_bag/blood/OPlus,
-					/obj/item/reagent_containers/iv_bag/blood/OMinus,
+					/obj/item/reagent_containers/iv_bag/blood/a_plus,
+					/obj/item/reagent_containers/iv_bag/blood/a_minus,
+					/obj/item/reagent_containers/iv_bag/blood/b_plus,
+					/obj/item/reagent_containers/iv_bag/blood/b_minus,
+					/obj/item/reagent_containers/iv_bag/blood/o_plus,
+					/obj/item/reagent_containers/iv_bag/blood/o_minus,
 					/obj/item/reagent_containers/iv_bag/slime,
 					/obj/item/reagent_containers/iv_bag/blood/vox,
 					/obj/machinery/iv_drip)
@@ -142,23 +162,44 @@
 	containertype = /obj/structure/closet/crate/freezer
 	containername = "blood pack crate"
 
+/datum/supply_packs/medical/vox_blood
+	name = "Vox Blood Pack Crate"
+	contains = list(/obj/item/reagent_containers/iv_bag/blood/vox,
+					/obj/item/reagent_containers/iv_bag/blood/vox,
+					/obj/item/reagent_containers/iv_bag/blood/vox,
+					/obj/item/reagent_containers/iv_bag/blood/vox,
+					/obj/machinery/iv_drip)
+	cost = 350
+	containertype = /obj/structure/closet/crate/freezer
+	containername = "vox blood pack crate"
+
+/datum/supply_packs/medical/slime_jelly
+	name = "Slime Jelly Pack Crate"
+	contains = list(/obj/item/reagent_containers/iv_bag/slime,
+					/obj/item/reagent_containers/iv_bag/slime,
+					/obj/item/reagent_containers/iv_bag/slime,
+					/obj/item/reagent_containers/iv_bag/slime,
+					/obj/machinery/iv_drip)
+	cost = 350
+	containertype = /obj/structure/closet/crate/freezer
+	containername = "slime jelly pack crate"
+
 /datum/supply_packs/medical/surgery
 	name = "Surgery Crate"
 	contains = list(/obj/item/cautery,
 					/obj/item/surgicaldrill,
 					/obj/item/clothing/mask/breath/medical,
 					/obj/item/tank/internals/anesthetic,
-					/obj/item/FixOVein,
+					/obj/item/fix_o_vein,
 					/obj/item/hemostat,
 					/obj/item/scalpel,
 					/obj/item/bonegel,
 					/obj/item/retractor,
 					/obj/item/bonesetter,
-					/obj/item/circular_saw)
-	cost = 400
-	containertype = /obj/structure/closet/crate/secure
+					/obj/item/circular_saw,
+					/obj/item/surgical_drapes)
+	cost = 100
 	containername = "surgery crate"
-	access = ACCESS_MEDICAL
 
 /datum/supply_packs/medical/gloves
 	name = "Nitrile Glove Crate"
@@ -168,3 +209,38 @@
 					/obj/item/clothing/gloves/color/latex/nitrile)
 	cost = 200
 	containername = "nitrile glove crate"
+
+/datum/supply_packs/medical/omnizine
+	name = "Omnizine Shipment Crate"
+	contains = list(/obj/item/reagent_containers/glass/bottle/reagent/omnizine)
+	cost = 300
+	containername = "omnizine shipment crate"
+
+/datum/supply_packs/medical/biosuits
+	name = "Biosuit 4-pack"
+	contains = list(
+		/obj/item/clothing/suit/bio_suit,
+		/obj/item/clothing/suit/bio_suit,
+		/obj/item/clothing/suit/bio_suit,
+		/obj/item/clothing/suit/bio_suit,
+		/obj/item/clothing/head/bio_hood,
+		/obj/item/clothing/head/bio_hood,
+		/obj/item/clothing/head/bio_hood,
+		/obj/item/clothing/head/bio_hood,
+	)
+	cost = 400
+	containername = "biosuit shipment crate"
+
+/datum/supply_packs/medical/surgical_masks
+	name = "Sterile Mask And Goggles 4-pack"
+	contains = list(/obj/item/clothing/mask/surgical,
+					/obj/item/clothing/mask/surgical,
+					/obj/item/clothing/mask/surgical,
+					/obj/item/clothing/mask/surgical,
+					/obj/item/clothing/glasses/goggles,
+					/obj/item/clothing/glasses/goggles,
+					/obj/item/clothing/glasses/goggles,
+					/obj/item/clothing/glasses/goggles,
+				)
+	cost = 50
+	containername = "sterile mask shipment crate"

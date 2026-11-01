@@ -17,9 +17,10 @@ Thus, the two variables affect pump operation are set in New():
 	icon_state = "map_off"
 
 	name = "volumetric gas pump"
-	desc = "A volumetric pump"
+	desc = "A volumetric pump."
 
 	can_unwrench = TRUE
+	can_unwrench_while_on = FALSE
 
 	var/transfer_rate = 200
 
@@ -32,21 +33,21 @@ Thus, the two variables affect pump operation are set in New():
 /obj/machinery/atmospherics/binary/volume_pump/CtrlClick(mob/living/user)
 	if(can_use_shortcut(user))
 		toggle(user)
-		investigate_log("was turned [on ? "on" : "off"] by [key_name(user)]", "atmos")
+		investigate_log("was turned [on ? "on" : "off"] by [key_name(user)]", INVESTIGATE_ATMOS)
 	return ..()
 
 /obj/machinery/atmospherics/binary/volume_pump/AICtrlClick(mob/living/silicon/user)
 	toggle(user)
-	investigate_log("was turned [on ? "on" : "off"] by [key_name(user)]", "atmos")
+	investigate_log("was turned [on ? "on" : "off"] by [key_name(user)]", INVESTIGATE_ATMOS)
 
 /obj/machinery/atmospherics/binary/volume_pump/AltClick(mob/living/user)
 	if(can_use_shortcut(user))
 		set_max(user)
-		investigate_log("was set to [target_pressure] kPa by [key_name(user)]", "atmos")
+		investigate_log("was set to [target_pressure] kPa by [key_name(user)]", INVESTIGATE_ATMOS)
 
 /obj/machinery/atmospherics/binary/volume_pump/AIAltClick(mob/living/silicon/user)
 	set_max(user)
-	investigate_log("was set to [target_pressure] kPa by [key_name(user)]", "atmos")
+	investigate_log("was set to [target_pressure] kPa by [key_name(user)]", INVESTIGATE_ATMOS)
 
 /obj/machinery/atmospherics/binary/volume_pump/on
 	on = TRUE
@@ -68,7 +69,6 @@ Thus, the two variables affect pump operation are set in New():
 		add_underlay(T, node2, dir)
 
 /obj/machinery/atmospherics/binary/volume_pump/process_atmos()
-	..()
 	if((stat & (NOPOWER|BROKEN)) || !on)
 		return 0
 
@@ -96,7 +96,7 @@ Thus, the two variables affect pump operation are set in New():
 		return
 
 	if(!allowed(user))
-		to_chat(user, "<span class='alert'>Access denied.</span>")
+		to_chat(user, SPAN_ALERT("Access denied."))
 		return
 
 	add_fingerprint(user)
@@ -105,10 +105,13 @@ Thus, the two variables affect pump operation are set in New():
 /obj/machinery/atmospherics/binary/volume_pump/attack_ghost(mob/user)
 	ui_interact(user)
 
-/obj/machinery/atmospherics/binary/volume_pump/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/atmospherics/binary/volume_pump/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/atmospherics/binary/volume_pump/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "AtmosPump", name, 310, 110, master_ui, state)
+		ui = new(user, src, "AtmosPump", name)
 		ui.open()
 
 /obj/machinery/atmospherics/binary/volume_pump/ui_data(mob/user)
@@ -128,7 +131,7 @@ Thus, the two variables affect pump operation are set in New():
 	switch(action)
 		if("power")
 			toggle()
-			investigate_log("was turned [on ? "on" : "off"] by [key_name(usr)]", "atmos")
+			investigate_log("was turned [on ? "on" : "off"] by [key_name(usr)]", INVESTIGATE_ATMOS)
 			return TRUE
 
 		if("max_rate")
@@ -143,20 +146,16 @@ Thus, the two variables affect pump operation are set in New():
 			transfer_rate = clamp(text2num(params["rate"]), 0 , MAX_TRANSFER_RATE)
 			. = TRUE
 	if(.)
-		investigate_log("was set to [transfer_rate] L/s by [key_name(usr)]", "atmos")
+		investigate_log("was set to [transfer_rate] L/s by [key_name(usr)]", INVESTIGATE_ATMOS)
 
 /obj/machinery/atmospherics/binary/volume_pump/power_change()
 	if(!..())
 		return
 	update_icon()
 
-/obj/machinery/atmospherics/binary/volume_pump/attackby(obj/item/W, mob/user, params)
-	if(is_pen(W))
-		rename_interactive(user, W)
-		return
-	else if(!istype(W, /obj/item/wrench))
-		return ..()
-	if(!(stat & NOPOWER) && on)
-		to_chat(user, "<span class='alert'>You cannot unwrench this [src], turn it off first.</span>")
-		return 1
+/obj/machinery/atmospherics/binary/volume_pump/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	if(is_pen(used))
+		rename_interactive(user, used)
+		return ITEM_INTERACT_COMPLETE
+
 	return ..()

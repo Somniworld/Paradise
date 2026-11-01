@@ -12,17 +12,17 @@
 	if(CQC.restraining)
 		return MARTIAL_COMBO_FAIL
 	if(!target.stat)
-		target.visible_message("<span class='warning'>[user] locks [target] into a restraining position!</span>", \
-							"<span class='userdanger'>[user] locks you into a restraining position!</span>")
+		target.visible_message(SPAN_WARNING("[user] locks [target] into a restraining position!"), \
+							SPAN_USERDANGER("[user] locks you into a restraining position!"))
 		var/stam_damage = target.getStaminaLoss()
 		switch(stam_damage)
 			if(0 to 40)
 				target.Immobilize(4 SECONDS)
-				target.adjustStaminaLoss(35)
+				target.apply_damage(35, STAMINA)
 			if(41 to 80)
 				target.Stun(6 SECONDS)
 			if(81 to 120)
-				target.adjustStaminaLoss(40)
+				target.apply_damage(40, STAMINA)
 
 		CQC.restraining = TRUE
 		addtimer(CALLBACK(CQC, TYPE_PROC_REF(/datum/martial_art/cqc, drop_restraining)), 5 SECONDS, TIMER_UNIQUE)

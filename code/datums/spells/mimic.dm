@@ -1,12 +1,11 @@
-/obj/effect/proc_holder/spell/mimic
+/datum/spell/mimic
 	name = "Mimic"
-	desc =  "Learn a new form to mimic or become one of your known forms"
+	desc = "Learn a new form to mimic or become one of your known forms."
 	clothes_req = FALSE
 	base_cooldown = 3 SECONDS
-	action_icon_state = "genetic_morph"
-	selection_activated_message = "<span class='sinister'>Click on a target to remember it's form. Click on yourself to change form.</span>"
-	create_attack_logs = FALSE
 	action_icon_state = "morph_mimic"
+	selection_activated_message = SPAN_SINISTER("Click on a target to remember it's form. Click on yourself to change form.")
+	create_attack_logs = FALSE
 	/// Which form is currently selected
 	var/datum/mimic_form/selected_form
 	/// Which forms the user can become
@@ -19,20 +18,19 @@
 	var/perfect_disguise = FALSE
 
 	var/static/list/black_listed_form_types = list(
-		/obj/screen,
+		/atom/movable/screen,
 		/obj/singularity,
 		/obj/effect,
 		/mob/living/simple_animal/hostile/megafauna,
-		/atom/movable/lighting_object,
 		/obj/machinery/dna_vault,
 		/obj/machinery/power/bluespace_tap,
-		/obj/structure/sign/barsign,
+		/obj/machinery/barsign,
 		/obj/machinery/atmospherics/unary/cryo_cell,
 		/obj/machinery/gravity_generator
 	)
 
 
-/obj/effect/proc_holder/spell/mimic/create_new_targeting()
+/datum/spell/mimic/create_new_targeting()
 	var/datum/spell_targeting/click/T = new
 	T.include_user = TRUE // To change forms
 	T.allowed_type = /atom/movable
@@ -40,18 +38,18 @@
 	T.click_radius = -1
 	return T
 
-/obj/effect/proc_holder/spell/mimic/valid_target(atom/target, user)
+/datum/spell/mimic/valid_target(atom/target, user)
 	if(is_type_in_list(target, black_listed_form_types))
 		return FALSE
 	if(istype(target, /atom/movable))
 		var/atom/movable/AM = target
 		if(AM.bound_height > world.icon_size || AM.bound_width > world.icon_size)
 			return FALSE // No multitile structures
-	if(user != target && istype(target, /mob/living/simple_animal/hostile/morph))
+	if(user != target && ismorph(target))
 		return FALSE
 	return ..()
 
-/obj/effect/proc_holder/spell/mimic/cast(list/targets, mob/user)
+/datum/spell/mimic/cast(list/targets, mob/user)
 	var/atom/movable/A = targets[1]
 	if(A == user)
 		INVOKE_ASYNC(src, PROC_REF(pick_form), user)
@@ -59,17 +57,17 @@
 
 	INVOKE_ASYNC(src, PROC_REF(remember_form), A, user)
 
-/obj/effect/proc_holder/spell/mimic/proc/remember_form(atom/movable/A, mob/user)
+/datum/spell/mimic/proc/remember_form(atom/movable/A, mob/user)
 	if(A.name in available_forms)
-		to_chat(user, "<span class='warning'>[A] is already an available form.</span>")
+		to_chat(user, SPAN_WARNING("[A] is already an available form."))
 		revert_cast(user)
 		return
 	if(length(available_forms) >= max_forms)
-		to_chat(user, "<span class='warning'>You start to forget the form of [available_forms[next_override_index]] to learn a new one.</span>")
+		to_chat(user, SPAN_WARNING("You start to forget the form of [available_forms[next_override_index]] to learn a new one."))
 
-	to_chat(user, "<span class='sinister'>You start remembering the form of [A].</span>")
+	to_chat(user, SPAN_SINISTER("You start remembering the form of [A]."))
 	if(!do_after(user, 2 SECONDS, FALSE, user))
-		to_chat(user, "<span class='warning'>You lose focus.</span>")
+		to_chat(user, SPAN_WARNING("You lose focus."))
 		return
 
 	// Forget the old form if needed
@@ -81,11 +79,11 @@
 			next_override_index = 1
 
 	available_forms[A.name] = new /datum/mimic_form(A, user)
-	to_chat(user, "<span class='sinister'>You learn the form of [A].</span>")
+	to_chat(user, SPAN_SINISTER("You learn the form of [A]."))
 
-/obj/effect/proc_holder/spell/mimic/proc/pick_form(mob/user)
+/datum/spell/mimic/proc/pick_form(mob/user)
 	if(!length(available_forms) && !selected_form)
-		to_chat(user, "<span class='warning'>No available forms. Learn more forms by using this spell on other objects first.</span>")
+		to_chat(user, SPAN_WARNING("No available forms. Learn more forms by using this spell on other objects first."))
 		revert_cast(user)
 		return
 
@@ -94,22 +92,22 @@
 		forms += "Original Form"
 
 	forms += available_forms.Copy()
-	var/what = input(user, "Which form do you want to become?", "Mimic") as null|anything in forms
+	var/what = tgui_input_list(user, "Which form do you want to become?", "Mimic", forms)
 	if(!what)
-		to_chat(user, "<span class='notice'>You decide against changing forms.</span>")
+		to_chat(user, SPAN_NOTICE("You decide against changing forms."))
 		revert_cast(user)
 		return
 
 	if(what == "Original Form")
 		restore_form(user)
 		return
-	to_chat(user, "<span class='sinister'>You start becoming [what].</span>")
+	to_chat(user, SPAN_SINISTER("You start becoming [what]."))
 	if(!do_after(user, 2 SECONDS, FALSE, user))
-		to_chat(user, "<span class='warning'>You lose focus.</span>")
+		to_chat(user, SPAN_WARNING("You lose focus."))
 		return
 	take_form(available_forms[what], user)
 
-/obj/effect/proc_holder/spell/mimic/proc/take_form(datum/mimic_form/form, mob/user)
+/datum/spell/mimic/proc/take_form(datum/mimic_form/form, mob/user)
 	var/old_name = "[user]"
 	if(ishuman(user))
 		// Not fully finished yet
@@ -120,7 +118,8 @@
 		user.transform = initial(user.transform)
 		user.pixel_y = initial(user.pixel_y)
 		user.pixel_x = initial(user.pixel_x)
-		user.layer = MOB_LAYER // Avoids weirdness when mimicing something below the vent layer
+		user.layer = MOB_LAYER // Avoids weirdness when mimicking something below the vent layer
+		user.density = form.density
 
 	playsound(user, "bonebreak", 75, TRUE)
 	show_change_form_message(user, old_name, "[user]")
@@ -132,16 +131,21 @@
 
 	selected_form = form
 
-/obj/effect/proc_holder/spell/mimic/proc/show_change_form_message(mob/user, old_name, new_name)
-	user.visible_message("<span class='warning'>[old_name] contorts and slowly becomes [new_name]!</span>", "<span class='sinister'>You take form of [new_name].</span>", "You hear loud cracking noises!")
+/datum/spell/mimic/proc/show_change_form_message(mob/user, old_name, new_name)
+	user.visible_message(
+		SPAN_WARNING("[old_name] contorts and slowly becomes [new_name]!"),
+		SPAN_SINISTER("You take the form of [new_name]."),
+		SPAN_WARNING("You hear loud cracking noises!")
+	)
 
-/obj/effect/proc_holder/spell/mimic/proc/restore_form(mob/user, show_message = TRUE)
+/datum/spell/mimic/proc/restore_form(mob/user, show_message = TRUE)
 	selected_form = null
 	var/old_name = "[user]"
 
 	user.cut_overlays()
 	user.icon = initial(user.icon)
 	user.icon_state = initial(user.icon_state)
+	user.density = initial(user.density)
 	if(ishuman(user))
 		var/mob/living/carbon/human/H = user
 		H.name_override = null
@@ -157,22 +161,30 @@
 
 	UnregisterSignal(user, list(COMSIG_PARENT_EXAMINE, COMSIG_MOB_DEATH))
 
-/obj/effect/proc_holder/spell/mimic/proc/show_restore_form_message(mob/user, old_name, new_name)
-	user.visible_message("<span class='warning'>[old_name] shakes and contorts and quickly becomes [new_name]!</span>", "<span class='sinister'>You take return to your normal self.</span>", "You hear loud cracking noises!")
+/datum/spell/mimic/proc/show_restore_form_message(mob/user, old_name, new_name)
+	user.visible_message(
+		SPAN_WARNING("[old_name] shakes and contorts and quickly becomes [new_name]!"),
+		SPAN_SINISTER("You return to your normal self."),
+		SPAN_WARNING("You hear loud cracking noises!")
+	)
 
-/obj/effect/proc_holder/spell/mimic/proc/examine_override(datum/source, mob/user, list/examine_list)
+/datum/spell/mimic/proc/examine_override(datum/source, mob/user, list/examine_list)
 	examine_list.Cut()
 	examine_list += selected_form.examine_text
 	if(!perfect_disguise && get_dist(user, source) <= 3)
-		examine_list += "<span class='warning'>It doesn't look quite right...</span>"
+		examine_list += SPAN_WARNING("It doesn't look quite right...")
 
-/obj/effect/proc_holder/spell/mimic/proc/on_death(mob/user, gibbed)
+/datum/spell/mimic/proc/on_death(mob/user, gibbed)
 	if(!gibbed)
 		restore_form(user, FALSE)
 		show_death_message(user)
 
-/obj/effect/proc_holder/spell/mimic/proc/show_death_message(mob/user)
-	user.visible_message("<span class='warning'>[user] shakes and contorts as [user.p_they()] die[user.p_s()], returning to [user.p_their()] true form!</span>", "<span class='deadsay'>Your disguise fails as your life forces drain away.</span>", "You hear loud cracking noises followed by a thud!")
+/datum/spell/mimic/proc/show_death_message(mob/user)
+	user.visible_message(
+		SPAN_WARNING("[user] shakes and contorts as [user.p_they()] die[user.p_s()], returning to [user.p_their()] true form!"),
+		SPAN_DEADSAY("Your disguise fails as your life forces drain away."),
+		SPAN_WARNING("You hear loud cracking noises followed by a thud!")
+	)
 
 
 /datum/mimic_form
@@ -182,41 +194,52 @@
 	var/examine_text
 	/// What the name of the form is
 	var/name
+	/// If the form has density
+	var/density
 
 /datum/mimic_form/New(atom/movable/form, mob/user)
 	appearance = form.appearance
 	examine_text = form.examine(user)
 	name = form.name
+	density = form.density
 
-
-/obj/effect/proc_holder/spell/mimic/morph
+/datum/spell/mimic/morph
 	action_background_icon_state = "bg_morph"
 
-/obj/effect/proc_holder/spell/mimic/morph/create_new_handler()
+/datum/spell/mimic/morph/create_new_handler()
 	var/datum/spell_handler/morph/H = new
 	return H
 
-/obj/effect/proc_holder/spell/mimic/morph/valid_target(atom/target, user)
-	if(target != user && istype(target, /mob/living/simple_animal/hostile/morph))
+/datum/spell/mimic/morph/valid_target(atom/target, user)
+	if(target != user && ismorph(target))
 		return FALSE
 	return ..()
 
-/obj/effect/proc_holder/spell/mimic/morph/take_form(datum/mimic_form/form, mob/living/simple_animal/hostile/morph/user)
+/datum/spell/mimic/morph/take_form(datum/mimic_form/form, mob/living/simple_animal/hostile/morph/user)
 	..()
 	user.assume()
 
-/obj/effect/proc_holder/spell/mimic/morph/restore_form(mob/living/simple_animal/hostile/morph/user, show_message = TRUE)
+/datum/spell/mimic/morph/restore_form(mob/living/simple_animal/hostile/morph/user, show_message = TRUE)
 	..()
 	user.restore()
 
-/obj/effect/proc_holder/spell/mimic/morph/show_change_form_message(mob/user, old_name, new_name)
-	user.visible_message("<span class='warning'>[old_name] suddenly twists and changes shape, becoming a copy of [new_name]!</span>", \
-					"<span class='notice'>You twist your body and assume the form of [new_name].</span>")
+/datum/spell/mimic/morph/show_change_form_message(mob/user, old_name, new_name)
+	user.visible_message(
+		SPAN_WARNING("[old_name] suddenly twists and changes shape, becoming a copy of [new_name]!"),
+		SPAN_NOTICE("You twist your body and assume the form of [new_name]."),
+		SPAN_WARNING("You hear loud cracking noises!")
+	)
 
-/obj/effect/proc_holder/spell/mimic/morph/show_restore_form_message(mob/user, old_name, new_name)
-	user.visible_message("<span class='warning'>[old_name] suddenly collapses in on itself, dissolving into a pile of green flesh!</span>", \
-					"<span class='notice'>You reform to your normal body.</span>")
+/datum/spell/mimic/morph/show_restore_form_message(mob/user, old_name, new_name)
+	user.visible_message(
+		SPAN_WARNING("[old_name] suddenly collapses in on itself, dissolving into a pile of green flesh!"),
+		SPAN_NOTICE("You reform to your normal body."),
+		SPAN_WARNING("You hear loud cracking noises followed by a thud!")
+	)
 
-/obj/effect/proc_holder/spell/mimic/morph/show_death_message(mob/user)
-	user.visible_message("<span class='warning'>[user] twists and dissolves into a pile of green flesh!</span>", \
-						"<span class='userdanger'>Your skin ruptures! Your flesh breaks apart! No disguise can ward off de--</span>")
+/datum/spell/mimic/morph/show_death_message(mob/user)
+	user.visible_message(
+		SPAN_WARNING("[user] twists and dissolves into a pile of green flesh!"),
+		SPAN_USERDANGER("Your skin ruptures! Your flesh breaks apart! No disguise can ward off de--"),
+		SPAN_WARNING("You hear loud cracking noises followed by a thud!")
+	)

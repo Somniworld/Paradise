@@ -3,8 +3,6 @@
 	desc = "Gambling for the antisocial."
 	icon = 'icons/obj/economy.dmi'
 	icon_state = "slots-off"
-	anchored = TRUE
-	density = TRUE
 
 	var/plays = 0
 	var/working = FALSE
@@ -38,10 +36,13 @@
 	UnregisterSignal(user_account, COMSIG_PARENT_QDELETING)
 	user_account = null
 
-/obj/machinery/economy/slot_machine/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = 0, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/economy/slot_machine/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/economy/slot_machine/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "SlotMachine", name, 350, 200, master_ui, state)
+		ui = new(user, src, "SlotMachine", name)
 		ui.open()
 
 /obj/machinery/economy/slot_machine/ui_data(mob/user)
@@ -137,16 +138,17 @@
 */
 /obj/machinery/economy/slot_machine/emag_act(user)
 	if(emagged)
-		to_chat(user, "<span class='notice'>[src] is unresponsive. It is probably already modified.</span>")
+		to_chat(user, SPAN_NOTICE("[src] is unresponsive. It is probably already modified."))
 		return
 	playsound(loc, 'sound/effects/sparks4.ogg', 75, 1)
 	emagged = TRUE
-	to_chat(user, "<span class='notice'>You engage the reverse-gripping mechanism on the machine's handle.</span>")
+	to_chat(user, SPAN_NOTICE("You engage the reverse-gripping mechanism on the machine's handle."))
 	log_game("[key_name(user)] emagged [src]")
+	return TRUE
 
 /// The spinning and throwing away is handled here, with a possible call to winning
 /obj/machinery/economy/slot_machine/proc/emagged_spinning(mob/living/user)
-	to_chat(user, "<span class='danger'>As you grip the handle of the machine, it grips back at you, and starts to wildly spin you around!</span>")
+	to_chat(user, SPAN_DANGER("As you grip the handle of the machine, it grips back at you, and starts to wildly spin you around!"))
 	user.SpinAnimation(speed = 2, loops = 6)
 	emagged_game_in_progress = TRUE
 
@@ -161,7 +163,7 @@
 
 	// No cheesing with buckling ourselves, this spinning is too fast for seatbelts
 	if(user.buckled)
-		user.buckled.unbuckle_mob(user, force = TRUE)
+		user.unbuckle(force = TRUE)
 
 	// Check if the machine and the user are still next to each other
 	if(!do_after(user, delay = 1.2 SECONDS, target = src, use_default_checks = FALSE))
@@ -170,7 +172,7 @@
 		return
 
 	// Find the right direction and throw the user away from the machine
-	to_chat(user, "<span class='userdanger'>The handle suddenly lets you go!</span>")
+	to_chat(user, SPAN_USERDANGER("The handle suddenly lets you go!"))
 	user.anchored = FALSE
 	var/user_direction = get_dir(src, user)
 	var/turf/throw_direction = get_edge_target_turf(user, user_direction)

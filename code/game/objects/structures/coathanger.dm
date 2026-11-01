@@ -6,14 +6,16 @@
 	var/obj/item/clothing/suit/coat
 	var/list/allowed = list(/obj/item/clothing/suit/storage/labcoat, /obj/item/clothing/suit/storage/det_suit)
 
-/obj/structure/coatrack/attack_hand(mob/user as mob)
-	user.visible_message("[user] takes [coat] off \the [src].", "You take [coat] off the \the [src]")
+/obj/structure/coatrack/attack_hand(mob/user)
+	if(isnull(coat))
+		return
+	user.visible_message("[user] takes [coat] off [src].", "You take [coat] off [src]")
 	if(!user.put_in_active_hand(coat))
 		coat.forceMove(get_turf(user))
 	coat = null
 	update_icon(UPDATE_OVERLAYS)
 
-/obj/structure/coatrack/attackby(obj/item/W as obj, mob/user as mob, params)
+/obj/structure/coatrack/item_interaction(mob/living/user, obj/item/W, list/modifiers)
 	var/can_hang = FALSE
 	for(var/T in allowed)
 		if(istype(W,T))
@@ -24,10 +26,10 @@
 		user.drop_item(src)
 		coat.forceMove(src)
 		update_icon(UPDATE_OVERLAYS)
-		return
+		return ITEM_INTERACT_COMPLETE
 	return ..()
 
-/obj/structure/coatrack/CanPass(atom/movable/mover, turf/target, height=0)
+/obj/structure/coatrack/CanPass(atom/movable/mover, border_dir)
 	var/can_hang = FALSE
 	for(var/T in allowed)
 		if(istype(mover,T))

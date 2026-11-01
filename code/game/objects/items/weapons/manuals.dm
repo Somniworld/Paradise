@@ -20,9 +20,8 @@
 /obj/item/book/manual
 	//While piracy is a heinious deed, we don't want people uploading programmatic books into the player book DB for obvious reasons
 	copyright = TRUE
-	protected = FALSE //No reason players shouldn't write in regular manuals
 	name = "Book Manual"
-	desc = "Please make a report on the github if you somehow get ahold of one of these in-game"
+	desc = ABSTRACT_TYPE_DESC
 	summary = "This is a manual procured by Nanotrasen, it contains important information!"
 	//Pages has to be a list of strings, it will break the book otherwise
 	pages = list({"How did we get here? Anyway, if you are reading this please make a report on the Github as you should not
@@ -31,10 +30,11 @@
 /obj/item/book/manual/detective
 	name = "The Film Noir: Proper Procedures for Investigations"
 	desc = "A gumshoe's guide to find out whodunnit, howdunnit, and wheredunnit."
+	summary = "A how-to manual for basic forensic procedures and detective work."
 	icon_state ="bookDetective"
 	author = "Nanotrasen"
 	title = "The Film Noir: Proper Procedures for Investigations"
-	pages = list({"<html>
+	pages = list({"<html><meta charset='utf-8'>
 			<head>
 			<style>
 			h1 {font-size: 18px; margin: 15px 0px 5px;}
@@ -71,11 +71,12 @@
 /obj/item/book/manual/engineering_particle_accelerator
 	name = "Particle Accelerator User's Guide"
 	desc = "An engineer's guide to shooting relativistic particles out of a big gun."
+	summary = "A quick-assembly manual for the setup of high-intensity particle accelerator systems."
 	icon_state ="bookParticleAccelerator"
 	author = "Engineering Encyclopedia"
 	title = "Particle Accelerator User's Guide"
 
-	pages = list({"<html>
+	pages = list({"<html><meta charset='utf-8'>
 				<head>
 				<style>
 				h1 {font-size: 18px; margin: 15px 0px 5px;}
@@ -113,96 +114,60 @@
 
 
 /obj/item/book/manual/supermatter_engine
-	name = "Supermatter Engine User's Guide"
-	desc = "An engineer's best tool for dealing with their worst frenemy: The Supermatter."
+	name = "Supermatter Engine Anomaly Reference"
+	desc = "An engineer's best tool for dealing with their worst frenemy: The Supermatter and its anomalous behavior."
+	summary = "A quick-reference booklet on Supermatter anomalies and their effects."
 	icon_state = "bookParticleAccelerator"
-	author = "Waleed Asad"
-	title = "Supermatter Engine User's Guide"
+	author = "Vroo-Looum-Kloo"
+	title = "Supermatter Engine Anomaly Reference"
 
 	pages = list({"Engineering notes on single-stage Supermatter engine,</br>
-			-Waleed Asad</br>
+			Vroo-Looum-Kloo</br>
 
-			A word of caution, do not enter the engine room, for any reason, without radiation protection and mesons on. The status of the engine may be unpredictable even when you believe it is .off.. This is an important level of personal protection.</br></br>
+			The supermatter engine is a very powerful, yet strange method of power generation. This guide will serve as a pocket reference for the myriad of anomalous behaviors it may exhibit throughout your shift. Below is a table of events and their effects.</br></br></br>
 
-			The engine has two basic modes of functionality. He has observed that it is capable of both a safe level of operation and a modified, high output mode.</br></br>
+			D Class: Events that only affect certain types of NON-STANDARD setups, minimial operator intervention required. These events occur instantly and engineering will be alerted on telecomms.</br></br>
 
-			<center><b>Notes on starting the basic function mode, dubbed .Heat-Primary Mode..</b></center></br></br>
+			D-1: About 2000 moles of nitrous oxide are released by the crystal.</br>
+			D-2: About 2000 moles of nitrogen are released by the crystal.</br>
+			D-3: About 2000 moles of CO2 are released by the crystal.</br>
+			D-4: About 2000 moles of hydrogen are released by the crystal.</br></br></br>
 
-			1. Prepare collector arrays. This is done standard to any text on their function by wrenching them down, filling six plasma tanks with a plasma canister, and inserting the tank into the collectors one by one. Finally, initialize each collector.</br></br>
+			C Class: Events with mild effects to standard setups. Operator intervention MAY be required. Engineering will be alerted on telecomms.</br></br>
+			C-1: 2000 moles of oxygen are released by the crystal.</br>
+			C-2: 2000 moles of plasma are released by the crystal.</br>
+			C-3: The temperature at which the engine starts to lose integrity is lowered for a few minutes.</br>
+			C-4: 2000 moles of hydrogen are released by the crystal.</br>
+			C-5: 2000 moles of water vapor are released by the crystal.</br></br></br>
 
-			2. Prepare gas system. Before introducing any gas to the Supermatter engine room, it is important to remember the small but vital steps to preparing this section. First, set the input gas pump and output gas flow pump to 4500, or maximum flow. Second, switch the digital switching valve into the .up. position, in order to circulate the gas back toward the coolers and collectors.</br></br>
+			B Class: Events with significant effects to standard setups. Action may need to be taken to prevent a delamination event.</br></br>
+			B-1: The amount of plasma and O2 released by the engine is doubled for a few minutes.</br>
+			B-2: The amount of heat released by the engine is increased for a few minutes.</br>
+			B-3: The engine's EER is raised slightly above critically for several minutes, regardless of outside factors.</br>
+			B-4: The engine's EER spikes, leading to the likely outcome of the engine arcing.</br></br></br>
 
-			3. Apply N2 gas. Retrieve the two N2 canisters from storage and bring them to the engine room. Attach one of them to the input section of the engine gas system located next to the collectors. Keep it attached until the N2 pressure is low enough to turn the canister light red. Replace it with the second canister to keep N2 pressure at optimal levels.</br></br>
+			A Class: Events with SEVERE effects to standard setups. Action will need to be taken to prevent a delamination event.</br></br>
+			A-1: The engine's APC is shorted due to a power spike, requiring its wires to be mended.</br>
+			A-2: The engine's air alarm resets its self as an effect of radiological interference.</br>
+			A-3: The amount of plasma and O2 released by the engine is quadrupled for a few minutes.</br>
+			A-4: The engine's integrity drops a random amount, leading to unexpected damage.</br></br>
 
-			4. Begin primary emitter burst series. This means firing a single emitter for its first four shots. It is important to move to this step quickly. The onboard SMES units may not have enough power to run the emitters if left alone too long on-station. This engine can produce enough power on its own to run the entire station, ignoring the SMES units completely, and is wired to do so.</br></br>
+			S Class events: Events that require immediate intervention and a specialized response to prevent a delamination event. Coordination with other departments is HIGHLY recommended. A warning will be broadcasted on engineering communications before these events.</br></br>
+			Arc Type: The engine's EER is raised massively several minutes, resulting it a supercritical state.</br>
+			Heat Type: The amount of heat released by the engine is massively increased for several minutes.</br>
+			Flood Type: The engine releases a large amount of plasma and oxygen, followed by a massive increase of gas output.</br>
 
-			5. Switch SMES units to primary settings. Maximize input and set the devices to automatically charge, additionally turn their outputs on if they are off unless power is to be saved (Which can be useful in case of later failures.)</br></br>
-
-			6. Begin secondary emitter burst series. Before firing the emitter again, check the power in the line with a multimeter (Do not forget electrical gloves.) The engine is running at high efficiency when the value exceeds 200,000 power units.</br></br>
-
-			7. Maintain engine power. When power in the lines gets low, add an additional emitter burst series to bring power to normal levels.</br></br></br>
-
-
-
-			<center>The second mode for running the engine uses a gas mix to produce a reaction within the Supermatter. This mode requires CE or Atmospheric help to setup. <b>This has been dubbed the .O2-Reaction Mode..</b></center></br></br>
-
-			<b><u>THIS MODE CAN CAUSE A RUNAWAY REACTION, LEADING TO CATASTROPHIC FAILURE IF NOT MAINTAINED. NEVER FORGET ABOUT THE ENGINE IN THIS MODE.</u></b></br></br>
-
-			Additionally, this mode can be used for what is called a .Cold Start.. If the station has no power in the SMES to run the emitters, using this mode will allow enough power output to run them, and quickly reach an acceptable level of power output.</br></br>
-
-			1. Prepare collector arrays. This is done standard to any text on their function by wrenching them down, filling six plasma tanks with a plasma canister, and inserting the tank into the collectors one by one. Finally, initialize each collector.</br></br>
-
-			2. Prepare gas system. Before introducing any gas to the Supermatter engine room, it is important to remember the small but vital steps to preparing this section. First, set the input gas pump and output gas flow pump to 4500, or maximum flow. Second, switch the digital switching valve into the .up. position, in order to circulate the gas back toward the coolers and collectors.</br></br>
-
-			3. Modify the engine room filters. Unlike the Heat-Primary Mode, it is important to change the filters attached to the gas system to stop filtering O2, and start filtering Carbon Molecules. O2-Reaction Mode produces far more plasma than Heat-Primary, therefor filtering it off is essential.</br></br>
-
-			4. Switch SMES units to primary settings. Maximize input and set the devices to automatically charge, additionally turn their outputs on if they are off unless power is to be saved (Which can be useful in case of later failures.) If you check the power in the system lines at this point you will find that it is constantly going up. Indeed, with just the addition of O2 to the Supermatter, it will begin outputting power.</br></br>
-
-			5. Begin primary emitter burst series. Fire a single emitter for a series of four pulses, or a single series, and turn it off. Do not over power the Supermatter. The reaction is self sustaining and propagating. As long as O2 is in the chamber, it will continue outputting MORE power.</br></br>
-
-			6. Maintain follow up operations. Remember to check the temp of the core gas and switch to the Heat-Primary function, or vent the core room when problems begin if required.</br></br>
-
-			Notes on Supermatter Reaction Function and Drawbacks-</br></br>
-
-			After several hours of observation an interesting phenomenon was witnessed. The Supermatter undergoes a constant self-sustaining reaction when given an extremely high O2 concentration. Anything about 80% or higher typically will cause this reaction. The Supermatter will continue to react whenever this gas mix is in the same room as the Supermatter.</br></br>
-
-			To understand why O2-Reaction mode is dangerous, the core principle of the Supermatter must be understood. The Supermatter emits three things when .not safe,. that is any time it is giving off power. These things are:</br></br>
-
-			*Radiation (which is converted into power by the collectors,)</br>
-			*Heat (which is removed via the gas exchange system and coolers,)</br>
-			*External gas (in the form of plasma and O2.)</br>
-
-			When in Heat-Primary mode, far more heat and plasma are produced than radiation. In O2-Reaction mode, very little heat and only moderate amounts of plasma are produced, however HUGE amounts of energy leaving the Supermatter is in the form of radiation.</br></br>
-
-			The O2-Reaction engine mode has a single drawback which has been eluded to more than once so far and that is very simple. The engine room will continue to grow hotter as the constant reaction continues. Eventually, there will be what he calls the .critical gas mix.. This is the point at which the constant adding of plasma to the mix of air around the Supermatter changes the gas concentration to below the tolerance. When this happens, two things occur. First, the Supermatter switches to its primary mode of operation where in huge amounts of heat are produced by the engine rather than low amounts with high power output. Second, an uncontrollable increase in heat within the Supermatter chamber will occur. This will lead to a spark-up, igniting the plasma in the Supermatter chamber, wildly increasing both pressure and temperature.</br></br>
-
-			While the O2-Reaction mode is dangerous, it does produce heavy amounts of energy. Consider using this mode only in short amounts to fill the SMES, and switch back later in the shift to keep things flowing normally.</br></br>
-
-
-			Notes on Supermatter Containment and Emergency Procedures-</br></br>
-
-			While a constant vigil on the Supermatter is not required, regular checkups are important. Verify the temp of gas leaving the Supermatter chamber for unsafe levels, and ensure that the plasma in the chamber is at a safe concentration. Of course, also make sure the chamber is not on fire. A fire in the core chamber is very difficult to put out. As any Toxin scientist can tell you, even low amounts of plasma can burn at very high temperatures. This burning creates a huge increase in pressure and more importantly, temperature of the crystal itself.</br></br>
-
-			The Supermatter is strong, but not invincible. When the Supermatter is heated too much, its crystal structure will attempt to liquify. The change in atomic structure of the Supermatter leads to a single reaction, a massive explosion. The computer chip attached to the Supermatter core will warn the station when stability is threatened. It will then offer a second warning, when things have become dangerously close to total destruction of the core.</br></br>
-
-			Located both within the supermatter monitoring room and engine room is the vent control button. This button allows the Core Vent Controls to be accessed, venting the room to space. Remember however, that this process takes time. If a fire is raging, and the pressure is higher than fathomable, it will take a great deal of time to vent the room. Also located in the supermatter monitoring room is the emergency core eject button. A new core can be ordered from cargo. It is often not worth the lives of the crew to hold on to it, not to mention the structural damage. However, if by some mistake the Supermatter is pushed off or removed from the mass ejector it sits on, manual reposition will be required. Which is very dangerous and often leads to death.</br></br>
-
-			The Supermatter is extremely dangerous. More dangerous than people give it credit for. It can destroy you in an instant, without hesitation, reducing you to a pile of dust. When working closely with Supermatter it is.. suggested to get a genetic backup and do not wear any items of value to you. The Supermatter core can be pulled if grabbed properly by the base, but <b>pushing is not possible.</b></br></br></br>
-
-
-			In Closing-</br></br>
-
-			Remember that the Supermatter is dangerous, and the core is dangerous still. Venting the core room is always an option if you are even remotely worried, utilizing Atmospherics to properly ready the room once more for core function. It is always a good idea to check up regularly on the temperature of gas leaving the chamber, as well as the power in the system lines. Lastly, once again remember, never touch the Supermatter with anything. Ever.</br></br>
-
-			-Waleed Asad, Senior Engine Technician."})
+			In the event that an anomaly NOT on this list presents itself, contact your local Nanotrasen Engineering Officer as soon as possible.</br>
+			-Vroo-Looum-Kloo, Senior Engine Technician."})
 
 /obj/item/book/manual/atmospipes
 	name = "Pipes and You: Getting To Know Your Scary Tools"
-	desc = "A plumber's guide on how to efficiently plumb and clean out old drone shells."
+	desc = "A plumber's guide on how to properly identify a pipe."
+	summary = "A handy encyclopedia on the many different flavors of pipe and device available to Atomspherics."
 	icon_state = "pipingbook"
 	author = "Maria Crash, Senior Atmospherics Technician"
 	title = "Pipes and You: Getting To Know Your Scary Tools"
-	pages = list({"<html>
+	pages = list({"<html><meta charset='utf-8'>
 				<head>
 				<style>
 				h1 {font-size: 18px; margin: 15px 0px 5px;}
@@ -223,70 +188,74 @@
 					<li><a href="#HES">Heat Exchange Systems</a></li>
 					<li><a href="#Final">Final Checks</a></li>
 				</ol>
-				<br><BR>
-				<h1><a name="Forward"><U><B>HOW TO NOT SUCK QUITE SO HARD AT ATMOSPHERICS</B></U></a></h1><BR>
-				<I>Or: What the fuck does a "passive gate" do?</I><BR><BR>
+				<br><br>
+				<h1><a name="Forward"><u><b>HOW TO NOT SUCK QUITE SO HARD AT ATMOSPHERICS</b></u></a></h1><br>
+				<i>Or: What the fuck does a "passive gate" do?</i><br><br>
 				Alright. It has come to my attention that a variety of people are unsure of what a "pipe" is and what it does.
 				Apparently there is an unnatural fear of these arcane devices and their "gases". Spooky, spooky. So,
 				this will tell you what every device constructable by an ordinary pipe dispenser within atmospherics actually does.
 				You are not going to learn what to do with them to be the super best person ever, or how to play guitar with passive gates,
-				or something like that. Just what stuff does.<BR><BR>
-				<h1><a name="Basic"><B>Basic Pipes</B></a></h1><BR>
-				<I>The boring ones.</I><BR>
-				TMost ordinary pipes are pretty straightforward. They hold gas. If gas is moving in a direction for some reason, gas will flow in that direction.
-				That's about it. Even so, here's all of your wonderful pipe options.<BR>
-				<li><I>Straight pipes:</I> They're pipes. One-meter sections. Straight line. Pretty simple. Just about every pipe and device is based around this
+				or something like that. Just what stuff does.<br><br>
+				<h1><a name="Basic"><b>Basic Pipes</b></a></h1><br>
+				<i>The boring ones.</i><br>
+				Most ordinary pipes are pretty straightforward. They hold gas. If gas is moving in a direction for some reason, gas will flow in that direction.
+				That's about it. Even so, here's all of your wonderful pipe options.<br>
+				<li><i>Straight pipes:</i> They're pipes. One-meter sections. Straight line. Pretty simple. Just about every pipe and device is based around this
 				standard one-meter size, so most things will take up as much space as one of these.</li>
-				<li><I>Bent pipes:</I> Pipes with a 90 degree bend at the half-meter mark. My goodness.</li>
-				<li><I>Pipe manifolds:</I> Pipes that are essentially a "T" shape, allowing you to connect three things at one point.</li>
-				<li><I>4-way manifold:</I> A four-way junction.</li>
-				<li><I>Pipe cap:</I> Caps off the end of a pipe. Open ends don't actually vent air, because of the way the pipes are assembled, so, uh. Use them to decorate your house or something.</li>
-				<li><I>Manual Valve:</I> A valve that will block off airflow when turned. Can't be used by the AI or cyborgs, because they don't have hands.</li>
-				<li><I>Manual T-Valve:</I> Like a manual valve, but at the center of a manifold instead of a straight pipe.</li><BR><BR>
-				<h1><a name="Insulated"><B>Insulated Pipes</B></a></h1><BR>
-				<I>Special Public Service Announcement.</I><BR>
-				Our regular pipes are already insulated. These are completely worthless. Punch anyone who uses them.<BR><BR>
-				<h1><a name="Devices"><B>Devices: </B></a></h1><BR>
-				<I>They actually do something.</I><BR>
+				<li><i>Bent pipes:</i> Pipes with a 90 degree bend at the half-meter mark. My goodness.</li>
+				<li><i>Pipe manifolds:</i> Pipes that are essentially a "T" shape, allowing you to connect three things at one point.</li>
+				<li><i>4-way manifold:</i> A four-way junction.</li>
+				<li><i>Pipe cap:</i> Caps off the end of a pipe. Open ends don't actually vent gas, because of the way the pipes are assembled, so, uh. Use them to decorate your house or something.</li>
+				<li><i>Manual/Digital Valves:</i> A valve that will block off gas flow when turned. Manual valves can't be used by the AI or cyborgs because they don't have hands, but they can access digital valves.</li>
+				<li><i>Manual/Digital T-Valves:</i> Like a straight valve, but at the center of a manifold instead of a straight pipe, allowing you to swap between two different pipe networks.</li><BR><BR>
+				<h1><a name="Insulated"><b>Insulated Pipes</b></a></h1><br>
+				<i>Special Public Service Announcement.</i><br>
+				Our regular pipes are already insulated. These are completely worthless. Punch anyone who uses them.<br><br>
+				<h1><a name="Devices"><b>Devices: </b></a></h1><br>
+				<i>They actually do something.</i><br>
 				This is usually where people get frightened, </font><font face="Verdana" color=black>afraid, and start calling on their gods and/or cowering in fear. Yes, I can see you doing that right now.
-				Stop it. It's unbecoming. Most of these are fairly straightforward.<BR>
-				<li><I>Gas Pump:</I> Take a wild guess. It moves gas in the direction it's pointing (marked by the red line on one end). It moves it based on pressure, the maximum output being 4500 kPa (kilopascals).
+				Stop it. It's unbecoming. Most of these are fairly straightforward.<br>
+				<li><i>Gas Pump:</i> Take a wild guess. It moves gas in the direction it's pointing (marked by the red line on one end). It moves it based on pressure, the maximum output being 4500 kPa (kilopascals).
 				Ordinary atmospheric pressure, for comparison, is 101.3 kPa, and the minimum pressure of room-temperature pure oxygen needed to not suffocate in a matter of minutes is 16 kPa
 				(though 18 is preferred using internals, for various reasons).</li>
-				<li><I>Volume pump:</I> This pump goes based on volume, instead of pressure, and the possible maximum pressure it can create in the pipe on the receiving end is double the gas pump because of this,
+				<li><i>Volume pump:</i> This pump goes based on volume, instead of pressure, and the possible maximum pressure it can create in the pipe on the receiving end is double the gas pump because of this,
 				clocking in at an incredible 9000 kPa. If a pipe with this is destroyed or damaged, and this pressure of gas escapes, it can be incredibly dangerous depending on the size of the pipe filled.
 				Don't hook this to the distribution loop, or you will make babies cry and the Chief Engineer brutally beat you.</li>
-				<li><I>Passive gate:</I> This is essentially a cap on the pressure of gas allowed to flow in a specific direction.
+				<li><i>Passive gate:</i> This is essentially a cap on the pressure of gas allowed to flow in a specific direction.
 				When turned on, instead of actively pumping gas, it measures the pressure flowing through it, and whatever pressure you set is the maximum: it'll cap after that.
-				In addition, it only lets gas flow one way. The direction the gas flows is opposite the red handle on it, which is confusing to people used to the red stripe on pumps pointing the way.</li>
-				<li><I>Unary vent:</I> The basic vent used in rooms. It pumps gas into the room, but can't suck it back out. Controlled by the room's air alarm system.</li>
-				<li><I>Scrubber:</I> The other half of room equipment. Filters air, and can suck it in entirely in what's called a "panic siphon". Actvating a panic siphon without very good reason will kill someone. Don't do it.</li>
-				<li><I>Meter:</I> A little box with some gagues and numbers. Fasten it to any pipe or manifold, and it'll read you the pressure in it. Very useful.</li>
-				<li><I>Gas mixer:</I> Two sides are input, one side is output. Mixes the gases pumped into it at the ratio defined. The side perpendicular to the other two is "node 2", for reference.
+				In addition, it only lets gas flow one way. As with pumps, the red handle on a passive gate indicates the direction the passive gate will output its gas when active.</li>
+				<li><i>Unary vent:</i> The basic vent used in rooms. It pumps or siphons gas in or out of a room depending on the setting. Controlled by the room's air alarm system.</li>
+				<li><i>Scrubber:</i> The other half of room equipment. Filters air and can suck it in entirely in what's called a "panic siphon". Activating a panic siphon without very good reason will kill someone. Don't do it.
+				Scrubbers also have an extended mode that can be enabled to expand the range and increase the amount of gas being filtered.</li>
+				<li><i>Passive Vent:</i> Passive vents are the lesser known cousin to Unary vents. Passive vents will exchange gas between the surrounding atmosphere and its connected pipe until the pressure between the two has reached an equilibrium.</li>
+				<li><i>Meter:</i> A little box with some gauges and numbers. Fasten it to any pipe or manifold, and it'll read you the pressure in it. Very useful.</li>
+				<li><i>Gas mixer:</i> Two sides are input, one side is output. Mixes the gases pumped into it at the ratio defined. The side perpendicular to the other two is "node 2", for reference.
 				Can output this gas at pressures from 0-4500 kPa.</li>
-				<li><I>Gas filter:</I> Essentially the opposite of a gas mixer. One side is input. The other two sides are output. One gas type will be filtered into the perpendicular output pipe,
+				<li><i>Gas filter:</i> Essentially the opposite of a gas mixer. One side is input. The other two sides are output. The selected gas type will be filtered into the perpendicular output pipe,
 				the rest will continue out the other side. Can also output from 0-4500 kPa.</li>
-				<h1><a name="HES"><B>Heat Exchange Systems</B></a></h1><BR>
-				<I>Will not set you on fire.</I><BR>
+				<h1><a name="HES"><b>Heat Exchange Systems</b></a></h1><br>
+				<i>Will not set you on fire.</i><br>
 				These systems are used to transfer heat only between two pipes. They will not move gases or any other element, but will equalize the temperature (eventually). Note that because of how gases work (remember: pv=nRt),
-				a higher temperature will raise pressure, and a lower one will lower temperature.<BR>
-				<li><I>Pipe:</I> This is a pipe that will exchange heat with the surrounding atmosphere. Place in fire for superheating. Place in space for supercooling.</li>
-				<li><I>Bent Pipe:</I> Take a wild guess.</li>
-				<li><I>Junction:</I><I>Junction:</I>The point where you connect your normal pipes to heat exchange pipes. Not necessary for heat exchangers, but necessary for H/E pipes/bent pipes.</li>
-				<li><I>Heat Exchanger:</I> These funky-looking bits attach to an open pipe end. Put another heat exchanger directly across from it, and you can transfer heat across two pipes without having to have the gases touch.
+				a higher temperature will raise pressure, and a lower one will lower temperature.<br>
+				<li><i>Pipe:</i> This is a pipe that will exchange heat with the surrounding atmosphere. Place in a fire for superheating. Place in space for supercooling.</li>
+				<li><i>Bent Pipe:</i> Take a wild guess.</li>
+				<li><i>Junction:</i><i>Junction:</i>The point where you connect your normal pipes to heat exchange pipes. Not necessary for heat exchangers, but necessary for H/E pipes/bent pipes.</li>
+				<li><i>Heat Exchanger:</i> These funky-looking bits attach to an open pipe end. Put another heat exchanger directly across from it, and you can transfer heat across two pipes without having to have the gases mix.
 				This normally shouldn't exchange with the ambient air, despite being totally exposed. Just don't ask questions...</li><BR>
-				That's about it for pipes. Go forth, armed with this knowledge, and try not to break, burn down, or kill anything. Please.</font>
+				<h1><a name="HES"><b>Final Checks</b></a></h1><br>
+				That's about it for pipes. Remember to turn your magboots on and keep a fire extinguisher near. Go forth, armed with this knowledge, and try not to break, burn down, or kill anything. Please.</font>
 				</body>
 				</html>
 			"})
 
 /obj/item/book/manual/evaguide
 	name = "EVA Gear and You: Not Spending All Day Inside"
-	desc = "An enterprising explorer's expedition explainer. Helmet not included!"
+	desc = "An outdated guidebook outlining the ups and downs of various pieces of EVA gear. Considering it references hardsuits, it must be a decade old at the least."
+	summary = "A beginner's guide to the pros and cons of various suit classes."
 	icon_state = "evabook"
 	author = "Maria Crash, Senior Atmospherics Technician"
 	title = "EVA Gear and You: Not Spending All Day Inside"
-	pages = list({"<html>
+	pages = list({"<html><meta charset='utf-8'>
 				<head>
 				<style>
 				h1 {font-size: 18px; margin: 15px 0px 5px;}
@@ -343,11 +312,12 @@
 /obj/item/book/manual/engineering_singularity_safety
 	name = "Singularity Safety in Special Circumstances"
 	desc = "A sufficiently succinct suppliment to securing singularities."
+	summary = "An easily digestable field guide for singularity-related emergencies."
 	icon_state ="bookEngineeringSingularitySafety"
 	author = "Engineering Encyclopedia"
 	title = "Singularity Safety in Special Circumstances"
 
-	pages = list({"<html>
+	pages = list({"<html><meta charset='utf-8'>
 				<head>
 				<style>
 				h1 {font-size: 18px; margin: 15px 0px 5px;}
@@ -389,13 +359,14 @@
 				"})
 
 /obj/item/book/manual/medical_cloning
-	name = "Cloning techniques of the 26th century"
-	desc = "A clinical explanation on how to resurrect your patients."
-	icon_state ="bookCloning"
-	author = "Medical Journal, volume 3"
-	title = "Cloning techniques of the 26th century"
+	name = "Introduction to Cloning"
+	desc = "A guide covering the basics of cloning."
+	summary = "A step-by-step guide to each part of the cloning process."
+	icon_state = "bookCloning"
+	author = "Bioarchitect for the Pillars of Creation" //this is a valid nian name, right?
+	title = "Introduction to Cloning"
 
-	pages = list({"<html>
+	pages = list({"<html><meta charset='utf-8'>
 				<head>
 				<style>
 				h1 {font-size: 18px; margin: 15px 0px 5px;}
@@ -407,72 +378,218 @@
 				</head>
 				<body>
 
-				<H3>How to Clone People</H3>
-				So theres 50 dead people lying on the floor, chairs are spinning like no tomorrow and you havent the foggiest idea of what to do? Not to worry! This guide is intended to teach you how to clone people and how to do it right, in a simple step-by-step process! If at any point of the guide you have a mental meltdown, genetics probably isnt for you and you should get a job-change as soon as possible before youre sued for malpractice.
+				<h3>How to Clone People</h3>
+				Picture the scene: there's five corpses surrounding you, the Chief Medical Officer is yelling something \
+				about terror spiders into their radio, and you only graduated medical school last week. What are you supposed to do? <br> \
+				Well, Thinktronics Corporation is proud to present you the new and improved TTC-5601 cloning device - capable of \
+				economically resuscitating even the most damaged of bodies. What follows is a guide on how to use this newer model \
+				of cloning machine and where it differs from previous models.
 
 				<ol>
-					<li><a href='#1'>Acquire body</a></li>
-					<li><a href='#2'>Strip body</a></li>
-					<li><a href='#3'>Put body in cloning machine</a></li>
-					<li><a href='#4'>Scan body</a></li>
-					<li><a href='#5'>Clone body</a></li>
-					<li><a href='#6'>Get clean Structurel Enzymes for the body</a></li>
-					<li><a href='#7'>Put body in morgue</a></li>
-					<li><a href='#8'>Await cloned body</a></li>
-					<li><a href='#9'>Use the clean SW injector</a></li>
-					<li><a href='#10'>Give person clothes back</a></li>
-					<li><a href='#11'>Send person on their way</a></li>
+					<li><a href='#1'>Preparation</a></li>
+					<li><a href='#2'>Load into Cloning Scanner</a></li>
+					<li><a href='#3'>Scan Patient</a></li>
+					<li><a href='#4'>Configure Device</a></li>
+					<li><a href='#5'>Clone</a></li>
+					<li><a href='#6'>Finish Procedure</a></li>
 				</ol>
 
-				<a name='1'><H4>Step 1: Acquire body</H4>
-				This is pretty much vital for the process because without a body, you cannot clone it. Usually, bodies will be brought to you, so you do not need to worry so much about this step. If you already have a body, great! Move on to the next step.
+				<a name='1'><h4>Step 1: Preparation</h4>
+				Your patient must be dead to clone them (as of the Cloning Regulatory Act of 2533). Therefore, make sure that \
+				they are deceased before proceeding, and ideally try to revive them via defibrillation! If that fails, however, \
+				you should strip them of their equipment and check to make sure the cloning pod is loaded with, at least, 250 \
+				biomass. <br>
+				If your patient has a lot of damage, it'll take a lot of biomass to clone them! If you do not have ample biomass \
+				or simply want to conserve it, try to tend to the cadaver's wounds before proceeding. In addition, fixing broken \
+				bones and internal bleeds via cloning will consume Osseous Reagent and Sanguine Reagent respectively - these are \
+				both much harder to replenish than biomass, so consider being polite to your chemists and fixing these via \
+				surgery instead.
 
-				<a name='2'><H4>Step 2: Strip body</H4>
-				The cloning machine does not like abiotic items. What this means is you cant clone anyone if theyre wearing clothes, so take all of it off. If its just one person, its courteous to put their possessions in the closet. If you have about seven people awaiting cloning, just leave the piles where they are, but dont mix them around and for Gods sake dont let people in to steal them.
+				<a name='2'><h4>Step 2: Load into Cloning Scanner</h4>
+				After stripping your patient, load them into the cloning device's scanning machine, as you would with any other \
+				device.
 
-				<a name='3'><H4>Step 3: Put body in cloning machine</H4>
-				Grab the body and then put it inside the DNA modifier. If you cannot do this, then you messed up at Step 2. Go back and check you took EVERYTHING off - a commonly missed item is their headset.
+				<a name='3'><h4>Step 3: Scan Patient</h4>
+				Access the cloning device's terminal, then navigate to the Damage Configuration menu and click 'scan.' If you see \
+				'Scan Successful' - great! Move on to the next step. If not, the device will inform you about what went wrong with \
+				the process. If it says it failed to sequence the patient's brain, try to scan them again in a few seconds. \
 
-				<a name='4'><H4>Step 4: Scan body</H4>
-				Go onto the computer and scan the body by pressing Scan - <Subject Name Here>. If youre successful, they will be added to the records (note that this can be done at any time, even with living people, so that they can be cloned without a body in the event that they are lying dead on port solars and didnt turn on their suit sensors)! If not, and it says Error: Mental interface failure., then they have left their bodily confines and are one with the spirits. If this happens, just shout at them to get back in their body, click Refresh and try scanning them again. If theres no success, threaten them with gibbing. Still no success? Skip over to Step 7 and dont continue after it, as you have an unresponsive body and it cannot be cloned. If you got Error: Unable to locate valid genetic data., you are trying to clone a monkey - start over.
+				<a name='4'><h4>Step 4: Configure Device</h4>
+				This step is where the TTC-5601 cloning device diverges from its earlier models. Its advanced systems allow you to \
+				conserve resources and elect to <i>not</i> fix certain damages, or elect to fix all damages - all on the fly! Keep \
+				in mind that if you're short on resources, you'll <i>have</i> to leave some damages on the patient in order to clone \
+				them. Once you're done tweaking settings, proceed to the next step.
 
-				<a name='5'><H4>Step 5: Clone body</H4>
-				Now that the body has a record, click View Records, click the subjects name, and then click Clone to start the cloning process. Congratulations! Youre halfway there. Remember not to Eject the cloning pod as this will kill the developing clone and youll have to start the process again.
+				<a name='5'><h4>Step 5: Clone</h4>
+				This is the simplest, but most important step. Simply press 'Clone' in the Damage Configuration menu, and the machine \
+				will begin the process of cloning. The process is fully automatic, so feel free to take care of other chores in the \
+				meanwhile - like moving the scanned cadaver to the morgue.
 
-				<a name='6'><H4>Step 6: Get clean SEs for body</H4>
-				Cloning is a finicky and unreliable process. Whilst it will most certainly bring someone back from the dead, they can have any number of nasty disabilities given to them during the cloning process! For this reason, you need to prepare a clean, defect-free Structural Enzyme (SE) injection for when theyre done. If youre a competent Geneticist, you will already have one ready on your working computer. If, for any reason, you do not, then eject the body from the DNA modifier (NOT THE CLONING POD) and take it next door to the Genetics research room. Put the body in one of those DNA modifiers and then go onto the console. Go into View/Edit/Transfer Buffer, find an open slot and click SE to save it. Then click Injector to get the SEs in syringe form. Put this in your pocket or something for when the body is done.
+				<a name='6'><h4>Step 6: Finish Procedure</h4>
+				After cloning, the patient may be disoriented - help them to get their bearings and put on the gear you stripped from \
+				their previous body. In addition, make sure to fix any wounds you may have left to save resources before sending them off.
 
-				<a name='7'><H4>Step 7: Put body in morgue</H4>
-				Now that the cloning process has been initiated and you have some clean Structural Enzymes, you no longer need the body! Drag it to the morgue and tell the Chef over the radio that they have some fresh meat waiting for them in there. To put a body in a morgue bed, simply open the tray, grab the body, put it on the open tray, then close the tray again. Use one of the nearby pens to label the bed CHEF MEAT in order to avoid confusion.
-
-				<a name='8'><H4>Step 8: Await cloned body</H4>
-				Now go back to the lab and wait for your patient to be cloned. It wont be long now, I promise.
-
-				<a name='9'><H4>Step 9: Use the clean SE injector on person</H4>
-				Has your body been cloned yet? Great! As soon as the guy pops out, grab your injector and jab it in them. Once youve injected them, they now have clean Structural Enzymes and their defects, if any, will disappear in a short while.
-
-				<a name='10'><H4>Step 10: Give person clothes back</H4>
-				Obviously the person will be naked after they have been cloned. Provided you werent an irresponsible little shit, you should have protected their possessions from thieves and should be able to give them back to the patient. No matter how cruel you are, its simply against protocol to force your patients to walk outside naked.
-
-				<a name='11'><H4>Step 11: Send person on their way</H4>
-				Give the patient one last check-over - make sure they dont still have any defects and that they have all their possessions. Ask them how they died, if they know, so that you can report any foul play over the radio. Once youre done, your patient is ready to go back to work! Chances are they do not have Medbay access, so you should let them out of Genetics and the Medbay main entrance.
-
-				<p>If youve gotten this far, congratulations! You have mastered the art of cloning. Now, the real problem is how to resurrect yourself after that traitor had his way with you for cloning his target.
-
-
-
+				<p>Congratulations! You now know how to use the TTC-5601 model cloning device. Please direct any further questions you have \
+				to your Chief Medical Officer. <i>Warranty void if used on living people, changeling organisms, or cluwnes.</i>
 				</body>
 				</html>
 				"})
 
+/obj/item/book/manual/zombie_manual
+	name = "Plague and You: Curing the Apocalypse"
+	desc = "A guide covering the basics of curing zombies."
+	summary = "A step-by-step guide to combatting each phase of the zombie virus."
+	icon_state = "bookCloning"
+	author = "Cleanses-The-Plague"
+	title = "Plague and You: Curing the Apocalypse"
+
+	pages = list({"<html><meta charset='utf-8'>
+				<head>
+				<style>
+				</style>
+				</head>
+				<body>
+
+				For years, we've seen "zombies" on the news and in movies, but have you ever thought how would would be cured?
+				Each strain of the "Advanced Resurection Virus" or simply "Necrotizing Plague" has its own unique bio-signature.
+				Therefore, each strain has a unique step of anti-virals, that each have progressively stronger effects on the plague.
+
+				<ol>
+					<li><a href='#1'>Preparation</a></li>
+					<li><a href='#2'>Containing a test subject</a></li>
+					<li><a href='#3'>Creating Cures</a></li>
+					<li><a href='#4'>Cure Effects</a></li>
+					<li><a href='#5'>Known Recipes</a></li>
+				</ol>
+
+				<a name='1' /><h4>Step 1: Preparation</h4>
+				First step is knowledge. The necrotizing plague can only be spread through direct fluid contact with an infected individual. \
+				Therefore, you should do your best to stay away from the claws and or teeth of zombies. Their claws are covered in a slimy fluid \
+				that has a chance of transmitting the disease. Their bites are much more dangerous however, guaranteeing an infection of the plague. \
+				Biohazard suits, riot gear, or other thick material are well suited for blocking these infectious attacks, but do not guaratee \
+				complete immunity. <br>
+
+				To begin, we will need to gather a blood sample from a zombifed individual. To do this, first make sure the \
+				zombie is dead and severely damaged. Damaged zombies will slowly heal, and re-awaken once they are healed. \
+				Then use a syringe to extract a blood sample, and return to your virology lab. <br>
+
+				<a name='2' /><h4>Step 2: Containing a test subject</h4>
+				With your new blood sample of the plague, place a monkey in a solitary pen, and infect it with the virus. This test subject \
+				will provide us with a steady source of plague blood to experiment with. Lower-sapience creatures are normally not advanced enough to \
+				actively seek out the flesh of living creatures, and are safe in captivity. Containing an active zombie is much harder and will require \
+				a cell of pure walls or doors. Otherwise, the zombie will be able to break out of it's cell using its claws.
+
+				<a name='3' /><h4>Step 3: Creating Cures</h4>
+				Now that a steady source of infected blood is available, we can begin making cures. There are 4 tiers of "cures" for the plague, \
+				these are referred to as "Anti-Plague Sequences". By combining chemicals with the plague and viral symptoms, more advanced sequences \
+				can be created. These sequences are M-RNA that alters protein synthesis of plague-infected individuals and alter B-lymphocytes to induce\
+				specific anti-bodies, countering the effects of the virus. \
+				There sequences are classified into 4 categories: Alpha, Beta, Gamma, and Omega. Alpha is the simplest, but weakest. \
+				Omega is the most difficult to make as it requires all previous sequences and advanced chemicals. <br>
+				Since each of zombie strains are unique, there is no known recipe for these, and will require experimentation. \
+				However, several researchers have compiled chemicals that are commonly found in these cures in the "Known Recipes" section below.
+
+				<a name='4' /><h4>Step 5: Cure Effects</h4>
+				Anti-Plague Sequence Alpha is the simplest anti-viral, but it still is the first step against the plague. \
+				This cure prevents infection from scratches while in system of the user, and can cure stage 1 infections. <br>
+
+				Anti-Plague Sequence Beta is the second anti-viral, and is more complex to make. This sequence has been shown to cure \
+				infections that are stage 3 or below. This sequence is sometimes able to cure bites from infected individuals. <br>
+
+				Anti-Plague Sequence Gamma is the third anti-viral. This sequence is difficult to manufacture, but is rewarding. \
+				It cures all infections that are stage 5 and below, and stops the effects of stage 6 infections, but will not cure \
+				stage 6 infections. This helps prevent the rotting of living people into the rotting and shambling corpses of zombies. <br>
+
+				Anti-Plague Sequence Omega is the full cure for the zombie plague. This advanced mix of viral symptoms and chemicals is \
+				the final cure for any Advanced Resurection Virus. This cure prevents zombies from reviving when in their system, and will \
+				slowly return their body to normal, non-infected state. <br>
+
+				<a name='5' /><h4>Step 6: Known Recipes</h4>
+				<b>Anti-Plague Sequence Alpha</b>
+				<ul>
+					<li>1 unit of blood containing any zombie plague</li>
+					<li>1 unit of Diphenhydramine</a></li>
+				</ul>
+
+				<b>Anti-Plague Sequence Beta</b>
+				<ul>
+					<li>1 unit of blood containing zombie plague cured by Anti-Plague Sequence Alpha</li>
+					<li>3 random chemicals from the list below, 1 unit of each (Unknown Random Recipe)
+						<ul>
+							<li>Saline-Glucose Solution</li>
+							<li>Toxin</li>
+							<li>Atropine</li>
+							<li>Lye</li>
+							<li>Soda Water</li>
+							<li>Happiness</li>
+							<li>Morphine</li>
+							<li>Teporone</li>
+						</ul>
+					</li>
+				</ul>
+
+				<b>Anti-Plague Sequence Gamma</b>
+				<ul>
+					<li>1 unit of blood containing zombie plague cured by Anti-Plague Sequence Beta</li>
+					<li>1 unit of blood containing an advanced virus with the <b>"Necrotizing Fasciitis"</b> symptom</li>
+					<li>3 random chemicals from the list below, 1 unit of each (Unknown Random Recipe)
+						<ul>
+							<li>Yellow Vomit</li>
+							<li>Jenkem</li>
+							<li>Charcoal</li>
+							<li>Egg</li>
+							<li>Sulphuric acid</li>
+							<li>Fluorosulfuric Acid</li>
+							<li>Surge</li>
+							<li>Ultra-Lube</li>
+							<li>Mitocholide</li>
+						</ul>
+					</li>
+				</ul>
+
+				<b>Anti-Plague Sequence Omega</b>
+				<ul>
+					<li>1 unit of blood containing zombie plague cured by Anti-Plague Sequence Gamma</li>
+					<li>1 unit of blood containing an advanced virus with the <b>"Anti-Bodies Metabolism"</b> symptom</li>
+					<li>2 of the chemicals from the list below, 1 unit of each (Unknown Random Recipe)
+						<ul>
+							<li>Colorful Reagent</li>
+							<li>Bacchus' Blessing</li>
+							<li>Pentetic Acid</li>
+							<li>Glyphosate</li>
+							<li>Lazarus Reagent</li>
+							<li>Omnizine</li>
+							<li>Sarin</li>
+							<li>Ants</li>
+							<li>Chlorine Trifluoride</li>
+							<li>Sorium</li>
+							<li>"????" Reagent</li>
+							<li>Aranesp</li>
+						</ul>
+					</li>
+				</ul>
+
+				<b>Anti-Plague Sequence Duplication</b>
+				<ul>
+					<li>1 unit of any Anti-Plague Sequence</li>
+					<li>1 unit of Sulfonal</li>
+					<li>1 unit of Sugar</li>
+				</ul>
+
+
+				<p>Congratulations! You are now qualitifed in creating Anti-Plague Sequences for combatting Class-C resurrecting un-dead beings. \
+				Please direct any further questions you have to your Chief Medical Officer.</p>
+				</body>
+				</html>"})
+
 /obj/item/book/manual/ripley_build_and_repair
 	name = "APLU \"Ripley\" Construction and Operation Manual"
-	desc = "A guide from a little-known corporation on how to operate a heavy lifter mech. It's filled with disclaimers and pre-signed waivers."
-	icon_state ="book"
-	author = "Weyland-Yutani Corp"
+	desc = "A small guidebook on how to operate a Ripley powerloader exosuit. It's filled with disclaimers and pre-signed waivers."
+	summary = "Standard operational practices and construction requirements for operation of the Ripley mk. 3 powerloader system."
+	author = "Hephaestus Industries"
 	title = "APLU \"Ripley\" Construction and Operation Manual"
 
-	pages = list({"<html>
+	pages = list({"<html><meta charset='utf-8'>
 				<head>
 				<style>
 				h1 {font-size: 18px; margin: 15px 0px 5px;}
@@ -484,7 +601,7 @@
 				</head>
 				<body>
 				<center>
-				<b style='font-size: 12px;'>Weyland-Yutani - Building Better Worlds</b>
+				<b style='font-size: 12px;'>Hephaestus Industries - Forging the Tools of Tomorrow</b>
 				<h1>Autonomous Power Loader Unit \"Ripley\"</h1>
 				</center>
 				<h2>Specifications:</h2>
@@ -521,7 +638,7 @@
 				<li>Install the internal armor plating (Not included due to Nanotrasen regulations. Can be made using 5 metal sheets.)</li>
 				<li>Secure the internal armor plating with a wrench</li>
 				<li>Weld the internal armor plating to the chassis</li>
-				<li>Install the external reinforced armor plating (Not included due to Nanotrasen regulations. Can be made using 5 reinforced metal sheets.)</li>
+				<li>Install the external reinforced armor plating (Not included due to Nanotrasen regulations. Can be made using 5 plasteel sheets.)</li>
 				<li>Secure the external reinforced armor plating with a wrench</li>
 				<li>Weld the external reinforced armor plating to the chassis</li>
 				<li></li>
@@ -543,11 +660,12 @@
 /obj/item/book/manual/research_and_development
 	name = "Research and Development 101"
 	desc = "The mad scientist's second best friend, after coffee."
+	summary = "Construction & operational instructions for all standard Nanotrasen research machinery."
 	icon_state = "rdbook"
 	author = "Dr. L. Ight"
 	title = "Research and Development 101"
 	pages = list({"
-	<html>
+	<html><meta charset='utf-8'>
 				<head>
 				<style>
 				h1 {font-size: 18px; margin: 15px 0px 5px;}
@@ -562,19 +680,19 @@
 				<h1>Science For Dummies</h1>
 				So you want to further SCIENCE? Good man/woman/thing! However, SCIENCE is a complicated process even though it's quite easy. For the most part, it's a three step process:
 				<ol>
-					<li> 1) Deconstruct items in the Destructive Analyzer to advance technology or improve the design.</li>
+					<li> 1) Deconstruct items in the Scientific Analyzer to advance technology or improve the design.</li>
 					<li> 2) Build unlocked designs in the Protolathe and Circuit Imprinter</li>
 					<li> 3) Repeat!</li>
 				</ol>
 
-				Those are the basic steps to furthing science. What do you do science with, however? Well, you have four major tools: R&D Console, the Destructive Analyzer, the Protolathe, and the Circuit Imprinter.
+				Those are the basic steps to furthing science. What do you do science with, however? Well, you have four major tools: R&D Console, the Scientific Analyzer, the Protolathe, and the Circuit Imprinter.
 
 				<h2>The R&D Console</h2>
-				The R&D console is the cornerstone of any research lab. It is the central system from which the Destructive Analyzer, Protolathe, and Circuit Imprinter (your R&D systems) are controled. More on those systems in their own sections. On its own, the R&D console acts as a database for all your technological gains and new devices you discover. So long as the R&D console remains intact, you'll retain all that SCIENCE you've discovered. Protect it though, because if it gets damaged, you'll lose your data! In addition to this important purpose, the R&D console has a disk menu that lets you transfer data from the database onto disk or from the disk into the database. It also has a settings menu that lets you re-sync with nearby R&D devices (if they've become disconnected), lock the console from the unworthy, upload the data to all other R&D consoles in the network (all R&D consoles are networked by default), connect/disconnect from the network, and purge all data from the database.
+				The R&D console is the cornerstone of any research lab. It is the central system from which the Scientific Analyzer, Protolathe, and Circuit Imprinter (your R&D systems) are controled. More on those systems in their own sections. On its own, the R&D console acts as a database for all your technological gains and new devices you discover. So long as the R&D console remains intact, you'll retain all that SCIENCE you've discovered. Protect it though, because if it gets damaged, you'll lose your data! In addition to this important purpose, the R&D console has a disk menu that lets you transfer data from the database onto disk or from the disk into the database. It also has a settings menu that lets you re-sync with nearby R&D devices (if they've become disconnected), lock the console from the unworthy, upload the data to all other R&D consoles in the network (all R&D consoles are networked by default), connect/disconnect from the network, and purge all data from the database.
 				<b>NOTE:</b> The technology list screen, circuit imprinter, and protolathe menus are accessible by non-scientists. This is intended to allow 'public' systems for the plebians to utilize some new devices.
 
-				<h2>Destructive Analyzer</h2>
-				This is the source of all technology. Whenever you put a handheld object in it, it analyzes it and determines what sort of technological advancements you can discover from it. If the technology of the object is equal or higher then your current knowledge, you can destroy the object to further those sciences. Some devices (notably, some devices made from the protolathe and circuit imprinter) aren't 100% reliable when you first discover them. If these devices break down, you can put them into the Destructive Analyzer and improve their reliability rather then futher science. If their reliability is high enough ,it'll also advance their related technologies.
+				<h2>Scientific Analyzer</h2>
+				This is the source of all technology. Whenever you put a handheld object in it, it analyzes it and determines what sort of technological advancements you can discover from it. If the technology of the object is equal or higher then your current knowledge, you can destroy the object to further those sciences. Some devices (notably, some devices made from the protolathe and circuit imprinter) aren't 100% reliable when you first discover them. If these devices break down, you can put them into the Scientific Analyzer and improve their reliability rather then futher science. If their reliability is high enough ,it'll also advance their related technologies.
 
 				<h2>Circuit Imprinter</h2>
 				This machine, along with the Protolathe, is used to actually produce new devices. The Circuit Imprinter takes glass and various chemicals (depends on the design) to produce new circuit boards to build new machines or computers. It can even be used to print AI modules.
@@ -583,7 +701,7 @@
 				This machine is an advanced form of the Autolathe that produce non-circuit designs. Unlike the Autolathe, it can use processed metal, glass, solid plasma, silver, gold, and diamonds along with a variety of chemicals to produce devices. The downside is that, again, not all devices you make are 100% reliable when you first discover them.
 
 				<h1>Reliability and You</h1>
-				As it has been stated, many devices when they're first discovered do not have a 100% reliablity when you first discover them. Instead, the reliablity of the device is dependent upon a base reliability value, whatever improvements to the design you've discovered through the Destructive Analyzer, and any advancements you've made with the device's source technologies. To be able to improve the reliability of a device, you have to use the device until it breaks beyond repair. Once that happens, you can analyze it in a Destructive Analyzer. Once the device reachs a certain minimum reliability, you'll gain tech advancements from it.
+				As it has been stated, many devices when they're first discovered do not have a 100% reliablity when you first discover them. Instead, the reliablity of the device is dependent upon a base reliability value, whatever improvements to the design you've discovered through the Scientific Analyzer, and any advancements you've made with the device's source technologies. To be able to improve the reliability of a device, you have to use the device until it breaks beyond repair. Once that happens, you can analyze it in a Scientific Analyzer. Once the device reachs a certain minimum reliability, you'll gain tech advancements from it.
 
 				<h1>Building a Better Machine</h1>
 				Many machines produces from circuit boards and inserted into a machine frame require a variety of parts to construct. These are parts like capacitors, batteries, matter bins, and so forth. As your knowledge of science improves, more advanced versions are unlocked. If you use these parts when constructing something, its attributes may be improved. For example, if you use an advanced matter bin when constructing an autolathe (rather then a regular one), it'll hold more materials. Experiment around with stock parts of various qualities to see how they affect the end results! Be warned, however: Tier 3 and higher stock parts don't have 100% reliability and their low reliability may affect the reliability of the end machine.
@@ -594,40 +712,538 @@
 /obj/item/book/manual/barman_recipes
 	name = "Barman Recipes"
 	desc = "A coffee-stained guide to mixing drinks."
+	summary = "A quick-access reference to several common alcoholic beverages."
 	icon_state = "barbook"
 	author = "Sir John Rose"
 	title = "Barman Recipes"
-	pages = list({"<html>
+	pages = list()
+
+/obj/item/book/manual/barman_recipes/Initialize(mapload, datum/cachedbook/CB, _copyright = FALSE, _protected = FALSE)
+	. = ..()
+	pages = list({"<html><meta charset='utf-8'>
 				<head>
 				<style>
-				h1 {font-size: 18px; margin: 15px 0px 5px;}
-				h2 {font-size: 15px; margin: 15px 0px 5px;}
-				li {margin: 2px 0px 2px 15px;}
-				ul {list-style: none; margin: 5px; padding: 0px;}
-				ol {margin: 5px; padding: 0px 15px;}
+				h1, h2, h3 {font-size: 18px; margin: 15px 0px 5px;}
+				h2 {font-size: 15px;}
+				h3 {font-size: 14px;}
 				</style>
 				</head>
 				<body>
-				<h1>Drinks for dummies</h1>
-				Heres a guide for some basic drinks.
-				<h2>Manly Dorf:</h2>
-				Mix ale and beer into a glass.
-				<h2>Grog:</h2>
-				Mix rum and water into a glass.
+				<h1>Table of Contents</h1>
+				<h2><a href='byond://?src=[UID()];seek_page=2'>The Bar and Bartender</a></h2>
+				<h2>Alcoholic Drinks</h2>
+				<h3><a href='byond://?src=[UID()];seek_page=3'>Trivial Alcoholic Drinks</a></h3>
+				<h3><a href='byond://?src=[UID()];seek_page=4'>Easy Alcoholic Drinks</a></h3>
+				<h3><a href='byond://?src=[UID()];seek_page=5'>Intermediate Alcoholic Drinks</a></h3>
+				<h3><a href='byond://?src=[UID()];seek_page=6'>Hard Alcoholic Drinks</a></h3>
+				<h2>Soft Drinks</h2>
+				<h3><a href='byond://?src=[UID()];seek_page=7'>Trivial Soft Drinks</a></h3>
+				<h3><a href='byond://?src=[UID()];seek_page=8'>Easy Soft Drinks</a></h3>
+				<h3><a href='byond://?src=[UID()];seek_page=9'>Intermediate Soft Drinks</a></h3>
+				<h3><a href='byond://?src=[UID()];seek_page=10'>Hard Soft Drinks</a></h3>
+				<h3><a href='byond://?src=[UID()];seek_page=11'>Bottler Recipes</a></h3>
+				</body>
+				</html>
+			"}, {"<html><meta charset='utf-8'>
+				<head>
+				<style>
+				h1, h2 {font-size: 18px; margin: 15px 0px 5px;}
+				h2 {font-size: 15px;}
+				</style>
+				</head>
+				<body>
+				<h1>The Bar and Bartender</h1>
+				As the station bartender, it is your job to provide refreshments to the crew. Many drinks can be dispensed as whole bottles or mixed in the soda machines, but several may require you to gather ingredients from Chemistry, Botany, or even Xenobiology. Here's a brief overview of your workplace.
+				<h2>Booze-O-Mat</h2>
+				This machine will dispense whole bottles of unmixed drinks, like beer, cola, or electrolytes. It will also dispense empty glasses for you to serve mixed drinks in.
+				<h2>Booze Portal 9000</h2>
+				This machine will dispense custom amounts of alcoholic drinks for mixing. At the start of the shift, it is configured to block access to expensive drinks like absinthe, ethanol, goldschlager, nothing, patron, and sake. When upgraded, it can also dispense antihol.
+				<h2>Soda Dispens-o-matic</h2>
+				This machine will dispense custom amounts of soft drinks for mixing. At the start of the shift, it is configured to block access to expensive drinks like thirteen loko. When upgraded, it can also dispense electrolytes and ginger ale.
+				<h2>Reagent Grinder</h2>
+				This machine will juice produce and grind metals down to a powder usable for drinks.
+				<h2>Bottler</h2>
+				This machine can dispense empty bottles and cans for your drinks, and it can also mix several unique drinks.
+				<h2>Other supplies</h2>
+				You are also supplied with a shaker for mixing drinks, a cabinet for booze, weapons for self-defense, a lighter to heat up drinks that require it, and materials for your bottler, among other niceties. Take good care of them.
+				<br><br><a href='byond://?src=[UID()];seek_page=1'>Back to Table of Contents</a>
+				</body>
+				</html>
+			"},{"<html><meta charset='utf-8'>
+				<head>
+				<style>
+				h1, h2 {font-size: 18px; margin: 15px 0px 5px;}
+				h2 {font-size: 15px;}
+				</style>
+				</head>
+				<body>
+				<h1>Trivial Alcoholic Drinks</h1>
+				With upgraded machines, you can dispense many of these straightaway—Or if you're not so lucky, you can mix them as follows. Procurement won't be happy if you send these!
+				<h2>Brave Bull:</h2>
+				Mix two parts tequila to one part kahlua.
+				<h2>Goldschlager:</h2>
+				Mix 10 parts vodka to 1 part gold.
+				<h2>Iced Beer:</h2>
+				Mix five parts beer to one part ice, or 10 parts beer to one part frost oil.
+				<h2 id="Irish_Cream">Irish Cream:</h2>
+				Mix two parts whiskey to one part cream.
+				<h2>Manhattan:</h2>
+				Mix two parts whiskey to one part vermouth.
+				<h2>Patron:</h2>
+				Mix 10 parts tequila to one part silver.
+				<h2>Synthignon:</h2>
+				Mix one part synthanol to one part wine.
+				<h2>Vampire's Best Friend:</h2>
+				Mix one part White Russian (<a href='byond://?src=[UID()];seek_page=4'>Easy Alcoholic Drinks</a>) to one part garlic juice. Botany can help.
+				<br><br><a href='byond://?src=[UID()];seek_page=1'>Back to Table of Contents</a>
+				</body>
+				</html>
+			"},{"<html><meta charset='utf-8'>
+				<head>
+				<style>
+				h1, h2 {font-size: 18px; margin: 15px 0px 5px;}
+				h2 {font-size: 15px;}
+				</style>
+				</head>
+				<body>
+				<h1>Easy Alcoholic Drinks</h1>
+				Most of these drinks, you should be able to mix right at your dispenser. Drinks marked with a § are for synthetic customers.
+				<h2>Acapulco de Noche:</h2>
+				Mix one part each of tequila, rum, sugar, and ice.
+				<h2>Allies Cocktail:</h2>
+				Mix one part Classic Martini to one part vodka.
+				<h2>Aloe:</h2>
+				Mix one part each of watermelon juice, cream, and whiskey.
+				<h2>Andalusia:</h2>
+				Mix one part each of rum, whiskey, and lemon juice.
+				<h2>Anti-Freeze:</h2>
+				Mix two parts vodka to one part each cream and ice.
+				<h2>B-52:</h2>
+				Mix one part each of Irish Cream (<a href='byond://?src=[UID()];seek_page=3'>Trivial Alcoholic Drinks</a>), kahlua, and cognac.
+				<h2>Bahama Mama:</h2>
+				Mix two parts each rum and orange juice to one part each lime juice and ice.
+				<h2>Barefoot:</h2>
+				Mix one part each of cream, vermouth, and berry juice.
+				<h2>Bilk:</h2>
+				Mix one part beer to one part milk.
+				<h2>Bilkshake:</h2>
+				Mix two parts each of bilk and ice to one part cream.
 				<h2>Black Russian:</h2>
-				Mix vodka and kahlua into a glass.
-				<h2>Irish Cream:</h2>
-				Mix cream and whiskey into a glass.
-				<h2>Screwdriver:</h2>
-				Mix vodka and orange juice into a glass.
-				<h2>Cafe Latte:</h2>
-				Mix milk and coffee into a glass.
-				<h2>Mead:</h2>
-				Mix Enzyme, water and sugar into a glass.
-				<h2>Gin Tonic:</h2>
-				Mix gin and tonic into a glass.
+				Mix three parts vodka to two parts kahlua.
+				<h2>Bloody Mary:</h2>
+				Mix two parts tomato juice to one part each of vodka and lime juice.
+				<h2>Bluescreen: §</h2>
+				Mix one part each of synthanol, welding fuel, Goldschlager (<a href='byond://?src=[UID()];seek_page=3'>Trivial Alcoholic Drinks</a>), tonic, and water. You might find a fuel tank in the maintenance tunnels.
+				<h2>Booger:</h2>
+				Mix one part each of cream, banana juice, rum, and watermelon juice.
+				<h2>Changeling Sting:</h2>
+				Mix one part each of lime juice, lemon juice, and Screwdriver.
 				<h2>Classic Martini:</h2>
-				Mix vermouth and gin into a glass.
+				Mix two parts gin to one part vermouth.
+				<h2>CSV: §</h2>
+				Mix one part each of cognac, synthanol, and vodka.
+				<h2>Cuba Libre:</h2>
+				Mix two parts each rum and cola to one part lime juice.
+				<h2>Daiquiri:</h2>
+				Mix two parts rum to one part each of lime juice, sugar, and ice.
+				<h2>Demon's Blood:</h2>
+				Mix one part each space mountain wind soda, rum, blood, and Dr. Gibb soda. Medical or Botany can help.
+				<h2>Devil's Kiss:</h2>
+				Mix one part each of blood, rum, and kahlua. Medical or Botany can help.
+				<h2>Driest Martini:</h2>
+				Mix one part nothing to one part gin.
+				<h2>Dublin Drop:</h2>
+				Mix one part each of Irish Cream (<a href='byond://?src=[UID()];seek_page=3'>Trivial Alcoholic Drinks</a>), stout, and whiskey.
+				<h2>Durkehiet: (a Vulpkanin favorite!)</h2>
+				Mix two parts vodka to one part each of triple citrus and honey.
+				<h2>Erika Surprise:</h2>
+				Mix one part each of ale, lime juice, whiskey, banana juice, and ice.
+				<h2>Fernet Cola:</h2>
+				Mix two parts of cola to one part fernet.
+				<h2>Gimlet:</h2>
+				Mix one part each of gin, lime juice, and sugar.
+				<h2>Gin Fizz:</h2>
+				Mix two parts gin to one part each of soda water and lime juice.
+				<h2>Gin and Tonic:</h2>
+				Mix two parts gin to one part tonic water.
+				<h2>Grog:</h2>
+				Mix one part rum to one part water.
+				<h2>Irish Coffee:</h2>
+				Mix two parts Irish Cream (<a href='byond://?src=[UID()];seek_page=3'>Trivial Alcoholic Drinks</a>) to two parts coffee.
+				<h2>Long Island Iced Tea:</h2>
+				Mix one part each of Cuba Libre, vodka, gin, and tequila.
+				<h2>Margarita:</h2>
+				Mix two parts tequila to one part lime juice.
+				<h2>Miami Vice:</h2>
+				Mix one part Strawberry Daiquiri and one part Piña Colada.
+				<h2>Mint Julep:</h2>
+				Mix one part each of whiskey, ice, sugar, and mint. Botany or the Kitchen can help.
+				<h2>Mojito:</h2>
+				Mix one part each of rum, lime juice, sugar, soda water, and mint. Botany or the Kitchen can help.
+				<h2>Pan-Galactic Gargle Blaster:</h2>
+				Mix one part each of gin, vodka, whiskey, cognac, and lime juice.
+				<h2>Piña Colada:</h2>
+				Mix three parts rum to two parts pineapple juice and one part cream.
+				<h2>Robot Tears: §</h2>
+				Mix one part each of synthanol, soda water, and oil. Chemistry can help.
+				<h2>Runtime: §</h2>
+				Mix three parts Screwdriver to one part synthanol.
+				<h2>Screwdriver:</h2>
+				Mix two parts vodka to one part orange juice.
+				<h2>Servo: §</h2>
+				Mix two parts synthanol to one part each hot chocolate and cream.
+				<h2>Sidecar:</h2>
+				Mix one part each of cognac, lemon juice, and orange juice.
+				<h2>Snow White:</h2>
+				Mix one part beer to one part lemon-lime.
+				<h2>Strawberry Daiquiri:</h2>
+				Mix two parts rum to one part each of berry juice, sugar, and ice.
+				<h2>Syndicate Bomb:</h2>
+				Mix one part Whiskey Cola to one part beer.
+				<h2>Synth 'n Soda: §</h2>
+				Mix one part synthanol to two parts cola.
+				<h2>Tequila Sunrise:</h2>
+				Mix two parts tequila to one part orange juice.
+				<h2>The Manly Dorf:</h2>
+				Mix two parts ale to one part beer.
+				<h2>Trinary: §</h2>
+				Mix one part each of synthanol, orange juice, and lime juice.
+				<h2>Uplink: §</h2>
+				Mix one part each of synthanol, rum, vodka, tequila, and whiskey.
+				<h2>Vampiro:</h2>
+				Mix one part tomato juice with one part Tequila Sunrise.
+				<h2>Vodka Martini:</h2>
+				Mix two parts vodka to one part vermouth.
+				<h2>Vodka and Tonic:</h2>
+				Mix two parts vodka to one part tonic water.
+				<h2>Whiskey Cola:</h2>
+				Mix two parts whiskey to one part cola.
+				<h2>Whiskey Soda:</h2>
+				Mix two parts whiskey to one part soda water.
+				<h2>White Russian:</h2>
+				Mix three parts Black Russian to two parts cream.
+				<br><br><a href='byond://?src=[UID()];seek_page=1'>Back to Table of Contents</a>
+				</body>
+				</html>
+			"},{"<html><meta charset='utf-8'>
+				<head>
+				<style>
+				h1, h2 {font-size: 18px; margin: 15px 0px 5px;}
+				h2 {font-size: 15px;}
+				</style>
+				</head>
+				<body>
+				<h1>Intermediate Alcoholic Drinks</h1>
+				Most of these drinks require many steps or collaboration with other departments. Drinks marked with a § are for synthetic customers.
+				<h2>Acid Dreams: (a Grey favorite!)</h2>
+				Mix one part each of Pan-Galactic Gargle Blaster (<a href='byond://?src=[UID()];seek_page=4'>Easy Alcoholic Drinks</a>), sulphuric acid, and sugar. Chemistry can help.
+				<h2>Acid Spit:</h2>
+				Mix five parts wine to one part sulphuric acid. Chemistry can help.
+				<h2>Ahdomai Eclipse: (a Tajaran favorite!)</h2>
+				Mix five parts ice to one part Anti-Freeze (<a href='byond://?src=[UID()];seek_page=4'>Easy Alcoholic Drinks</a>). Cool below 273K. Chemistry can help.
+				<h2>Amasec:</h2>
+				Mix five parts each of wine and vodka to one part iron. Chemistry or Cargo can help.
+				<h2>Applejack:</h2>
+				Cool two parts cider to 270K. Chemistry can help.
+				<h2>Beepsky Smash:</h2>
+				Mix two parts each lime juice and whiskey to one part iron. Chemistry or Cargo can help.
+				<h2>Burnout: §</h2>
+				Mix one part synthanol to one part acetone. Heat to 375K. Chemistry can help.
+				<h2>Die Seife: (a Drask favorite!)</h2>
+				Mix one part each of lye, whiskey, and Iced Beer (<a href='byond://?src=[UID()];seek_page=3'>Trivial Alcoholic Drinks</a>). Chemistry can help.
+				<h2>Diona Smash: (a Kidan favorite!)</h2>
+				Mix four parts nutriment to two parts each of sugar and gin. The Kitchen or Botany can help.
+				<h2>Drunken Blumpkin:</h2>
+				Mix one part each of blumpkin juice, Irish Cream (<a href='byond://?src=[UID()];seek_page=3'>Trivial Alcoholic Drinks</a>), and ice. Botany can help.
+				<h2>Dryer Martini: §</h2>
+				Mix two parts synthanol to one part drying agent. Chemistry can help.
+				<h2>Feast by the Beach: (an Unathi favorite!)</h2>
+				Mix one part each of vodka, lime juice, grape juice, and silicon. Heat above 373K. Chemistry can help.
+				<h2>Flaming Moe:</h2>
+				Mix one part each of cognac, gin, saline-glucose solution, tequila, and vodka. Heat to 374K. Chemistry can help.
+				<h2>Hanky Panky:</h2>
+				Mix one part each of Fernet, vermouth, gin, and orange juice.
+				<h2>Hooch:</h2>
+				Mix two parts ethanol with one part each welding fuel and universal enzyme. The Kitchen or Chemistry can help.
+				<h2>Islay Whiskey: (a Dionae favorite!)</h2>
+				Mix one part each E-Z-Nutrient, whiskey, and nutriment. The Kitchen or Botany can help.
+				<h2>Jackrose:</h2>
+				Mix four parts Applejack to one part lemon juice.
+				<h2>Jungle Vox: (a Vox favorite!)</h2>
+				Mix one part each of rum, lime juice, sugar, kahlua, and nitrogen. Chemistry can help.
+				<h2>Michelada:</h2>
+				Mix two parts beer to one part each of capsaicin, salt, and lime juice. The Kitchen or Botany can help.
+				<h2>Moonshine:</h2>
+				Mix 10 parts nutriment to five parts universal enzyme. The Kitchen or Chemistry can help.
+				<h2>Neuro-toxin:</h2>
+				Mix one part ether to one part Pan-Galactic Gargle Blaster (<a href='byond://?src=[UID()];seek_page=4'>Easy Alcoholic Drinks</a>). Chemistry can help.
+				<h2>Peach Bellini:</h2>
+				Mix one part each of peach juice, wine and tonic. Botany can help.
+				<h2>Sbiten:</h2>
+				Mix 10 parts vodka to one part capsaicin. The Xenobiologist can help.
+				<h2>Singulo:</h2>
+				Mix five parts each of vodka and wine to one part radium. Chemistry can help.
+				<h2>Stack Trace: §</h2>
+				Mix one part Rewriter (<a href='byond://?src=[UID()];seek_page=8'>Easy Soft Drinks</a>) to one part Runtime (<a href='byond://?src=[UID()];seek_page=4'>Easy Alcoholic Drinks</a>).
+				<h2>Suicider:</h2>
+				Mix one part each of cider, vodka, welding fuel, and epinephrine. Chemistry or Medical can help.
+				<h2>Toxins Special:</h2>
+				Mix two parts each of rum and plasma to one part vermouth. Chemistry or Cargo can help.
+				<br><br><a href='byond://?src=[UID()];seek_page=1'>Back to Table of Contents</a>
+				</body>
+				</html>
+			"},{"<html><meta charset='utf-8'>
+				<head>
+				<style>
+				h1, h2 {font-size: 18px; margin: 15px 0px 5px;}
+				h2 {font-size: 15px;}
+				</style>
+				</head>
+				<body>
+				<h1>Hard Alcoholic Drinks</h1>
+				These drinks require a significant amount of cross-department collaboration, many steps, or rare ingredients. Drinks marked with a § are for synthetic customers.
+				<h2>Adminfreeze:</h2>
+				Mix one part each of Neuro-toxin (<a href='byond://?src=[UID()];seek_page=5'>Intermediate Alcoholic Drinks</a>), Toxins Special (<a href='byond://?src=[UID()];seek_page=5'>Intermediate Alcoholic Drinks</a>), fernet, Moonshine (<a href='byond://?src=[UID()];seek_page=5'>Intermediate Alcoholic Drinks</a>), and morphine. Heat to 374K. Medical or Cargo can help.
+				<h2>Atomic Bomb:</h2>
+				Mix 10 parts B-52 (<a href='byond://?src=[UID()];seek_page=4'>Easy Alcoholic Drinks</a>) to one part uranium. Cargo can help.
+				<h2>Bacchus' Blessing: (Procurement won't accept this!)</h2>
+				Mix one part each of Hooch (<a href='byond://?src=[UID()];seek_page=5'>Intermediate Alcoholic Drinks</a>), absinthe, The Manly Dorf (<a href='byond://?src=[UID()];seek_page=4'>Easy Alcoholic Drinks</a>), and Syndicate Bomb (<a href='byond://?src=[UID()];seek_page=4'>Easy Alcoholic Drinks</a>).
+				<h2>Eggnog:</h2>
+				Mix five parts each of cream, egg, and rum. The Kitchen or Botany can help.
+				<h2>Gear Grinder: §</h2>
+				Mix one part Beet Shrub (<a href='byond://?src=[UID()];seek_page=10'>Hard Soft Drinks</a>) to one part Robot Tears (<a href='byond://?src=[UID()];seek_page=4'>Easy Alcoholic Drinks</a>).
+				<h2>GFS:</h2>
+				Mix one part each of gin, fernet, and Beet Shrub (<a href='byond://?src=[UID()];seek_page=10'>Hard Soft Drinks</a>).
+				<h2>Gin and Sonic:</h2>
+				Mix one part Gin and Tonic (<a href='byond://?src=[UID()];seek_page=4'>Easy Alcoholic Drinks</a>) to one part methamphetamine. Chemistry can help.
+				<h2>Hard Reset: §</h2>
+				Mix one part Soft Reset (<a href='byond://?src=[UID()];seek_page=10'>Hard Soft Drinks</a>) to one part Bluescreen (<a href='byond://?src=[UID()];seek_page=4'>Easy Alcoholic Drinks</a>).
+				<h2>Hippie's Delight:</h2>
+				Mix one part each of psilocybin and Pan-Galactic Gargle Blaster (<a href='byond://?src=[UID()];seek_page=4'>Easy Alcoholic Drinks</a>). Botany can help.
+				<h2>It's Overclock Somewhere: §</h2>
+				Mix one part each of ultra lube, oil, and synthanol. Chemistry can help.
+				<h2>Manhattan Project:</h2>
+				Mix 10 parts Manhattan (<a href='byond://?src=[UID()];seek_page=3'>Trivial Alcoholic Drinks</a>) to one part uranium. Cargo can help.
+				<h2>Matadora Beer</h2>
+				Mix one part each of tequila, Bilk (<a href='byond://?src=[UID()];seek_page=4'>Easy Alcoholic Drinks</a>), Red Mead, and ice.
+				<h2>Red Mead:</h2>
+				Mix one part mead to one part blood. Medical or Botany can help.
+				<h2>Shrub Julep:</h2>
+				Mix two parts whiskey to one part each of mint, Beet Shrub (<a href='byond://?src=[UID()];seek_page=10'>Hard Soft Drinks</a>), and ice. Botany or the Kitchen can help.
+				<h2>Slime Mold: (a Slime People favorite!)</h2>
+				Mix two parts each of Booger (<a href='byond://?src=[UID()];seek_page=4'>Easy Alcoholic Drinks</a>) and slime jelly to one part egg. Medical, Xenobiology, or the Kitchen can help.
+				<h2>Sontse: (a Nian favorite!)</h2>
+				Mix two parts Tequila Sunrise (<a href='byond://?src=[UID()];seek_page=4'>Easy Alcoholic Drinks</a>) to one part Flaming Moe (<a href='byond://?src=[UID()];seek_page=5'>Intermediate Alcoholic Drinks</a>).
+				<h2>Ultramatter: (a Plasmaman favorite!)</h2>
+				Mix five parts Singulo (<a href='byond://?src=[UID()];seek_page=5'>Intermediate Alcoholic Drinks</a>) to one part plasma dust. Cargo or Chemistry can help.
+				<h2>Whiskey Sour:</h2>
+				Mix 1 part each of egg, whiskey, lemon juice, and sugar. The Kitchen or Botany can help.
+				<br><br><a href='byond://?src=[UID()];seek_page=1'>Back to Table of Contents</a>
+				</body>
+				</html>
+			"},{"<html><meta charset='utf-8'>
+				<head>
+				<style>
+				h1, h2 {font-size: 18px; margin: 15px 0px 5px;}
+				h2 {font-size: 15px;}
+				</style>
+				</head>
+				<body>
+				<h1>Trivial Soft Drinks</h1>
+				With upgraded machines, you can dispense many of these straightaway—Or if you're not so lucky, you can mix them as follows. Procurement won't be happy if you send these!
+				<h2>Banana Honk:</h2>
+				Mix one part each of banana juice, cream, and sugar.
+				<h2>Cafe Latte:</h2>
+				Mix one part coffee to one part milk.
+				<h2>Cafe Mocha:</h2>
+				Mix one part Cafe Latte to one part chocolate.
+				<h2>Grape Soda:</h2>
+				Mix one part grape juice to one part soda water.
+				<h2>Iced Coffee:</h2>
+				Mix three parts coffee to one part ice.
+				<h2>Iced Tea:</h2>
+				Mix three parts tea to one part ice.
+				<h2>Milkshake:</h2>
+				Mix two parts each of milk and ice to one part cream.
+				<h2>Triple Citrus:</h2>
+				Mix one part each of lemon juice, lime juice, and orange juice.
+				<br><br><a href='byond://?src=[UID()];seek_page=1'>Back to Table of Contents</a>
+				</body>
+				</html>
+			"},{"<html><meta charset='utf-8'>
+				<head>
+				<style>
+				h1, h2 {font-size: 18px; margin: 15px 0px 5px;}
+				h2 {font-size: 15px;}
+				</style>
+				</head>
+				<body>
+				<h1>Easy Soft Drinks</h1>
+				You can make most of these drinks straight from your own dispensers. Drinks marked with § are for synthetic customers only. Drinks marked with † are enjoyable for synthetic and organic customers alike.
+				<h2>Brown Star:</h2>
+				Mix two parts orange juice to one part cola.
+				<h2>Cog-a-Cola: §</h2>
+				Mix one part TCP Sip to one part cola.
+				<h2>Gibb Floats:</h2>
+				Mix five parts each of cream, Dr. Gibb, and ice.
+				<h2>Ginger Beep: §</h2>
+				Mix one part TCP Sip to one part ginger ale.
+				<h2>Iced Coco:</h2>
+				Mix three parts hot chocolate to one part ice.
+				<h2>Kira Special:</h2>
+				Mix one part each of orange juice, lime juice, and soda water.
+				<h2>Lemonade:</h2>
+				Mix one part each of lemon juice, sugar, and water.
+				<h2>Melonade:</h2>
+				Mix two parts each of lemonade and watermelon juice to one part ice.
+				<h2>Milk Tea:</h2>
+				Mix one part each of tea, sugar, and milk.
+				<h2>Monster Mix:</h2>
+				Mix one part each of soda water, Dr. Gibb, space mountain wind soda, space-up, cola, and ice.
+				<h2>Party Punch:</h2>
+				Mix two parts soda water to one part each of Triple Citrus (<a href='byond://?src=[UID()];seek_page=7'>Trivial Soft Drinks</a>), banana juice, berry juice, pineapple juice, watermelon juice, and grape juice.
+				<h2>Processor Punch: §</h2>
+				Mix one part each of TCP Sip, Dr. Gibb, and Iced Tea (<a href='byond://?src=[UID()];seek_page=7'>Trivial Soft Drinks</a>).
+				<h2>Rewriter:</h2>
+				Mix one part space mountain wind soda to one part coffee.
+				<h2>Roy Rogers:</h2>
+				Mix one part berry juice to one part cola.
+				<h2>Shirley Temple:</h2>
+				Mix one part berry juice to one part space-up.
+				<h2>Silencer:</h2>
+				Mix one part each of nothing, cream, and sugar.
+				<h2>Soy Latte:</h2>
+				Mix one part coffee to one part soy milk.
+				<h2>Spessamato Smash:</h2>
+				Mix one part tomato juice to one part space-up.
+				<h2>TCP Sip: §</h2>
+				Mix one part electrolytes to one part welding fuel. You can likely find a fuel tank in the maintenance tunnels.
+				<h2>The Doctor's Delight:</h2>
+				Mix one part each of lime juice, tomato juice, orange juice, and cream.
+				<h2>Top-Up: †</h2>
+				Mix one part electrolytes to one part space-up.
+				<h2>Zero Day: †</h2>
+				Mix one part electrolytes to one part nothing.
+				<br><br><a href='byond://?src=[UID()];seek_page=1'>Back to Table of Contents</a>
+				</body>
+				</html>
+			"},{"<html><meta charset='utf-8'>
+				<head>
+				<style>
+				h1, h2 {font-size: 18px; margin: 15px 0px 5px;}
+				h2 {font-size: 15px;}
+				</style>
+				</head>
+				<body>
+				<h1>Intermediate Soft Drinks</h1>
+				Most of these drinks require many steps or collaboration with other departments. Drinks marked with § are for synthetic customers only.
+				<h2>Annona and Blueberries:</h2>
+				Mix one part each of annona juice and berry juice. Botany can help.
+				<h2>Annona Cream:</h2>
+				Mix five parts each of sugar and water to two parts corn oil and one part annona juice. Botany or the Kitchen can help.
+				<h2>Arnold Palmer:</h2>
+				Mix one part Lemonade (<a href='byond://?src=[UID()];seek_page=8'>Easy Soft Drinks</a>) to one part Iced Tea (<a href='byond://?src=[UID()];seek_page=7'>Trivial Soft Drinks</a>).
+				<h2>Battery Acid: §</h2>
+				Mix one part TCP Sip (<a href='byond://?src=[UID()];seek_page=8'>Easy Soft Drinks</a>) to one part Triple Citrus (<a href='byond://?src=[UID()];seek_page=7'>Trivial Soft Drinks</a>).
+				<h2>Bubbly Beep: §</h2>
+				Mix one part space cleaner to one part soda water. Custodial or Chemistry can help.
+				<h2>Bubble Milk Tea:</h2>
+				Mix three parts Milk Tea (<a href='byond://?src=[UID()];seek_page=8'>Easy Soft Drinks</a>) to one part cooked tapioca pearls. The Kitchen and Botany can help.
+				<h2>Bubble Tea:</h2>
+				Mix two parts tea to one part each of sugar and cooked tapioca pearls. The Kitchen and Botany can help.
+				<h2>Cherry Shake:</h2>
+				Mix one part each of cherry jelly, cream, and ice. Botany or the Kitchen can help.
+				<h2>Chocolate Milk:</h2>
+				Mix one part chocolate to one part milk. Botany or the Kitchen can help.
+				<h2>Chocolate Pudding:</h2>
+				Mix five parts each of cocoa powder, egg, and milk. Botany or the Kitchen can help.
+				<h2>Egg Coffee:</h2>
+				Mix two parts Egg Cream to three parts coffee.
+				<h2>Egg Cream:</h2>
+				Mix 10 parts sugar to five parts each of egg and milk. Cool to 280K. The Kitchen or Chemistry can help.
+				<h2>Horchata:</h2>
+				Mix four parts water, two parts rice, and one part each of sugar and vanilla. Botany or the Kitchen can help.
+				<h2>Mambo Smoothie:</h2>
+				Mix one part each of kiwi juice and mango juice. Botany can help.
+				<h2>Mango Punch:</h2>
+				Mix one part each of mango juice, lime juice, and Goldschlager (<a href='byond://?src=[UID()];seek_page=3'>Trivial Alcoholic Drinks</a>). Surprisingly non-alcoholic. Botany can help.
+				<h2>Peach Milkshake:</h2>
+				Mix one part each of peach juice, ice, and cream.
+				<h2>Peanut Butter Banana Smoothie:</h2>
+				Mix one part each of soy milk, banana juice, peanut butter, and ice. Botany or the Kitchen can help.
+				<h2>Pumpkin Space Latte:</h2>
+				Mix five parts each of coffee, cream, and pumpkin juice. Botany can help.
+				<h2>Refined Nispero Juice:</h2>
+				Mix ten parts sugar to one part each nispero juice, lemon juice, and ice. Botany can help.
+				<h2>Super Healthy Prickly-Pear Juice:</h2>
+				Mix five parts each of sugar, prickly pear juice, lemon juice, and ice. Botany can help.
+				<h2>Tears of Fyrsskar:</h2>
+				Mix one part each of plasma, oxygen, and Triple Citrus (<a href='byond://?src=[UID()];seek_page=7'>Trivial Soft Drinks</a>). Chemistry can help.
+				<h2>Tin and Tonic: §</h2>
+				Mix one part liquid solder to one part tonic water. Chemistry can help.
+				<h2>Uncle Git's Special Milk:</h2>
+				Mix five parts each of milk, cream, and egg to one part salt. The Kitchen or Botany can help.
+				<h2>Vanilla Pudding:</h2>
+				Mix five parts each of egg, coffee, and vanilla powder. Botany or the Kitchen can help.
+				<h2>Very Berry Smoothie:</h2>
+				Mix one part each of cream, berry juice, plum juice, and ice. Botany can help.
+				<br><br><a href='byond://?src=[UID()];seek_page=1'>Back to Table of Contents</a>
+				</body>
+				</html>
+			"},{"<html><meta charset='utf-8'>
+				<head>
+				<style>
+				h1, h2 {font-size: 18px; margin: 15px 0px 5px;}
+				h2 {font-size: 15px;}
+				</style>
+				</head>
+				<body>
+				<h1>Hard Soft Drinks</h1>
+				These drinks require a significant amount of cross-department collaboration, many steps, or rare ingredients. Drinks marked with § are for synthetic customers only.
+				<h2>Beet Shrub:</h2>
+				Mix two parts beet juice to one part each of vinegar and corn syrup. Heat to 375K. Botany or the Kitchen can help.
+				<h2>Berry Beet Refresher:</h2>
+				Mix four parts soda water, three parts ice, and one part each of Beet Shrub, berry juice, and lime juice.
+				<h2>Blue Cherry Shake:</h2>
+				Mix one part each of blue cherry jelly, cream, and ice. Botany can help.
+				<h2>Electrocharge: §</h2>
+				Mix three parts TCP Sip (<a href='byond://?src=[UID()];seek_page=8'>Easy Soft Drinks</a>) to one part each of copper and silver. Chemistry or Cargo can help.
+				<h2>Lean:</h2>
+				Mix one part each of space drugs, soda water, and grape juice. Chemistry can help.
+				<h2>Nuka Cola:</h2>
+				Mix six parts cola to one part uranium. Cargo can help.
+				<h2>Salt and Battery: §</h2>
+				Mix one part electrolytes to one part conductive lube. Chemistry can help.
+				<h2>Soft Reset: §</h2>
+				Mix one part each of degreaser, sterilizine, drying agent, and space cleaner. Chemistry, Custodial, or Virology can help.
+				<h2>Vegetable Juice Mix:</h2>
+				Mix one part each of tomato juice, carrot juice, beet juice, and lettuce juice. Botany can help.
+				<br><br><a href='byond://?src=[UID()];seek_page=1'>Back to Table of Contents</a>
+				</body>
+				</html>
+			"},{"<html><meta charset='utf-8'>
+				<head>
+				<style>
+				h1, h2 {font-size: 18px; margin: 15px 0px 5px;}
+				h2 {font-size: 15px;}
+				</style>
+				</head>
+				<body>
+				<h1>Bottler Recipes</h1>
+				In collaboration with Cargo, Botany, and the Kitchen, you can make several special drinks in your bottling machine. Add the ingredients in the order provided or your recipe may not come out.
+				<h2>Apple-pocalypse:</h2>
+				Apple, Apple, Apple.
+				<h2>Berry Banned:</h2>
+				Berries, Berries, Berries, or Poison Berries, Poison Berries, Poison Berries.
+				<h2>Blackeye Brew:</h2>
+				Cola, Sugar Cane, Ice Cream.
+				<h2>Grape Granade:</h2>
+				Grape Juice, Grapes, Flash.
+				<h2>Meteor Malt:</h2>
+				Unrefined Ore, Wheat, Unrefined Ore.
+				<h2>Paradise Punch:</h2>
+				Grapes, Banana, Cherries.
+				<br><br><a href='byond://?src=[UID()];seek_page=1'>Back to Table of Contents</a>
 				</body>
 				</html>
 			"})
@@ -637,11 +1253,12 @@
 /obj/item/book/manual/nuclear
 	name = "Fission Mailed: Nuclear Sabotage 101"
 	desc = "A blood-spattered book filled with block text, educating the reader on how to detonate nuclear bombs."
+	summary = "Reference material for the activation and detonation of nuclear devices. All material classified Level-1 PYTHON."
 	icon_state ="bookNuclear"
 	author = "Syndicate"
 	protected = TRUE
 	title = "Fission Mailed: Nuclear Sabotage 101"
-	pages = list({"<html>
+	pages = list({"<html><meta charset='utf-8'>
 			Nuclear Explosives 101:<br>
 			Hello and thank you for choosing the Syndicate for your nuclear information needs.<br>
 			Today's crash course will deal with the operation of a Fusion Class Nanotrasen made Nuclear Device.<br>
@@ -668,16 +1285,17 @@
 			Good luck. Remember the order:<br>
 			<b>Disk, Code, Safety, Timer, Disk, RUN!</b><br>
 			Intelligence Analysts believe that normal Nanotrasen procedure is for the Captain to secure the nuclear authorisation disk.<br>
-			Good luck!
+			Speed and strength, operative.
 			</html>"})
 
 /obj/item/book/manual/hydroponics_pod_people
 	name = "The Human Harvest - From seed to market"
 	desc = "Blurry pictures of people coming out of pods are taped to the cover."
+	summary = "A handy-dandy guide to growing plant-people for fun and profit!"
 	icon_state ="bookHydroponicsPodPeople"
 	author = "Farmer John"
 	title = "The Human Harvest - From seed to market"
-	pages = list({"<html>
+	pages = list({"<html><meta charset='utf-8'>
 				<head>
 				<style>
 				h1 {font-size: 18px; margin: 15px 0px 5px;}
@@ -707,6 +1325,60 @@
 				</html>
 				"})
 
+/obj/item/book/manual/mug_cakes
+	name = "Harried Intern's Guide to Mug Cakes"
+	desc = "A tiny recipe book written in ballpoint pen."
+	summary = "How to cook your own mug cakes when the chef is nowhere to be found!"
+	icon_state ="cook_book"
+	author = "Intern Kołodziejczyk"
+	title = "Harried Intern's Guide to Mug Cakes"
+	pages = list({"<html><meta charset='utf-8'>
+				<head>
+				<style>
+				body {font-family: sans-serif; color: #104;}
+				h1 {font-size: 18px; margin: 15px 0px 5px;}
+				h2 {font-size: 15px; margin: 15px 0px 5px;}
+				li {margin: 2px 0px 2px 15px;}
+				ul {list-style: none; margin: 5px; padding: 0px;}
+				ul li {margin: 2px 0 1em 0;}
+				ol {margin: 5px; padding: 0px 15px;}
+				</style>
+				</head>
+				<body>
+				<h1>Making Mug Cakes!!</h1>
+
+				<p>The chef would have you believe that cooking is specialist knowledge that needs fancy equipment,
+				but when there's a trail of blood leading to the freezers and they're nowhere to be found,
+				they can't help you anymore, can they! All you need to start these recipes is a mug,
+				a food crate from cargo, and a microwave. Good luck!</p>
+
+				<h2>Basic mug cake!</h2>
+				<ol>
+				<li>Put 5u milk, 5u flour, and 5u sugar in your mug.</li>
+				<li>Put the mug in the microwave.</li>
+				<li>Put an egg in the microwave.</li>
+				<li>Turn it on!</li>
+				</ol>
+
+				<p>Now you have a mug cake. Hopefully it staves off starvation until the shift change shuttle arrives.
+				If you want it to taste a little better, try some of these modifications.</p>
+
+				<ul>
+				<li>Add a banana to the microwave. Bananas come in the food crate.</li>
+				<li>Add 5u vanilla to the mug.</li>
+				<li>Instead of 5u milk, use 10u chocolate milk.</li>
+				<li>Add a cherry to the microwave. The botanist won't give me blue ones.</li>
+				<li>Add a lime to the microwave.</li>
+				<li>Add 5u honey to the mug.</li>
+				<li>DO NOT add the red mushrooms, it's not worth it!</li>
+				</ul>
+
+				<p>Oh god I think I hear it in the vents again. Wish me lu</p>
+
+				</body>
+				</html>
+				"})
+
 /**
   * # Wiki Page Based Book Manuals
   *
@@ -720,8 +1392,7 @@
 
 /obj/item/book/manual/wiki
 	name = "Wiki Book Manual"
-	desc = "This REALLY shouldn't exist in-game, please contact a coder"
-	copyright = TRUE
+	desc = "This REALLY shouldn't exist in-game, please contact a coder."
 	protected = TRUE //We absolutely do not want players editing these books, it might fuck up the iframes in them :)
 	pages = null //we don't want people opening this book until it fully initializes
 	//Wiki Iframes need a decent bit of room, this will be enough to make the readable without having to expand the window immediately
@@ -730,10 +1401,10 @@
 	///The Article title of the wiki page being opened in the <iframe>, must use underscores '_' and not whitespace for spaces in title
 	var/wiki_article_title = "Space_Law"
 
-/obj/item/book/manual/wiki/Initialize()
+/obj/item/book/manual/wiki/Initialize(mapload)
 	. = ..()
 	pages = list({"
-		<html><head></head><body bgcolor='[book_bgcolor]'>
+		<html><meta charset='utf-8'><head></head><body bgcolor='[book_bgcolor]'>
 		<iframe width='100%' height='97%' src="[GLOB.configuration.url.wiki_url]/index.php/[wiki_article_title]?action=render" frameborder="0" id="main_frame"></iframe>
 		</body></html>"})
 
@@ -758,30 +1429,16 @@
 /obj/item/book/manual/wiki/robotics_cyborgs
 	name = "Cyborgs for Dummies"
 	desc = "Precise instructions on how to construct your very own robotic friend."
+	summary = "Standard construction and maintenance procedures for Nanotrasen silicon units."
 	icon_state = "borgbook"
 	author = "XISC"
 	title = "Cyborgs for Dummies"
 	wiki_article_title = "Guide_to_Robotics"
 
-/obj/item/book/manual/wiki/experimentor
-	name = "Mentoring your Experiments"
-	desc = "A madman's ramblings on how to experiment with the E.X.P.E.R.I-MENTOR."
-	icon_state = "rdbook"
-	author = "Dr. H.P. Kritz"
-	title = "Mentoring your Experiments"
-	wiki_article_title = "Guide_to_the_E.X.P.E.R.I-MENTOR"
-
-/obj/item/book/manual/wiki/chef_recipes
-	name = "Chef Recipes"
-	desc = "Knives, Ovens, and You: A guide to cooking."
-	icon_state = "cook_book"
-	author = "NanoTrasen"
-	title = "Chef Recipes"
-	wiki_article_title = "Guide_to_Food_and_Drinks#Food"
-
 /obj/item/book/manual/wiki/engineering_construction
 	name = "Station Repairs and Construction"
 	desc = "A guide on how to fix things without duct tape."
+	summary = "A comprehensive reference for the construction and maintenance of most on-station equipment."
 	icon_state ="bookEngineering"
 	author = "Engineering Encyclopedia"
 	title = "Station Repairs and Construction"
@@ -789,11 +1446,30 @@
 
 /obj/item/book/manual/wiki/faxes
 	name = "Guide to Faxes"
-	desc = "NanoTrasen's own manual on how to write faxes."
+	desc = "Nanotrasen's own manual on how to write faxes."
+	summary = "A comprehensive reference on protocol for the writing and sending of faxes."
 	icon_state ="bookEngineering"
 	author = "Nanotrasen"
 	title = "Faxes and You!"
 	wiki_article_title = "Guide_to_Faxes"
+
+/obj/item/book/manual/wiki/hydroponics
+	name = "General Hydroponics"
+	desc = "A guide outlining the principles of hydroponics."
+	summary = "A comprehensive reference on the identification and growth of various usable plants."
+	icon_state ="bookHydroponicsGeneral"
+	author = "Nanotrasen"
+	title = "General Hydroponics"
+	wiki_article_title = "Guide_to_Hydroponics"
+
+/obj/item/book/manual/wiki/botanist
+	name = "The Station Botanist Handbook"
+	desc = "A handbook with instructions and tips for station botanists."
+	summary = "A quick reference guide to the responsibilities and tasks of the station's Botany contingent."
+	icon_state ="bookHydroponicsBotanist"
+	author = "Nanotrasen"
+	title = "The Station Botanist Handbook"
+	wiki_article_title = "Botanist"
 
  //* STANDARD OPERATING PROCEDURE MANUALS *// (and space Law)
 
@@ -805,6 +1481,17 @@
 	author = "Nanotrasen"
 	title = "Space Law"
 	wiki_article_title = "Space_law"
+
+/obj/item/book/manual/wiki/security_space_law/imaginary
+	name = "Imaginary Space Law Manual"
+	desc = "A set of memorized Nanotrasen guidelines for keeping law and order on their space stations."
+	flags = DROPDEL | ABSTRACT | NOBLUDGEON
+	imaginary = TRUE
+
+/obj/item/book/manual/wiki/security_space_law/imaginary/Initialize(mapload)
+	. = ..()
+	ADD_TRAIT(src, TRAIT_SKIP_EXAMINE, INNATE_TRAIT)
+	ADD_TRAIT(src, TRAIT_NO_STRIP, INNATE_TRAIT)
 
 /obj/item/book/manual/wiki/security_space_law/black
 	name = "Space Law - Limited Edition"
@@ -835,6 +1522,17 @@
 	author = "Nanotrasen"
 	title = "Legal Standard Operating Procedures"
 	wiki_article_title = "Legal_Standard_Operating_Procedure"
+
+/obj/item/book/manual/wiki/sop_legal/imaginary
+	name = "Imaginary Legal SOP Manual"
+	desc = "A set of memorized Nanotrasen guidelines aiming at the safe conduct of all legal activities."
+	flags = DROPDEL | ABSTRACT | NOBLUDGEON
+	imaginary = TRUE
+
+/obj/item/book/manual/wiki/sop_legal/imaginary/Initialize(mapload)
+	. = ..()
+	ADD_TRAIT(src, TRAIT_SKIP_EXAMINE, INNATE_TRAIT)
+	ADD_TRAIT(src, TRAIT_NO_STRIP, INNATE_TRAIT)
 
 /obj/item/book/manual/wiki/sop_supply
 	name = "Supply Standard Operating Procedures"
@@ -884,13 +1582,46 @@
 	title = "Science Standard Operating Procedures"
 	wiki_article_title = "Standard_Operating_Procedure_(Science)"
 
+/obj/item/book/manual/sop_ntinstructor
+	name = "Career Trainer SOP"
+	desc = "A set of guidelines for Instructors."
+	icon_state = "sop_legal"
+	author = "Nanotrasen"
+	title = "Instructor SOP"
+	pages = list({"
+		<html>
+				<head>
+				<style>
+				h1 {font-size: 15px; margin: 15px 0px 5px;}
+				li {margin: 2px 0px 2px 15px;}
+				ul {list-style: none; margin: 5px; padding: 0px;}
+				ol {margin: 5px; padding: 0px 15px;}
+
+
+				</style>
+				</head>
+				<body>
+				<h1><U><B>Instructor SOP</B></U></h1><BR>
+				<p>
+				<ol>
+				<li>NT Career Trainers are to wear their company-provided uniform and <b>jacket OR their issued beret/hat</b> at all times while on duty. They are free to choose a beret that best matches their primary field of knowledge if they so desire. Additionally, Identifying equipment SHOULD not be distributed to crew members. </li>
+				<li>NT Career Trainers are to be available to all Crewmembers, regardless of Department. You may not only assist a singular Department. </li>
+				<li>NT Career Trainers are not to do a Trainee's work for them. </li>
+				<li>NT Career Trainers are to use NCT Data Chips only to acquire the access necessary for providing training. They are not to use said access for other purposes. </li>
+				<li>In the event of a lost or stolen NCT Data Chip, the NT Career Trainer is to report the incident to their local Nanotrasen Representative or Station Captain. </li>
+				<li>NT Career Trainers are permitted to carry a flash for self-defense.</li>
+				</ol>
+				</body>
+				</html>
+		"})
+
  //* MANUAL SPAWNERS *// (and space Law)
 
 /obj/item/book/manual/random
 	icon_state = "random_book"
 	var/static/list/banned_books = list(/obj/item/book/manual/random, /obj/item/book/manual/nuclear, /obj/item/book/manual/wiki)
 
-/obj/item/book/manual/random/Initialize()
+/obj/item/book/manual/random/Initialize(mapload)
 	..()
 	var/newtype = pick(subtypesof(/obj/item/book/manual) - banned_books)
 	new newtype(loc)

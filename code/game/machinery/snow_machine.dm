@@ -3,7 +3,6 @@
 	desc = "Just add water and you too can have your own winter wonderland! Carol singers not included."
 	icon_state = "snow_machine_off"
 	density = TRUE
-	anchored = FALSE
 	layer = OBJ_LAYER
 	var/active = FALSE
 	var/power_used_this_cycle = 0
@@ -26,7 +25,7 @@
 
 /obj/machinery/snow_machine/examine(mob/user)
 	. = ..()
-	. += "<span class='notice'>The internal reservoir indicates it is [infinite_snow ? "100" : round(reagents.total_volume / reagents.maximum_volume * 100)]% full.</span>"
+	. += SPAN_NOTICE("The internal reservoir indicates it is [infinite_snow ? "100" : round(reagents.total_volume / reagents.maximum_volume * 100)]% full.")
 
 /obj/machinery/snow_machine/RefreshParts()
 	power_efficiency = 0
@@ -40,7 +39,7 @@
 	if(!has_power() || !anchored)
 		return
 	if(turn_on_or_off(!active))
-		to_chat(user, "<span class='notice'>You [active ? "turn on" : "turn off"] [src].</span>")
+		to_chat(user, SPAN_NOTICE("You [active ? "turn on" : "turn off"] [src]."))
 	return ..()
 
 /obj/machinery/snow_machine/crowbar_act(mob/user, obj/item/I)
@@ -54,11 +53,10 @@
 
 /obj/machinery/snow_machine/wrench_act(mob/user, obj/item/I)
 	. = TRUE
-	if(!I.use_tool(src, user, 0, volume = I.tool_volume))
+	if(!default_unfasten_wrench(user, I, 0))
 		return
-	anchored = !anchored
-	to_chat(user, "<span class='notice'>You [anchored ? "tighten" : "loosen"] [src]'s wheels.</span>")
-	turn_on_or_off(FALSE)
+	if(!anchored)
+		turn_on_or_off(FALSE)
 
 /obj/machinery/snow_machine/process()
 	if(power_used_this_cycle)
@@ -77,11 +75,29 @@
 		return
 	for(var/turf/TF in range(1, src))
 		if(issimulatedturf(TF))
-			var/turf/simulated/S = TF
-			affect_turf_temperature(S, cooling_speed)
+			var/datum/milla_safe/snow_machine_cooling/milla = new()
+			milla.invoke_async(src, cooling_speed)
 		if(prob(50))
 			continue
 		make_snowcloud(TF)
+
+/datum/milla_safe/snow_machine_cooling
+
+/datum/milla_safe/snow_machine_cooling/on_run(obj/machinery/snow_machine/snowy, modifier)
+	var/turf/T = get_turf(snowy)
+	var/datum/gas_mixture/env = get_turf_air(T)
+
+	if(!issimulatedturf(T) || T.density)
+		return
+
+	var/initial_temperature = env.temperature()
+	if(initial_temperature <= snowy.lower_temperature_limit) //Can we actually cool this?
+		return
+	var/old_thermal_energy = env.thermal_energy()
+	var/amount_cooled = initial_temperature - modifier * 8000 / env.heat_capacity()
+	env.set_temperature(max(amount_cooled, snowy.lower_temperature_limit))
+	var/new_thermal_energy = env.thermal_energy()
+	snowy.power_used_this_cycle += (old_thermal_energy - new_thermal_energy) / 100
 
 /obj/machinery/snow_machine/power_change()
 	if(!..())
@@ -96,29 +112,13 @@
 	else
 		icon_state = "snow_machine_[active ? "on" : "off"]"
 
-/obj/machinery/snow_machine/proc/affect_turf_temperature(turf/T, modifier)
-	if(!issimulatedturf(T) || T.density)
-		return
-	var/turf/simulated/S = T
-	var/initial_temperature = S.air.temperature
-	if(initial_temperature <= lower_temperature_limit) //Can we actually cool this?
-		return
-	var/old_thermal_energy = S.air.thermal_energy()
-	var/amount_cooled = initial_temperature - modifier * 8000 / S.air.heat_capacity()
-	S.air.temperature = max(amount_cooled, lower_temperature_limit)
-	air_update_turf()
-	var/new_thermal_energy = S.air.thermal_energy()
-	power_used_this_cycle += (old_thermal_energy - new_thermal_energy) / 100
-
 /obj/machinery/snow_machine/proc/make_snowcloud(turf/T)
 	if(isspaceturf(T))
 		return
 	if(T.density)
 		return
-	if(issimulatedturf(T))
-		var/turf/simulated/S = T
-		if(S.air.temperature > T0C + 1)
-			return
+	if(T.get_readonly_air().temperature() > T0C + 1)
+		return
 	if(locate(/obj/effect/snowcloud, T)) //Ice to see you
 		return
 	if(infinite_snow || !reagents.remove_reagent(reagents.get_master_reagent_id(), 3))
@@ -129,7 +129,7 @@
 /obj/machinery/snow_machine/proc/turn_on_or_off(activate, give_message = FALSE)
 	active = activate ? TRUE : FALSE
 	if(!active && give_message)
-		visible_message("<span class='warning'>[src] switches off!</span>")
+		visible_message(SPAN_WARNING("[src] switches off!"))
 		playsound(loc, 'sound/machines/buzz-sigh.ogg', 50, FALSE)
 	update_icon(UPDATE_ICON_STATE)
 	return TRUE

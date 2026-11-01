@@ -35,7 +35,7 @@
 /datum/vote/map/announce()
 	..()
 	for(var/mob/M in GLOB.player_list)
-		M.throw_alert("Map Vote", /obj/screen/alert/notify_mapvote, timeout_override = GLOB.configuration.vote.vote_time)
+		M.throw_alert("Map Vote", /atom/movable/screen/alert/notify_mapvote, timeout_override = GLOB.configuration.vote.vote_time)
 
 /datum/vote/map/handle_result(result)
 	// Find target map.
@@ -48,5 +48,5 @@
 			// Set top voted map
 			if(result == "[initial(M.fluff_name)] ([initial(M.technical_name)])")
 				top_voted_map = M
-	to_chat(world, "<span class='interface'>Map for next round: [initial(top_voted_map.fluff_name)] ([initial(top_voted_map.technical_name)])</span>")
+	to_chat(world, SPAN_INTERFACE("Map for next round: [initial(top_voted_map.fluff_name)] ([initial(top_voted_map.technical_name)])"))
 	SSmapping.next_map = new top_voted_map

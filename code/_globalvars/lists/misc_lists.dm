@@ -1,8 +1,9 @@
 GLOBAL_LIST_INIT(alphabet, list("a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"))
 GLOBAL_LIST_INIT(alphabet_uppercase, list("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z"))
-GLOBAL_LIST_INIT(zero_character_only, list("0"))
-GLOBAL_LIST_INIT(hex_characters, list("0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"))
-GLOBAL_LIST_INIT(binary, list("0","1"))
+GLOBAL_LIST_INIT(vowels_lower, list("a","e","i","o","u"))
+GLOBAL_LIST_INIT(vowels_upper, list("A","E","I","O","U"))
+GLOBAL_LIST_INIT(consonants_lower, list("b","c","d","f","g","h","j","k","l","m","n","p","q","r","s","t","v","w","x","y","z"))
+GLOBAL_LIST_INIT(consonants_upper, list("B","C","D","F","G","H","J","K","L","M","N","P","Q","R","S","T","V","W","X","Y","Z"))
 GLOBAL_LIST_INIT(html_colors, list("Alice Blue","Antique White","Aqua","Aquamarine","Azure","Beige","Bisque","Black","Blanched Almond","Blue","Blue Violet",
 									"Brown","Burly Wood","Cadet Blue","Chartreuse","Chocolate","Coral","Cornflower Blue","Cornsilk","Crimson","Cyan",
 									"Dark Blue","Dark Cyan","Dark Golden Rod","Dark Gray","Dark Green","Dark Khaki","Dark Magenta","Dark Olive Green",
@@ -19,8 +20,9 @@ GLOBAL_LIST_INIT(html_colors, list("Alice Blue","Antique White","Aqua","Aquamari
 									"Salmon","Sandy Brown","Sea Green","Sea Shell","Sienna","Silver","Sky Blue","Slate Blue","Slate Gray","Snow","Spring Green",
 									"Steel Blue","Tan","Teal","Thistle","Tomato","Turquoise","Violet","Wheat","White","White Smoke","Yellow","Yellow Green"))
 
-GLOBAL_LIST_INIT(day_names, list("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
 GLOBAL_LIST_INIT(month_names, list("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"))
+// keep si_suffixes balanced and with a pivot in the middle!
+GLOBAL_LIST_INIT(si_suffixes, list("y", "z", "a", "f", "p", "n", "u", "m", "", "k", "M", "G", "T", "P", "E", "Z", "Y"))
 
 GLOBAL_LIST_INIT(restricted_camera_networks, list(
 	"CentComm",
@@ -31,10 +33,12 @@ GLOBAL_LIST_INIT(restricted_camera_networks, list(
 	"UO45R",
 	"UO71",
 	"Xeno",
-	"SyndicateTestLab"
+	"SyndicateTestLab",
+	"SyndicateToxinsTest",
+	"SyndicateCaves"
 	)) //Those networks can only be accessed by preexisting terminals. AIs and new terminals can't use them.
 
-GLOBAL_LIST_INIT(ruin_landmarks, list())
+GLOBAL_LIST_EMPTY(ruin_landmarks)
 
 GLOBAL_LIST_INIT(round_end_sounds, list(
 		'sound/AI/newroundsexy.ogg' = 2.3 SECONDS,
@@ -47,9 +51,6 @@ GLOBAL_LIST_INIT(round_end_sounds, list(
 
 GLOBAL_LIST_INIT(cooking_recipe_types, list(
 	RECIPE_MICROWAVE = /datum/recipe/microwave,
-	RECIPE_OVEN = /datum/recipe/oven,
-	RECIPE_GRILL = /datum/recipe/grill,
-	RECIPE_CANDY = /datum/recipe/candy
 	))
 GLOBAL_LIST_INIT(cooking_recipes, list(RECIPE_MICROWAVE = list(), RECIPE_OVEN = list(), RECIPE_GRILL = list(), RECIPE_CANDY = list()))
 GLOBAL_LIST_INIT(cooking_ingredients, list(RECIPE_MICROWAVE = list(), RECIPE_OVEN = list(), RECIPE_GRILL = list(), RECIPE_CANDY = list()))
@@ -61,3 +62,83 @@ GLOBAL_LIST_EMPTY(client_login_processors)
 
 /// List of ckeys that have seen a blurb of a given key.
 GLOBAL_LIST_EMPTY(blurb_witnesses)
+
+/// List of looping sounds
+GLOBAL_LIST_EMPTY(looping_sounds)
+
+/// List of possible crits from things tipping over
+GLOBAL_LIST_EMPTY(tilt_crits)
+
+/// Stores a list of the cached seed icons. Used in the seed extractor and the gene modder
+GLOBAL_LIST_EMPTY(seeds_cached_base64_icons)
+
+/// Assoc list of all RND techs with ID to name
+GLOBAL_LIST_EMPTY(rnd_tech_id_to_name)
+
+/// List of things that restrain teslas.
+GLOBAL_LIST_EMPTY(tesla_containment)
+
+/// Assoc list of admin permission names
+GLOBAL_LIST_INIT(admin_permission_names, alist(
+	R_BUILDMODE = "BUILDMODE",
+	R_ADMIN = "ADMIN",
+	R_BAN = "BAN",
+	R_EVENT = "EVENT",
+	R_SERVER = "SERVER",
+	R_DEBUG = "DEBUG",
+	R_POSSESS = "POSSESS",
+	R_PERMISSIONS = "PERMISSIONS",
+	R_STEALTH = "STEALTH",
+	R_REJUVINATE = "REJUVINATE",
+	R_VAREDIT = "VAREDIT",
+	R_SOUNDS = "SOUNDS",
+	R_SPAWN = "SPAWN",
+	R_MOD = "MOD",
+	R_MENTOR = "MENTOR",
+	R_PROCCALL = "PROCCALL",
+	R_VIEWRUNTIMES = "VIEWRUNTIMES",
+	R_MAINTAINER = "MAINTAINER",
+	R_DEV_TEAM = "DEV_TEAM",
+	R_VIEWLOGS = "VIEWLOGS",
+))
+GLOBAL_PROTECT(admin_permission_names)
+
+GLOBAL_LIST_INIT(blacklisted_heretic_areas, list(
+	/area/station/turret_protected,
+	/area/station/aisat,
+	/area/station/science/toxins/test,
+	))
+
+GLOBAL_LIST_EMPTY(starlight) // Turfs that emit starlight
+
+GLOBAL_LIST_INIT(false_alarm_types, list(
+	/datum/event/alien_infestation, \
+	/datum/event/apc_overload, \
+	/datum/event/apc_short, \
+	/datum/event/blob, \
+	/datum/event/brand_intelligence, \
+	/datum/event/bureaucratic_error, \
+	/datum/event/communications_blackout, \
+	/datum/event/electrical_storm, \
+	/datum/event/immovable_rod, \
+	/datum/event/infestation, \
+	/datum/event/ion_storm, \
+	/datum/event/mass_hallucination, \
+	/datum/event/meteor_wave, \
+	/datum/event/prison_break, \
+	/datum/event/rogue_drone, \
+	/datum/event/solar_flare, \
+	/datum/event/spider_infestation, \
+	/datum/event/spider_terror, \
+	/datum/event/tear, \
+	/datum/event/tear/honk, \
+	/datum/event/traders, \
+	/datum/event/market_crash, \
+	/datum/event/disease_outbreak, \
+	/datum/event/vent_clog, \
+	/datum/event/disposals_clog, \
+	/datum/event/demon_incursion, \
+	/datum/event/shuttle_loan, \
+	/datum/event/grid_check, \
+	) + subtypesof(/datum/event/anomaly) + subtypesof(/datum/event/carp_migration) \
+)

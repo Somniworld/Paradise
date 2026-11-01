@@ -17,25 +17,29 @@
 	///station account database
 	var/datum/money_account_database/account_db
 
-/obj/machinery/computer/account_database/Initialize()
+/obj/machinery/computer/account_database/Initialize(mapload)
 	. = ..()
 	reconnect_database()
 
 /obj/machinery/computer/account_database/proc/reconnect_database()
 	account_db = GLOB.station_money_database
 
-/obj/machinery/computer/account_database/attackby(obj/O, mob/user, params)
-	if(ui_login_attackby(O, user))
-		return
+/obj/machinery/computer/account_database/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	if(ui_login_attackby(used, user))
+		return ITEM_INTERACT_COMPLETE
+
 	return ..()
 
 /obj/machinery/computer/account_database/attack_hand(mob/user)
 	ui_interact(user)
 
-/obj/machinery/computer/account_database/ui_interact(mob/user, ui_key = "main", datum/tgui/ui = null, force_open = FALSE, datum/tgui/master_ui = null, datum/ui_state/state = GLOB.default_state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/computer/account_database/ui_state(mob/user)
+	return GLOB.default_state
+
+/obj/machinery/computer/account_database/ui_interact(mob/user, datum/tgui/ui = null)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "AccountsUplinkTerminal", name, 800, 600, master_ui, state)
+		ui = new(user, src, "AccountsUplinkTerminal", name)
 		ui.open()
 
 /obj/machinery/computer/account_database/ui_data(mob/user)
@@ -114,16 +118,16 @@
 			if(!attempt_pin || !Adjacent(ui.user))
 				return
 			if(!account_db.try_authenticate_login(detailed_account_view, attempt_pin, FALSE, FALSE, FALSE) || detailed_account_view.account_pin != attempt_pin)
-				to_chat(ui.user, "<span class='warning'>Authentification Failure: Incorrect Pin or insufficient access.</span>")
+				to_chat(ui.user, SPAN_WARNING("Authentification Failure: Incorrect Pin or insufficient access."))
 				return
 			var/new_pin = input("Enter the new pin for this account", "New Account Pin") as num
 			if(!new_pin || !Adjacent(ui.user))
 				return
 			if(new_pin < 1 || new_pin >= 1000000)
-				to_chat(ui.user, "<span class='warning'>Account Error: New pin must be a number between 000001 and 999999.</span>")
+				to_chat(ui.user, SPAN_WARNING("Account Error: New pin must be a number between 000001 and 999999."))
 				return
 			detailed_account_view.account_pin = new_pin
-			to_chat(ui.user, "<span class='notice'>The [detailed_account_view.account_name] account pin has been set to [new_pin] successfully.</span>")
+			to_chat(ui.user, SPAN_NOTICE("The [detailed_account_view.account_name] account pin has been set to [new_pin] successfully."))
 		if("toggle_suspension")
 			if(detailed_account_view)
 				detailed_account_view.suspended = !detailed_account_view.suspended
@@ -133,8 +137,39 @@
 			var/account_name = params["holder_name"]
 			if(!account_name)
 				return
-			GLOB.station_money_database.create_account(account_name, 0, ACCOUNT_SECURITY_ID, name, supress_log = FALSE)
+			var/datum/money_account/account = GLOB.station_money_database.create_account(account_name, 0, ACCOUNT_SECURITY_ID, name, supress_log = FALSE)
+			print_new_account_info(account)
 			current_page = AUT_ACCLST
+
+/obj/machinery/computer/account_database/proc/print_new_account_info(datum/money_account/account)
+	//create a sealed package containing the account details
+	var/obj/item/small_delivery/package = new /obj/item/small_delivery(loc)
+
+	var/obj/item/paper/printout = new /obj/item/paper(package)
+	playsound(loc, 'sound/goonstation/machines/printer_thermal.ogg', 50, TRUE)
+	package.wrapped = printout
+	printout.name = "Account information: [account.account_name]"
+
+	var/overseer = "Unknown"
+	var/datum/ui_login/L = ui_login_get()
+	if(L.id)
+		overseer = L.id.registered_name
+	printout.info = {"<b>Account details (confidential)</b><br><hr><br>
+		<i>Account holder:</i> [account.account_name]<br>
+		<i>Account number:</i> [account.account_number]<br>
+		<i>Account PIN:</i> [account.account_pin]<br>
+		<i>Starting balance:</i> $[account.credit_balance]<br>
+		<i>Created at:</i> [GLOB.current_date_string], [station_time_timestamp()]<br><br>
+		<i>Authorised NT officer overseeing creation:</i> [overseer]<br>"}
+
+	//stamp the paper (icon only)
+	var/image/stampoverlay = image('icons/obj/bureaucracy.dmi')
+	stampoverlay.icon_state = "paper_stamp-cent"
+	if(!printout.stamped)
+		printout.stamped = new
+	printout.stamped += /obj/item/stamp
+	printout.stamp_overlays += stampoverlay
+	printout.stamps += "<hr><i>This paper has been stamped by the Accounts Database.</i>"
 
 /obj/machinery/computer/account_database/proc/clear_viewed_account()
 	UnregisterSignal(detailed_account_view, COMSIG_PARENT_QDELETING)

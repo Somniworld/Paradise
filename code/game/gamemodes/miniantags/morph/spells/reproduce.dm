@@ -1,4 +1,4 @@
-/obj/effect/proc_holder/spell/morph_spell/reproduce
+/datum/spell/morph_spell/reproduce
 	name = "Reproduce"
 	desc = "Split yourself in half making a new morph. Can only be used while on a floor. Makes you temporarily unable to vent crawl."
 	hunger_cost = 150 // 5 humans
@@ -6,24 +6,24 @@
 	action_icon_state = "morph_reproduce"
 	create_attack_logs = FALSE
 
-/obj/effect/proc_holder/spell/morph_spell/reproduce/create_new_targeting()
+/datum/spell/morph_spell/reproduce/create_new_targeting()
 	return new /datum/spell_targeting/self
 
-/obj/effect/proc_holder/spell/morph_spell/reproduce/can_cast(mob/living/simple_animal/hostile/morph/user, charge_check, show_message)
+/datum/spell/morph_spell/reproduce/can_cast(mob/living/simple_animal/hostile/morph/user, charge_check, show_message)
 	. = ..()
 	if(!.)
 		return
 	if(!isturf(user.loc))
 		if(show_message)
-			to_chat(user, "<span class='warning'>You can only split while on flooring!</span>")
+			to_chat(user, SPAN_WARNING("You can only split while on flooring!"))
 		return FALSE
 
-/obj/effect/proc_holder/spell/morph_spell/reproduce/cast(list/targets, mob/living/simple_animal/hostile/morph/user)
-	to_chat(user, "<span class='sinister'>You prepare to split in two, making you unable to vent crawl!</span>")
-	user.ventcrawler = FALSE // Temporarily disable it
+/datum/spell/morph_spell/reproduce/cast(list/targets, mob/living/simple_animal/hostile/morph/user)
+	to_chat(user, SPAN_SINISTER("You prepare to split in two, making you unable to vent crawl!"))
+	user.ventcrawler = VENTCRAWLER_NONE // Temporarily disable it
 	var/list/candidates = SSghost_spawns.poll_candidates("Do you want to play as a morph?", ROLE_MORPH, TRUE, poll_time = 10 SECONDS, source = /mob/living/simple_animal/hostile/morph)
 	if(!length(candidates))
-		to_chat(user, "<span class='warning'>Your body refuses to split at the moment. Try again later.</span>")
+		to_chat(user, SPAN_WARNING("Your body refuses to split at the moment. Try again later."))
 		revert_cast(user)
 		user.ventcrawler = initial(user.ventcrawler) // re enable the crawling
 		return
@@ -34,5 +34,6 @@
 	player_mind.active = TRUE
 	player_mind.transfer_to(new_morph)
 	new_morph.make_morph_antag()
+	dust_if_respawnable(C)
 	user.create_log(MISC_LOG, "Made a new morph using [src]", new_morph)
 	user.ventcrawler = initial(user.ventcrawler) // re enable the crawling

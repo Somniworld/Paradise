@@ -1,43 +1,37 @@
 /datum/species/machine
 	name = "Machine"
 	name_plural = "Machines"
-	max_age = 60
+	max_age = 60 // the first posibrains were created in 2510, they can't be much older than this limit, giving some leeway for sounds sake
 
-	blurb = "Positronic intelligence really took off in the 26th century, and it is not uncommon to see independent, free-willed \
-	robots on many human stations, particularly in fringe systems where standards are slightly lax and public opinion less relevant \
-	to corporate operations. IPCs (Integrated Positronic Chassis) are a loose category of self-willed robots with a humanoid form, \
-	generally self-owned after being 'born' into servitude; they are reliable and dedicated workers, albeit more than slightly \
-	inhuman in outlook and perspective."
+	blurb = "IPCs, or Integrated Positronic Chassis, were initially created as expendable laborers within the Trans-Solar Federation. \
+	Similar to the organic species of the Orion Arm, IPCs possess full sapience, as well as creativity and adaptability on par with other life. Unlike traditional cyborgs and AI units, IPCs are given full rights by Nanotrasen and do not possess lawsets.<br/><br/> \
+	Views on IPCs vary widely between groups across the sector, ranging from openly discriminatory, to supportive of their rights. \
+	In recent years, IPCs have formed diplomatic relations with various governments in the sector, elevating their status from tools and assistants to minor players in interstellar affairs."
 
 	icobase = 'icons/mob/human_races/r_machine.dmi'
 	language = "Trinary"
 	remains_type = /obj/effect/decal/remains/robot
 	inherent_factions = list("slime")
-	skinned_type = /obj/item/stack/sheet/metal // Let's grind up IPCs for station resources!
 
 	eyes = "blank_eyes"
-	brute_mod = 1 / 0.66 // 1 * 0.66 (robolimbs) * 1/0.66 = 1
-	burn_mod = 1 / 0.66 // so no damage mod overall.
 	tox_mod = 0
 	clone_mod = 0
 	death_message = "gives a short series of shrill beeps, their chassis shuddering before falling limp, nonfunctional."
 	death_sounds = list('sound/voice/borg_deathsound.ogg') //I've made this a list in the event we add more sounds for dead robots.
 
 	species_traits = list(NO_BLOOD, NO_CLONESCAN, NO_INTORGANS)
-	inherent_traits = list(TRAIT_VIRUSIMMUNE, TRAIT_NOBREATH, TRAIT_NOGERMS, TRAIT_NODECAY, TRAIT_NOPAIN, TRAIT_GENELESS) //Computers that don't decay? What a lie!
+	inherent_traits = list(TRAIT_VIRUSIMMUNE, TRAIT_NOBREATH, TRAIT_NOGERMS, TRAIT_NODECAY, TRAIT_NOPAIN, TRAIT_GENELESS, TRAIT_NOFAT) // Computers that don't decay? What a lie!
 	inherent_biotypes = MOB_ROBOTIC | MOB_HUMANOID
 	clothing_flags = HAS_UNDERWEAR | HAS_UNDERSHIRT | HAS_SOCKS
 	bodyflags = HAS_SKIN_COLOR | HAS_HEAD_MARKINGS | HAS_HEAD_ACCESSORY | ALL_RPARTS | SHAVED
-	dietflags = 0		//IPCs can't eat, so no diet
-	taste_sensitivity = TASTE_SENSITIVITY_NO_TASTE
+	taste_category = TASTE_CATEGORY_SYNTHETIC
 	blood_color = COLOR_BLOOD_MACHINE
 	flesh_color = "#AAAAAA"
 
 	//Default styles for created mobs.
 	default_hair = "Blue IPC Screen"
 	dies_at_threshold = TRUE
-	can_revive_by_healing = 1
-	has_gender = FALSE
+	can_revive_by_healing = TRUE
 	reagent_tag = PROCESS_SYN
 	male_scream_sound = 'sound/goonstation/voice/robot_scream.ogg'
 	female_scream_sound = 'sound/goonstation/voice/robot_scream.ogg'
@@ -48,8 +42,9 @@
 	butt_sprite = "machine"
 
 	hunger_icon = 'icons/mob/screen_hunger_machine.dmi'
-	hunger_type = "machine"
 
+	skinned_type = /obj/item/stack/sheet/metal // Let's grind up IPCs for station resources!
+	meat_type = /obj/item/food/meat/human/robot
 	has_organ = list(
 		"brain" = /obj/item/organ/internal/brain/mmi_holder/posibrain,
 		"cell" = /obj/item/organ/internal/cell,
@@ -58,17 +53,17 @@
 		)
 	mutantears = /obj/item/organ/internal/ears/microphone
 	has_limbs = list(
-		"chest" =  list("path" = /obj/item/organ/external/chest/ipc),
-		"groin" =  list("path" = /obj/item/organ/external/groin/ipc),
-		"head" =   list("path" = /obj/item/organ/external/head/ipc),
-		"l_arm" =  list("path" = /obj/item/organ/external/arm/ipc),
-		"r_arm" =  list("path" = /obj/item/organ/external/arm/right/ipc),
-		"l_leg" =  list("path" = /obj/item/organ/external/leg/ipc),
-		"r_leg" =  list("path" = /obj/item/organ/external/leg/right/ipc),
-		"l_hand" = list("path" = /obj/item/organ/external/hand/ipc),
-		"r_hand" = list("path" = /obj/item/organ/external/hand/right/ipc),
-		"l_foot" = list("path" = /obj/item/organ/external/foot/ipc),
-		"r_foot" = list("path" = /obj/item/organ/external/foot/right/ipc)
+		"chest" =  list("path" = /obj/item/organ/external/chest/ipc, "descriptor" = "chest"),
+		"groin" =  list("path" = /obj/item/organ/external/groin/ipc, "descriptor" = "groin"),
+		"head" =   list("path" = /obj/item/organ/external/head/ipc, "descriptor" = "head"),
+		"l_arm" =  list("path" = /obj/item/organ/external/arm/ipc, "descriptor" = "left arm"),
+		"r_arm" =  list("path" = /obj/item/organ/external/arm/right/ipc, "descriptor" = "right arm"),
+		"l_leg" =  list("path" = /obj/item/organ/external/leg/ipc, "descriptor" = "left leg"),
+		"r_leg" =  list("path" = /obj/item/organ/external/leg/right/ipc, "descriptor" = "right leg"),
+		"l_hand" = list("path" = /obj/item/organ/external/hand/ipc, "descriptor" = "left hand"),
+		"r_hand" = list("path" = /obj/item/organ/external/hand/right/ipc, "descriptor" = "right hand"),
+		"l_foot" = list("path" = /obj/item/organ/external/foot/ipc, "descriptor" = "left foot"),
+		"r_foot" = list("path" = /obj/item/organ/external/foot/right/ipc, "descriptor" = "right foot")
 		)
 
 	suicide_messages = list(
@@ -79,15 +74,26 @@
 		"is frying their own circuits!",
 		"is blocking their ventilation port!")
 
+	plushie_type = /obj/item/toy/plushie/ipcplushie
 
 /datum/species/machine/on_species_gain(mob/living/carbon/human/H)
 	..()
 	var/datum/action/innate/change_monitor/monitor = new()
 	monitor.Grant(H)
-	for(var/datum/atom_hud/data/human/medical/medhud in GLOB.huds)
-		medhud.remove_from_hud(H)
-	for(var/datum/atom_hud/data/diagnostic/diag_hud in GLOB.huds)
-		diag_hud.add_to_hud(H)
+	for(var/hud_key, hud in GLOB.huds)
+		if(istype(hud, /datum/atom_hud/data/diagnostic))
+			var/datum/atom_hud/data/diagnostic/diag_hud = hud
+			diag_hud.add_to_hud(H)
+		else if(istype(hud, /datum/atom_hud/data/human/medical))
+			var/datum/atom_hud/data/human/medical/med_hud = hud
+			med_hud.remove_from_hud(H)
+
+	// i love snowflake code
+	var/image/health_bar = H.hud_list[DIAG_HUD]
+	health_bar.icon = 'icons/mob/hud/medhud.dmi'
+	var/image/status_box = H.hud_list[DIAG_STAT_HUD]
+	status_box.icon = 'icons/mob/hud/medhud.dmi'
+
 	H.med_hud_set_health()
 	H.med_hud_set_status()
 
@@ -95,23 +101,64 @@
 	..()
 	for(var/datum/action/innate/change_monitor/monitor in H.actions)
 		monitor.Remove(H)
-	for(var/datum/atom_hud/data/diagnostic/diag_hud in GLOB.huds)
-		diag_hud.remove_from_hud(H)
-	for(var/datum/atom_hud/data/human/medical/medhud in GLOB.huds)
-		medhud.add_to_hud(H)
+	for(var/hud_key, hud in GLOB.huds)
+		if(istype(hud, /datum/atom_hud/data/diagnostic))
+			var/datum/atom_hud/data/diagnostic/diag_hud = hud
+			diag_hud.remove_from_hud(H)
+		else if(istype(hud, /datum/atom_hud/data/human/medical))
+			var/datum/atom_hud/data/human/medical/med_hud = hud
+			med_hud.add_to_hud(H)
+
+	// i love snowflake code
+	var/image/health_bar = H.hud_list[DIAG_HUD]
+	health_bar.icon = 'icons/mob/hud/diaghud.dmi'
+	var/image/status_box = H.hud_list[DIAG_STAT_HUD]
+	status_box.icon = 'icons/mob/hud/diaghud.dmi'
+
 	H.med_hud_set_health()
 	H.med_hud_set_status()
 
+/datum/species/machine/handle_life(mob/living/carbon/human/H) // Handles IPC starvation
+	..()
+	if(isLivingSSD(H)) // We don't want AFK people dying from this
+		return
+
+	if(H.nutrition >= NUTRITION_LEVEL_HYPOGLYCEMIA)
+		return
+
+	// We invented surge protectors and power monitors for just this occasion.
+	if(H.nutrition >= NUTRITION_LEVEL_FAT)
+		H.nutrition = NUTRITION_LEVEL_FULL
+		return
+
+	var/obj/item/organ/internal/cell/microbattery = H.get_organ_slot("heart")
+	if(!istype(microbattery)) //Maybe they're powered by an abductor gland or sheer force of will
+		return
+
+	if(prob(6))
+		to_chat(H, SPAN_WARNING("Error 74: Microbattery critical malfunction, likely cause: Extended strain."))
+		microbattery.receive_damage(4, TRUE)
+	else if(prob(4))
+		H.Weaken(6 SECONDS)
+		H.Stuttering(20 SECONDS)
+		to_chat(H, SPAN_WARNING("Power critical, shutting down superfluous functions."))
+		H.emote("collapse")
+		microbattery.receive_damage(2, TRUE)
+	else if(prob(4))
+		to_chat(H, SPAN_WARNING("Redirecting excess power from servos to vital components."))
+		H.Slowed(rand(15 SECONDS, 32 SECONDS))
+
 /datum/species/machine/handle_death(gibbed, mob/living/carbon/human/H)
 	var/obj/item/organ/external/head/head_organ = H.get_organ("head")
-	if(!istype(head_organ))
-		return
-	head_organ.h_style = "Bald"
-	head_organ.f_style = "Shaved"
-	spawn(100)
-		if(H && head_organ)
-			H.update_hair()
-			H.update_fhair()
+	if(!head_organ)
+		return ..()
+
+	var/datum/robolimb/robohead = GLOB.all_robolimbs[head_organ.model]
+	if(!robohead || !robohead.is_monitor)
+		return ..()
+
+	H.update_hair()
+	return
 
 // Allows IPC's to change their monitor display
 /datum/action/innate/change_monitor
@@ -124,18 +171,18 @@
 	var/obj/item/organ/external/head/head_organ = H.get_organ("head")
 
 	if(!head_organ) //If the rock'em-sock'em robot's head came off during a fight, they shouldn't be able to change their screen/optics.
-		to_chat(H, "<span class='warning'>Where's your head at? Can't change your monitor/display without one.</span>")
+		to_chat(H, SPAN_WARNING("Where's your head at? Can't change your monitor/display without one."))
 		return
 
 	var/datum/robolimb/robohead = GLOB.all_robolimbs[head_organ.model]
 	if(!head_organ)
 		return
 	if(!robohead.is_monitor) //If they've got a prosthetic head and it isn't a monitor, they've no screen to adjust. Instead, let them change the colour of their optics!
-		var/optic_colour = input(H, "Select optic colour", H.m_colours["head"]) as color|null
+		var/optic_colour = tgui_input_color(H, "Please select an optic color", "Select Optic Color", H.m_colours["head"])
 		if(H.incapacitated(TRUE, TRUE))
-			to_chat(H, "<span class='warning'>You were interrupted while changing the colour of your optics.</span>")
+			to_chat(H, SPAN_WARNING("You were interrupted while changing the color of your optics."))
 			return
-		if(optic_colour)
+		if(!isnull(optic_colour))
 			H.change_markings(optic_colour, "head")
 
 	else if(robohead.is_monitor) //Means that the character's head is a monitor (has a screen). Time to customize.
@@ -151,23 +198,24 @@
 			for(var/style in GLOB.configuration.custom_sprites.ipc_screen_map[H.ckey])
 				hair += style
 
-		var/new_style = input(H, "Select a monitor display", "Monitor Display", head_organ.h_style) as null|anything in hair
-		var/new_color = input("Please select hair color.", "Monitor Color", head_organ.hair_colour) as null|color
+		var/new_style = tgui_input_list(H, "Select a monitor display", "Monitor Display", hair)
+		if(!new_style)
+			return
+		var/new_color = tgui_input_color(H, "Please select hair color.", "Monitor Color", head_organ.hair_colour)
 
 		if(H.incapacitated(TRUE, TRUE))
-			to_chat(H, "<span class='warning'>You were interrupted while changing your monitor display.</span>")
+			to_chat(H, SPAN_WARNING("You were interrupted while changing your monitor display."))
 			return
 
 		if(new_style)
 			H.change_hair(new_style, 1)							// The 1 is to enable custom sprites
-		if(new_color)
+		if(!isnull(new_color))
 			H.change_hair_color(new_color)
 
 /datum/species/machine/spec_electrocute_act(mob/living/carbon/human/H, shock_damage, source, siemens_coeff, flags)
 	if(flags & SHOCK_ILLUSION)
 		return
-	H.adjustBrainLoss(shock_damage)
-	H.adjust_nutrition(shock_damage)
+	H.adjust_nutrition(clamp(shock_damage, 0, (NUTRITION_LEVEL_FULL - H.nutrition)))
 
 /datum/species/machine/handle_mutations_and_radiation(mob/living/carbon/human/H)
 	H.adjustBrainLoss(H.radiation / 100)
@@ -195,4 +243,95 @@
 								"Daisy.... Daisy...."
 								)
 		var/error_message = pick(error_messages)
-		to_chat(H, "<span class='boldwarning'>[error_message]</span>")
+		to_chat(H, SPAN_BOLDWARNING("[error_message]"))
+
+/datum/species/machine/do_compressor_grind(mob/living/carbon/human/H)
+	new /obj/item/stack/sheet/mineral/titanium(H.loc)
+
+/mob/living/carbon/human/machine/get_spooked()
+	to_chat(src, SPAN_WHISPER("[pick(GLOB.boo_phrases_robot)]"))
+	return TRUE
+/datum/species/machine/generate_random_appearance(prosthesis_prob = 100, appearance = null, use_gender = null)
+	return ..()
+
+/datum/species/machine/randomize_chassis_brands()
+	var/list/limb_choices = list()
+	var/brand_list = list(
+		/datum/robolimb/morpheus = 9,
+		/datum/robolimb/bishop = 2,
+		/datum/robolimb/hephaestus = 2,
+		/datum/robolimb/wardtakahashi = 1,
+		/datum/robolimb/xion = 2,
+		/datum/robolimb/zenghu = 2,
+		/datum/robolimb/shellguard = 2,
+	)
+	var/main_brand = pickweight(brand_list)
+	var/secondary_brand = pickweight(brand_list - main_brand)
+	var/tertiary_brand = pickweight(brand_list - list(main_brand, secondary_brand))
+
+	for(var/limb in has_limbs)
+		var/datum/robolimb/choice
+		if(prob(98))
+			choice = limb == "head" ? pick(typesof(main_brand)) : main_brand
+		else if(prob(80))
+			choice = limb == "head" ? pick(typesof(secondary_brand)) : secondary_brand
+		else
+			choice = limb == "head" ? pick(typesof(tertiary_brand)) : tertiary_brand
+		if(choice.type != /datum/robolimb/morpheus)
+			if(choice.type != /datum/robolimb/morpheus/alt1 || prob(20))
+				limb_choices[limb] = choice
+
+	return limb_choices
+
+/datum/species/machine/randomize_body_color()
+	if(prob(90))
+		return rgb(rand(0, 360), rand(0, 95), rand(0, 20), space = COLORSPACE_HSL)
+	return COLOR_BLACK
+
+/datum/species/machine/randomize_hair_style(datum/robolimb/robohead, species_bald_prob = null)
+	if(species_bald_prob)
+		return ..()
+	if(robohead.is_monitor || robohead.company == "Zeng-Hu Pharmaceuticals")
+		species_bald_prob = 5
+	else
+		species_bald_prob = 50
+	return ..(robohead, species_bald_prob)
+
+/datum/species/machine/randomize_hair_colors(datum/robolimb/robohead, body_color = null, skin_tone = null)
+	// humanlike hair for humanlike chassis
+	if(robohead.company == "Zeng-Hu Pharmaceuticals")
+		return ..()
+
+	var/list/hair_colors = list(
+		"h1" = COLOR_BLACK,
+		"h2" = rand_hex_color(),
+		"f1" = COLOR_BLACK,
+		"f2" = rand_hex_color()
+	)
+	// monitor colors
+	if(robohead.is_monitor)
+		if(prob(80))
+			return hair_colors
+		if(prob(80))
+			hair_colors["h1"] = rgb(rand(0, 360), 90, rand(40, 80), space = COLORSPACE_HSL) // deep saturated color
+			return hair_colors
+		hair_colors["h1"] = rand_hex_color()
+		return hair_colors
+
+	// non-monitor colors
+	if(prob(20))
+		return ..()
+	if(prob(20))
+		return hair_colors
+	if(prob(80))
+		hair_colors["h1"] = rgb(rand(0, 360), 90, rand(40, 80), space = COLORSPACE_HSL) // deep saturated color
+		hair_colors["f1"] = hair_colors["h1"]
+		return hair_colors
+	hair_colors["h1"] = rand_hex_color()
+	hair_colors["f1"] = hair_colors["h1"]
+	return hair_colors
+
+/datum/species/machine/randomize_head_accessory_color(head_accessory = "None", body_color = null, hair_color = null)
+	if(head_accessory == "None")
+		return ..()
+	return rgb(rand(0, 360), rand(0, 100), rand(0, 40), space = COLORSPACE_HSL)

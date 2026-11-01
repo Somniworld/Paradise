@@ -2,105 +2,96 @@
 	name = "shotgun"
 	desc = "A traditional shotgun with wood furniture and a four-shell capacity underneath."
 	icon_state = "shotgun"
-	item_state = "shotgun"
+	worn_icon_state = null
+	inhand_icon_state = null
 	lefthand_file = 'icons/mob/inhands/64x64_guns_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/64x64_guns_righthand.dmi'
 	inhand_x_dimension = 64
 	inhand_y_dimension = 64
 	w_class = WEIGHT_CLASS_BULKY
 	force = 10
-	flags = CONDUCT
-	can_holster = FALSE
-	slot_flags = SLOT_BACK
-	origin_tech = "combat=4;materials=2"
+	slot_flags = ITEM_SLOT_BACK
 	mag_type = /obj/item/ammo_box/magazine/internal/shot
 	fire_sound = 'sound/weapons/gunshots/gunshot_shotgun.ogg'
-	var/recentpump = 0 // to prevent spammage
 	weapon_weight = WEAPON_HEAVY
+	var/pump_time = 1 SECONDS // To prevent spammage
+	COOLDOWN_DECLARE(pump_cooldown)
 
 /obj/item/gun/projectile/shotgun/examine(mob/user)
 	. = ..()
+	if(chambered)
+		. += "A [chambered.BB ? "live" : "spent"] one is in the chamber."
 	. += get_shotgun_info()
 
 /obj/item/gun/projectile/shotgun/proc/get_shotgun_info()
-	return "<span class='notice'>After firing a shot, use this item in hand to remove the spent shell.</span>"
+	return SPAN_NOTICE("After firing a shot, use this item in hand to remove the spent shell.")
 
-/obj/item/gun/projectile/shotgun/attackby(obj/item/A, mob/user, params)
+/obj/item/gun/projectile/shotgun/attackby__legacy__attackchain(obj/item/A, mob/user, params)
 	. = ..()
 	if(.)
 		return
-	var/num_loaded = magazine.attackby(A, user, params, 1)
+	var/num_loaded = magazine.load_box(A, user, silent = TRUE)
 	if(num_loaded)
-		to_chat(user, "<span class='notice'>You load [num_loaded] shell\s into \the [src]!</span>")
+		to_chat(user, SPAN_NOTICE("You load [num_loaded] shell\s into \the [src]!"))
 		A.update_icon()
 		update_icon()
 
-
 /obj/item/gun/projectile/shotgun/process_chamber()
-	return ..(0, 0)
+	return ..(FALSE, FALSE)
 
 /obj/item/gun/projectile/shotgun/chamber_round()
 	return
 
 /obj/item/gun/projectile/shotgun/can_shoot()
 	if(!chambered)
-		return 0
-	return (chambered.BB ? 1 : 0)
+		return FALSE
+	return chambered.BB
 
-/obj/item/gun/projectile/shotgun/attack_self(mob/living/user)
-	if(recentpump)
+/obj/item/gun/projectile/shotgun/attack_self__legacy__attackchain(mob/living/user)
+	if(!COOLDOWN_FINISHED(src, pump_cooldown))
 		return
 	pump(user)
-	recentpump = 1
-	spawn(10)
-		recentpump = 0
-	return
-
+	COOLDOWN_START(src, pump_cooldown, pump_time)
 
 /obj/item/gun/projectile/shotgun/proc/pump(mob/M)
-	playsound(M, 'sound/weapons/gun_interactions/shotgunpump.ogg', 60, 1)
-	pump_unload(M)
-	pump_reload(M)
-	return 1
+	if(QDELETED(M))
+		return
+	playsound(M, 'sound/weapons/gun_interactions/shotgunpump.ogg', 60, TRUE)
+	pump_unload()
+	pump_reload()
 
-/obj/item/gun/projectile/shotgun/proc/pump_unload(mob/M)
+/obj/item/gun/projectile/shotgun/proc/pump_unload()
 	if(chambered)//We have a shell in the chamber
-		chambered.loc = get_turf(src)//Eject casing
+		chambered.forceMove(get_turf(src))
 		chambered.SpinAnimation(5, 1)
-		playsound(src, chambered.casing_drop_sound, 60, 1)
+		playsound(src, chambered.casing_drop_sound, 60, TRUE)
 		chambered = null
 
-/obj/item/gun/projectile/shotgun/proc/pump_reload(mob/M)
+/obj/item/gun/projectile/shotgun/proc/pump_reload()
 	if(!magazine.ammo_count())
 		return FALSE
 	var/obj/item/ammo_casing/AC = magazine.get_round() //load next casing.
 	chambered = AC
-
-/obj/item/gun/projectile/shotgun/examine(mob/user)
-	. = ..()
-	if(chambered)
-		. += "A [chambered.BB ? "live" : "spent"] one is in the chamber."
 
 /obj/item/gun/projectile/shotgun/lethal
 	mag_type = /obj/item/ammo_box/magazine/internal/shot/lethal
 
 // RIOT SHOTGUN //
 
-/obj/item/gun/projectile/shotgun/riot //for spawn in the armory
-	name = "riot shotgun"
-	desc = "A sturdy shotgun with a longer magazine and a fixed tactical stock designed for non-lethal riot control."
+/// for spawn in the armory
+/obj/item/gun/projectile/shotgun/riot
+	name = "\improper M500 riot shotgun"
+	desc = "A sturdy shotgun by Starstrike Arms, featuring a longer magazine and a fixed tactical stock designed for non-lethal riot control."
 	icon_state = "riotshotgun"
-	item_state = "riotshotgun"
 	mag_type = /obj/item/ammo_box/magazine/internal/shot/riot
 	sawn_desc = "Come with me if you want to live."
-	sawn_state = SAWN_INTACT
 
-/obj/item/gun/projectile/shotgun/riot/attackby(obj/item/A, mob/user, params)
+/obj/item/gun/projectile/shotgun/riot/attackby__legacy__attackchain(obj/item/A, mob/user, params)
 	if(istype(A, /obj/item/circular_saw) || istype(A, /obj/item/gun/energy/plasmacutter))
 		sawoff(user)
 	if(istype(A, /obj/item/melee/energy))
 		var/obj/item/melee/energy/W = A
-		if(W.active)
+		if(HAS_TRAIT(W, TRAIT_ITEM_ACTIVE))
 			sawoff(user)
 	if(istype(A, /obj/item/pipe))
 		unsaw(A, user)
@@ -109,21 +100,21 @@
 
 /obj/item/gun/projectile/shotgun/riot/sawoff(mob/user)
 	if(sawn_state == SAWN_OFF)
-		to_chat(user, "<span class='warning'>[src] has already been shortened!</span>")
+		to_chat(user, SPAN_WARNING("[src] has already been shortened!"))
 		return
 	if(isstorage(loc))	//To prevent inventory exploits
-		to_chat(user, "<span class='info'>How do you plan to modify [src] while it's in a bag.</span>")
+		to_chat(user, SPAN_NOTICE("How do you plan to modify [src] while it's in a bag."))
 		return
 	if(chambered)	//if the gun is chambering live ammo, shoot self, if chambering empty ammo, 'click'
 		if(chambered.BB)
 			process_fire(user, user)
-			user.visible_message("<span class='danger'>\The [src] goes off!</span>", "<span class='danger'>\The [src] goes off in your face!</span>")
+			user.visible_message(SPAN_DANGER("\The [src] goes off!"), SPAN_DANGER("\The [src] goes off in your face!"))
 			return
 		else
-			afterattack(user, user)
-			user.visible_message("[src] goes click!", "<span class='notice'>[src] you are holding goes click.</span>")
+			afterattack__legacy__attackchain(user, user)
+			user.visible_message("[src] goes click!", SPAN_NOTICE("[src] you are holding goes click."))
 	if(magazine.ammo_count())	//Spill the mag onto the floor
-		user.visible_message("<span class='danger'>[user.name] opens [src] up and the shells go goes flying around!</span>", "<span class='userdanger'>You open [src] up and the shells go goes flying everywhere!!</span>")
+		user.visible_message(SPAN_DANGER("[user.name] opens [src] up and the shells go goes flying around!"), SPAN_USERDANGER("You open [src] up and the shells go goes flying everywhere!!"))
 		while(get_ammo(0) > 0)
 			var/obj/item/ammo_casing/CB
 			CB = magazine.get_round(0)
@@ -132,39 +123,36 @@
 				CB.update_icon()
 
 	if(do_after(user, 30, target = src))
-		user.visible_message("[user] shortens \the [src]!", "<span class='notice'>You shorten \the [src].</span>")
+		user.visible_message("[user] shortens \the [src]!", SPAN_NOTICE("You shorten \the [src]."))
 		post_sawoff()
 		return 1
-
 
 /obj/item/gun/projectile/shotgun/riot/proc/post_sawoff()
 	w_class = WEIGHT_CLASS_NORMAL
 	current_skin = "riotshotgun_sawn"
-	item_state = "riotshotgun_sawn"			//phil235 is it different with different skin?
-	slot_flags &= ~SLOT_BACK    //you can't sling it on your back
-	slot_flags |= SLOT_BELT     //but you can wear it on your belt (poorly concealed under a trenchcoat, ideally)
+	slot_flags &= ~ITEM_SLOT_BACK    //you can't sling it on your back
+	slot_flags |= ITEM_SLOT_BELT     //but you can wear it on your belt (poorly concealed under a trenchcoat, ideally)
 	sawn_state = SAWN_OFF
 	magazine.max_ammo = 3
 	update_appearance()
 
-
 /obj/item/gun/projectile/shotgun/riot/proc/unsaw(obj/item/A, mob/user)
 	if(sawn_state == SAWN_INTACT)
-		to_chat(user, "<span class='warning'>[src] has not been shortened!</span>")
+		to_chat(user, SPAN_WARNING("[src] has not been shortened!"))
 		return
 	if(isstorage(loc))	//To prevent inventory exploits
-		to_chat(user, "<span class='info'>How do you plan to modify [src] while it's in a bag.</span>")
+		to_chat(user, SPAN_NOTICE("How do you plan to modify [src] while it's in a bag."))
 		return
 	if(chambered)	//if the gun is chambering live ammo, shoot self, if chambering empty ammo, 'click'
 		if(chambered.BB)
-			afterattack(user, user)
-			user.visible_message("<span class='danger'>\The [src] goes off!</span>", "<span class='danger'>\The [src] goes off in your face!</span>")
+			afterattack__legacy__attackchain(user, user)
+			user.visible_message(SPAN_DANGER("\The [src] goes off!"), SPAN_DANGER("\The [src] goes off in your face!"))
 			return
 		else
-			afterattack(user, user)
-			user.visible_message("[src] goes click!", "<span class='notice'>[src] you are holding goes click.</span>")
+			afterattack__legacy__attackchain(user, user)
+			user.visible_message("[src] goes click!", SPAN_NOTICE("[src] you are holding goes click."))
 	if(magazine.ammo_count())	//Spill the mag onto the floor
-		user.visible_message("<span class='danger'>[user.name] opens [src] up and the shells go goes flying around!</span>", "<span class='userdanger'>You open [src] up and the shells go goes flying everywhere!!</span>")
+		user.visible_message(SPAN_DANGER("[user.name] opens [src] up and the shells go goes flying around!"), SPAN_USERDANGER("You open [src] up and the shells go goes flying everywhere!!"))
 		while(get_ammo() > 0)
 			var/obj/item/ammo_casing/CB
 			CB = magazine.get_round(0)
@@ -174,16 +162,15 @@
 
 	if(do_after(user, 30, target = src))
 		qdel(A)
-		user.visible_message("<span class='notice'>[user] lengthens [src]!</span>", "<span class='notice'>You lengthen [src].</span>")
+		user.visible_message(SPAN_NOTICE("[user] lengthens [src]!"), SPAN_NOTICE("You lengthen [src]."))
 		post_unsaw(user)
 		return 1
 
 /obj/item/gun/projectile/shotgun/riot/proc/post_unsaw()
 	w_class = initial(w_class)
 	current_skin = "riotshotgun"
-	item_state = initial(item_state)
-	slot_flags &= ~SLOT_BELT
-	slot_flags |= SLOT_BACK
+	slot_flags &= ~ITEM_SLOT_BELT
+	slot_flags |= ITEM_SLOT_BACK
 	sawn_state = SAWN_INTACT
 	magazine.max_ammo = 6
 	update_appearance()
@@ -207,19 +194,21 @@
 
 /obj/item/gun/projectile/shotgun/boltaction
 	name = "\improper Mosin Nagant"
-	desc = "This piece of junk looks like something that could have been used 700 years ago. Has a bayonet lug for attaching a knife."
+	desc = "An ancient design commonly used by the conscript forces of the USSP. Chambered in 7.62mm. Has a bayonet lug for attaching a knife."
 	icon_state = "moistnugget"
-	item_state = "moistnugget"
+	worn_icon_state = "moistnugget"
+	inhand_icon_state = "moistnugget"
 	lefthand_file = 'icons/mob/inhands/guns_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/guns_righthand.dmi'
 	inhand_x_dimension = 32
 	inhand_y_dimension = 32
 	mag_type = /obj/item/ammo_box/magazine/internal/boltaction
 	fire_sound = 'sound/weapons/gunshots/gunshot_rifle.ogg'
-	var/bolt_open = FALSE
 	can_bayonet = TRUE
 	knife_x_offset = 27
 	knife_y_offset = 13
+	execution_speed = 7 SECONDS
+	var/bolt_open = FALSE
 
 /obj/item/gun/projectile/shotgun/boltaction/pump(mob/M)
 	playsound(M, 'sound/weapons/gun_interactions/rifle_load.ogg', 60, 1)
@@ -240,9 +229,9 @@
 		process_fire(user, user,0)
 		. = 1
 
-/obj/item/gun/projectile/shotgun/boltaction/attackby(obj/item/A, mob/user, params)
+/obj/item/gun/projectile/shotgun/boltaction/attackby__legacy__attackchain(obj/item/A, mob/user, params)
 	if(!bolt_open)
-		to_chat(user, "<span class='notice'>The bolt is closed!</span>")
+		to_chat(user, SPAN_NOTICE("The bolt is closed!"))
 		return
 	. = ..()
 
@@ -266,7 +255,7 @@
 	..()
 	guns_left = 0
 
-/obj/item/gun/projectile/shotgun/boltaction/enchanted/attack_self()
+/obj/item/gun/projectile/shotgun/boltaction/enchanted/attack_self__legacy__attackchain()
 	return
 
 /obj/item/gun/projectile/shotgun/boltaction/enchanted/shoot_live_shot(mob/living/user, atom/target, pointblank = FALSE, message = TRUE)
@@ -282,21 +271,23 @@
 		discard_gun(user)
 
 /obj/item/gun/projectile/shotgun/boltaction/enchanted/proc/discard_gun(mob/living/user)
-	user.visible_message("<span class='warning'>[user] tosses aside the spent rifle!</span>")
+	user.visible_message(SPAN_WARNING("[user] tosses aside the spent rifle!"))
 	user.throw_item(pick(oview(7, get_turf(user))))
 
 /obj/item/gun/projectile/shotgun/boltaction/enchanted/arcane_barrage
 	name = "arcane barrage"
 	desc = "Pew Pew Pew."
-	fire_sound = 'sound/weapons/emitter.ogg'
 	icon_state = "arcane_barrage"
-	item_state = "arcane_barrage"
+	inhand_icon_state = "disintegrate"
+	lefthand_file = 'icons/mob/inhands/items_lefthand.dmi'
+	righthand_file = 'icons/mob/inhands/items_righthand.dmi'
+	fire_sound = 'sound/weapons/emitter.ogg'
 	slot_flags = null
 	flags = NOBLUDGEON | DROPDEL | ABSTRACT
 	mag_type = /obj/item/ammo_box/magazine/internal/boltaction/enchanted/arcane_barrage
 
 /obj/item/gun/projectile/shotgun/boltaction/enchanted/arcane_barrage/examine(mob/user)
-	. = desc // Override since magical hand lasers don't have chambers or bolts
+	return build_base_description() // Override since magical hand lasers don't have chambers or bolts
 
 /obj/item/gun/projectile/shotgun/boltaction/enchanted/arcane_barrage/discard_gun(mob/living/user)
 	qdel(src)
@@ -306,33 +297,45 @@
 /obj/item/gun/projectile/shotgun/automatic
 
 /obj/item/gun/projectile/shotgun/automatic/get_shotgun_info()
-	return "<span class='notice'>Automatically releases spent shotgun shells.</span>"
+	return SPAN_NOTICE("Automatically releases spent shotgun shells.")
 
 /obj/item/gun/projectile/shotgun/automatic/shoot_live_shot(mob/living/user, atom/target, pointblank = FALSE, message = TRUE)
 	..()
 	pump(user)
 
 /obj/item/gun/projectile/shotgun/automatic/combat
-	name = "combat shotgun"
-	desc = "A semi automatic shotgun with tactical furniture and a six-shell capacity underneath."
-	icon_state = "cshotgun"
-	item_state = "shotgun_combat"
+	name = "\improper M600 combat shotgun"
+	desc = "A semi automatic shotgun by Starstrike Arms, with tactical furniture and a six-shell magazine capacity."
+	icon_state = "shotgun_combat"
 	origin_tech = "combat=6"
 	mag_type = /obj/item/ammo_box/magazine/internal/shot/com
-	w_class = WEIGHT_CLASS_HUGE
+	execution_speed = 5 SECONDS
+
+/obj/item/gun/projectile/shotgun/automatic/combat/confetti
+	mag_type = /obj/item/ammo_box/magazine/internal/shot/com/confetti
+
+/// Service Malfunction Borg Combat Shotgun Variant
+/obj/item/gun/projectile/shotgun/automatic/combat/cyborg
+	name = "cyborg shotgun"
+	desc = "Get those organics off your station. Holds eight shots. Can only reload in a recharge station."
+	mag_type = /obj/item/ammo_box/magazine/internal/shot/malf
+
+/obj/item/gun/projectile/shotgun/automatic/combat/cyborg/cyborg_recharge(coeff, emagged)
+	if(magazine.ammo_count() < magazine.max_ammo)
+		magazine.stored_ammo.Add(new /obj/item/ammo_casing/shotgun/lasershot)
 
 //Dual Feed Shotgun
 
 /obj/item/gun/projectile/shotgun/automatic/dual_tube
-	name = "cycler shotgun"
-	desc = "An advanced shotgun with two separate magazine tubes, allowing you to quickly toggle between ammo types."
+	name = "\improper XM800 cycler shotgun"
+	desc = "A prototype shotgun by Starstrike Arms with two separate magazine tubes, allowing you to quickly toggle between ammo types."
 	icon_state = "cycler"
-	inhand_x_dimension = 32
-	inhand_y_dimension = 32
+	worn_icon_state = "shotgun_combat"
+	inhand_icon_state = "bulldog"
 	lefthand_file = 'icons/mob/inhands/guns_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/guns_righthand.dmi'
-	item_state = "bulldog"
-	origin_tech = "combat=4;materials=2"
+	inhand_x_dimension = 32
+	inhand_y_dimension = 32
 	mag_type = /obj/item/ammo_box/magazine/internal/shot/tube
 	w_class = WEIGHT_CLASS_HUGE
 	var/toggled = 0
@@ -347,9 +350,9 @@
 	QDEL_NULL(alternate_magazine)
 	return ..()
 
-/obj/item/gun/projectile/shotgun/automatic/dual_tube/attack_self(mob/living/user)
-	if(!chambered && magazine.contents.len)
-		pump()
+/obj/item/gun/projectile/shotgun/automatic/dual_tube/attack_self__legacy__attackchain(mob/living/user)
+	if(!chambered && length(magazine.contents))
+		pump(user)
 	else
 		toggle_tube(user)
 
@@ -368,6 +371,6 @@
 /obj/item/gun/projectile/shotgun/automatic/dual_tube/AltClick(mob/living/user)
 	if(user.incapacitated() || !Adjacent(user) || !istype(user))
 		return
-	pump()
+	pump(user)
 
 // DOUBLE BARRELED SHOTGUN, IMPROVISED SHOTGUN, and CANE SHOTGUN are in revolver.dm

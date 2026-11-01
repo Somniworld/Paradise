@@ -5,7 +5,6 @@
 	icon_state = "pdapainter"
 	density = TRUE
 	anchored = TRUE
-	max_integrity = 200
 	var/obj/item/pda/storedpda = null
 	/// List of possible PDA colors to choose from
 	var/list/colorlist = list()
@@ -71,14 +70,15 @@
 		storedpda = null
 		update_icon()
 
-/obj/machinery/pdapainter/attackby(obj/item/I, mob/user, params)
-	if(default_unfasten_wrench(user, I))
+/obj/machinery/pdapainter/item_interaction(mob/living/user, obj/item/used, list/modifiers)
+	if(default_unfasten_wrench(user, used))
 		power_change()
-		return
-	if(istype(I, /obj/item/pda))
+		return ITEM_INTERACT_COMPLETE
+	if(istype(used, /obj/item/pda))
 		insertpda(user)
-	else
-		return ..()
+		return ITEM_INTERACT_COMPLETE
+
+	return ..()
 
 /obj/machinery/pdapainter/welder_act(mob/user, obj/item/I)
 	. = TRUE
@@ -98,10 +98,10 @@
 
 	ui_interact(user)
 
-/obj/machinery/pdapainter/ui_interact(mob/user, ui_key, datum/tgui/ui, force_open, datum/tgui/master_ui, datum/ui_state/state)
-	ui = SStgui.try_update_ui(user, src, ui_key, ui, force_open)
+/obj/machinery/pdapainter/ui_interact(mob/user, datum/tgui/ui, datum/ui_state/state)
+	ui = SStgui.try_update_ui(user, src, ui)
 	if(!ui)
-		ui = new(user, src, ui_key, "PdaPainter", "PDA Painter", 510, 510)
+		ui = new(user, src, "PdaPainter", "PDA Painter")
 		ui.open()
 
 /obj/machinery/pdapainter/ui_data(mob/user)
@@ -159,7 +159,7 @@
 
 /obj/machinery/pdapainter/proc/ejectpda(mob/user)
 	if(!storedpda)
-		to_chat(usr, "<span class='notice'>[src] is empty.</span>")
+		to_chat(usr, SPAN_NOTICE("[src] is empty."))
 		return
 	storedpda.forceMove(get_turf(src))
 	if(ishuman(user))
@@ -167,6 +167,7 @@
 		H.put_in_hands(storedpda)
 
 	UnregisterSignal(storedpda, COMSIG_PARENT_QDELETING)
+	storedpda.update_icon(UPDATE_ICON_STATE|UPDATE_OVERLAYS)
 	storedpda = null
 	update_icon()
 
@@ -174,7 +175,7 @@
 	if(storedpda)
 		storedpda.icon_state = preview_icon_state
 		storedpda.desc = colorlist[preview_icon_state][2]
-		playsound(loc, 'sound/effects/spray.ogg', 5, 1, 5)
+		playsound(loc, 'sound/effects/spray.ogg', 5, TRUE, 5)
 		update_pda_cache()
 
 /obj/machinery/pdapainter/proc/update_pda_cache()

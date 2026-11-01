@@ -7,7 +7,6 @@
 
 	volume = 70
 
-	dir = SOUTH
 	initialize_directions = SOUTH|NORTH
 
 	var/obj/machinery/atmospherics/node1
@@ -15,10 +14,6 @@
 
 	var/minimum_temperature_difference = 300
 	var/thermal_conductivity = 0 //WALL_HEAT_TRANSFER_COEFFICIENT No
-
-	var/maximum_pressure = 70*ONE_ATMOSPHERE
-	var/fatigue_pressure = 55*ONE_ATMOSPHERE
-	alert_pressure = 55*ONE_ATMOSPHERE
 
 	level = 1
 
@@ -72,23 +67,8 @@
 			hide(T.intact)
 		update_icon()
 
-/obj/machinery/atmospherics/pipe/simple/check_pressure(pressure)
-	var/datum/gas_mixture/environment = loc.return_air()
-
-	var/pressure_difference = pressure - environment.return_pressure()
-
-	if(pressure_difference > maximum_pressure)
-		burst()
-
-	else if(pressure_difference > fatigue_pressure)
-		//TODO: leak to turf, doing pfshhhhh
-		if(prob(5))
-			burst()
-
-	else return 1
-
 /obj/machinery/atmospherics/pipe/simple/proc/burst()
-	src.visible_message("<span class='danger'>\The [src] bursts!</span>")
+	src.visible_message(SPAN_DANGER("\The [src] bursts!"))
 	playsound(src.loc, 'sound/effects/bang.ogg', 25, 1)
 	var/datum/effect_system/smoke_spread/smoke = new
 	smoke.set_up(1, FALSE, loc)
@@ -97,9 +77,9 @@
 
 /obj/machinery/atmospherics/pipe/simple/proc/normalize_dir()
 	if(dir==3)
-		dir = 1
+		dir = NORTH
 	else if(dir==12)
-		dir = 4
+		dir = EAST
 
 /obj/machinery/atmospherics/pipe/simple/Destroy()
 	. = ..()
@@ -141,9 +121,9 @@
 	. = ..()
 	alpha = 255
 	if(node1 && node2)
-		. += SSair.icon_manager.get_atmos_icon("pipe", , pipe_color, pipe_icon + "intact" + icon_connect_type)
+		. += GLOB.pipe_icon_manager.get_atmos_icon("pipe", null, pipe_color, pipe_icon + "intact" + icon_connect_type)
 	else
-		. += SSair.icon_manager.get_atmos_icon("pipe", , pipe_color, pipe_icon + "exposed[node1?1:0][node2?1:0]" + icon_connect_type)
+		. += GLOB.pipe_icon_manager.get_atmos_icon("pipe", null, pipe_color, pipe_icon + "exposed[node1?1:0][node2?1:0]" + icon_connect_type)
 
 // A check to make sure both nodes exist - self-delete if they aren't present
 /obj/machinery/atmospherics/pipe/simple/check_nodes_exist()
